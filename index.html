@@ -1,0 +1,46 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>키워봐도될까 — 입양 전 30일 반려 생활 체험</title>
+  <meta name="description" content="내 출퇴근 시간 그대로 아기 강아지·고양이를 30일 키워 보고, 시간·돈·환경·지식·꾸준함으로 반려 준비도를 확인해요. 모든 비용·건강 정보에 출처를 달았어요.">
+  <meta name="theme-color" content="#FBF7EF">
+  <meta property="og:title" content="키워봐도될까 — 입양 전, 내 생활로 먼저 30일">
+  <meta property="og:description" content="내 출퇴근 시간 그대로 아기 강아지·고양이를 키워 보고 시간·돈·환경·지식·꾸준함으로 반려 준비도를 확인해요.">
+  <meta property="og:image" content="https://rlawnstlr001-design.github.io/kiwobwado/og.png">
+  <meta property="og:url" content="https://rlawnstlr001-design.github.io/kiwobwado/">
+  <meta property="og:type" content="website">
+  <meta name="twitter:card" content="summary_large_image">
+  <link rel="icon" href="icons/icon-192.png" type="image/png">
+  <link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+  <link rel="manifest" href="manifest.webmanifest">
+  <link rel="stylesheet" href="styles.css?v=202610051549">
+</head>
+<body>
+  <header class="top" id="top">
+    <a class="brand" href="#/" aria-label="키워봐도될까 처음으로"><span class="brand-mark" aria-hidden="true"></span><span class="brand-name">키워봐도될까</span></a>
+    <div class="top-right">
+      <span class="day-badge" id="day-badge" hidden></span>
+      <button class="icon-btn" id="btn-settings" aria-label="설정">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3M4.9 4.9l2.1 2.1M17 17l2.1 2.1M4.9 19.1 7 17M17 7l2.1-2.1"/></svg>
+      </button>
+    </div>
+  </header>
+
+  <main id="view" tabindex="-1"></main>
+
+  <nav class="tabbar" id="tabbar" aria-label="화면">
+    <a href="#/" data-tab="today"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 11l8-7 8 7v9H4z"/><path d="M10 20v-5h4v5"/></svg>오늘</a>
+    <a href="#/book" data-tab="book"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="5" y="3" width="14" height="18" rx="2"/><path d="M9 8h6M9 12h6M9 16h4"/></svg>수첩</a>
+    <a href="#/learn" data-tab="learn"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 6l9-3 9 3-9 3z"/><path d="M7 8v5c0 1.5 2.5 3 5 3s5-1.5 5-3V8"/></svg>배움</a>
+    <a href="#/report" data-tab="report"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/></svg>리포트</a>
+  </nav>
+
+  <div id="toast" role="status" aria-live="polite"></div>
+  <div id="sheet-root"></div>
+
+  <script src="config.js?v=202610051549"></script>
+  <script type="module" src="js/app.js?v=202610051549"></script>
+</body>
+</html>

@@ -1,0 +1,63 @@
+{
+  "_note": "모든 금액은 원. src는 sources.json 키. [계산] 표시는 출처 값을 곱하거나 더한 값.",
+  "adopt": {
+    "shelter": { "label": "보호소·구조단체에서 입양", "amount": 0, "note": "입양비는 지자체·단체마다 다르고, 지자체 입양비 지원 제도도 있어요. 이 체험에선 0원으로 두고 나머지 비용만 셉니다.", "src": ["kara_adopt"] },
+    "shop": { "label": "펫숍(반려동물 매장)", "amount": 890000, "note": "반려동물복합매장 평균 89만원 · 일반 애견센터 78만원 (개·고양이 전체 평균)", "src": ["kb2025"] },
+    "breeder": { "label": "전문 브리더", "amount": 1010000, "note": "전문 브리더 평균 101만원 (개·고양이 전체 평균)", "src": ["kb2025"] }
+  },
+  "monthly": {
+    "dog": { "amount": 161000, "label": "사료·간식·배변패드·용품·미용 (병원비 제외)", "src": ["kb2025"] },
+    "cat": { "amount": 142000, "label": "사료·간식·모래·용품 (병원비 제외)", "src": ["kb2025"] },
+    "split_dog": [["사료", 34.7], ["간식·영양제", 26.0], ["배변패드 등 일용품", 9.0], ["옷·잡화", 3.0], ["기타(미용·장난감 등)", 27.3]],
+    "split_cat": [["사료", 36.8], ["간식·영양제", 21.3], ["가구·캣타워", 9.7], ["위생 서비스", 3.0], ["기타(모래·장난감 등)", 29.2]],
+    "split_src": ["kb2025"],
+    "other_survey": { "dog": 135000, "cat": 92000, "label": "병원비 포함 1마리당 월평균(다른 조사)", "src": ["mafra2025"] }
+  },
+  "vet": {
+    "first_visit": { "5": 9873, "10": 10332, "20": 11227 },
+    "revisit": { "5": 7931, "10": 8318, "20": 9010 },
+    "consult": 10283,
+    "inpatient_dog": { "5": 51468, "10": 64374, "20": 84589 },
+    "inpatient_cat": 56417,
+    "vax_dog_combo": 26337,
+    "vax_cat_combo": 39478,
+    "vax_rabies": 24803,
+    "vax_kennel": 22666,
+    "vax_corona": 22266,
+    "vax_flu": 34931,
+    "blood_cbc": 35973,
+    "blood_chem": 86502,
+    "xray": { "5": 41026, "10": 46234, "20": 55451 },
+    "ultrasound": { "5": 58822, "10": 64817, "20": 77903 },
+    "heartworm_5kg": 16542,
+    "ectoparasite_5kg": 18927,
+    "src": ["vetfee2025"]
+  },
+  "illness_min": {
+    "_note": "펫보험 보험금 건당 평균 [계산] — 본인부담이 빠진 값이라 실제 진료비는 이보다 크다",
+    "dog_gastro": { "amount": 130000, "label": "개 위염·장염 (보험금 건당 약 13만원)", "src": ["meritz2023"] },
+    "dog_foreign": { "amount": 210000, "label": "개 이물 섭식 (보험금 건당 약 21만원)", "src": ["meritz2023"] },
+    "cat_vomit": { "amount": 160000, "label": "고양이 구토 (보험금 건당 약 16만원)", "src": ["meritz2023"] }
+  },
+  "neuter": { "seoul_avg": 154023, "gyeonggi_avg": 182267, "label": "중성화 수술 지역 평균(2022, 성별 구분 없음) — 최신 공식 통계 없음", "src": ["neuter2022", "neuter2017"] },
+  "register": { "chip_in": 10000, "chip_out": 3000, "label": "동물등록 수수료(내장형 1만원·외장형 3천원, 식별장치 값 별도)", "src": ["seoul_register"] },
+  "care": {
+    "sitter_hour": { "amount": 28000, "label": "방문 펫시터 1시간", "src": ["dogmate_price"] },
+    "personal_care": { "amount": 25000, "label": "개인 돌봄 1회", "src": ["petcare_price2026"] },
+    "hotel_night": { "min": 40000, "max": 60000, "amount": 50000, "label": "펫호텔 1박(소형견, 성수기 할증 별도)", "src": ["petcare_price2026"] }
+  },
+  "fines": {
+    "register": [200000, 400000, 600000],
+    "leash": [200000, 300000, 500000],
+    "tag": [50000, 100000, 200000],
+    "poop": [50000, 70000, 100000],
+    "abandon_max": 3000000,
+    "src": ["law_register", "law_walk", "law_abandon"]
+  },
+  "yearly": {
+    "dog": { "min": 1620000, "max": 2649000 },
+    "cat": { "min": 1104000, "max": 2220000 },
+    "label": "1년 양육비 범위 [계산] — 병원비 포함 조사(월평균×12) ~ 병원비 제외 조사+치료비 연환산",
+    "src": ["mafra2025", "kb2025"]
+  }
+}

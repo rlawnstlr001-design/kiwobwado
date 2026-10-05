@@ -1,8 +1,8 @@
 // 키워봐도될까 — 내 생활 그대로 30일 키워 보고 반려 준비도를 확인하는 입양 전 체험
-import * as db from './db.js?v=202610051549';
-import * as E from './engine.js?v=202610051549';
-import { C, loadContent, eventById, lessonById, foodById } from './content.js?v=202610051549';
-import { track } from './track.js?v=202610051549';
+import * as db from './db.js?v=202610051642';
+import * as E from './engine.js?v=202610051642';
+import { C, loadContent, eventById, lessonById, foodById } from './content.js?v=202610051642';
+import { track } from './track.js?v=202610051642';
 
 const $ = (s, el = document) => el.querySelector(s);
 const view = $('#view');
@@ -282,7 +282,7 @@ function moodOf(plan, key) {
   if (S.stats.bond < 30) return { text: '아직 보호자를 조금 어려워해요', state: 'idle' };
   return { text: species() === 'dog' ? '졸졸 따라다니며 눈을 맞춰요' : '창밖을 구경하다 눈을 깜빡여요', state: 'idle' };
 }
-const STATE_STAGES = new Set(['baby']); // 상태 그림이 있는 단계 (청소년·성체는 생성 후 추가)
+const STATE_STAGES = new Set(['baby', 'teen', 'adult']); // 상태 그림(6가지)이 있는 단계
 const photoOf = (stage, state) => (STATE_STAGES.has(stage) ? `art/pet/${P().type}_${stage}_${state}.webp` : imgOf(P().type, stage));
 function today() {
   setTab('today');
@@ -578,7 +578,7 @@ function report() {
       <p class="fine" style="margin:10px 0 0">제때 ${rep.counts.done} · 늦음 ${rep.counts.late} · 놓침 ${rep.counts.missed} · 사건 판단 ${S.answers.length}번 · 퀴즈 ${S.quiz.right}/${S.quiz.total}</p></section>
     ${rep.blockers.length ? `<section class="card"><h2>먼저 풀어야 할 것</h2><ul class="tips">${rep.blockers.map((b) => `<li style="border-left-color:var(--warn)">${esc(b)}</li>`).join('')}</ul></section>` : ''}
     ${rep.tips.length ? `<section class="card"><h2>이렇게 준비해 보세요</h2><ul class="tips">${rep.tips.map((t) => `<li>${esc(t.text)}</li>`).join('')}</ul></section>` : ''}
-    <section class="card"><h2>앞으로의 시간</h2><div class="future"><figure class="photo" style="transform:rotate(2deg)"><img src="${imgOf(P().type, 'adult')}" alt="다 자란 모습"><figcaption>다 자라면</figcaption></figure>
+    <section class="card"><h2>앞으로의 시간</h2><div class="future"><figure class="photo" style="transform:rotate(2deg)"><img src="${photoOf('adult', 'happy')}" alt="다 자란 모습"><figcaption>다 자라면</figcaption></figure>
       <p class="sub" style="margin:0">${esc(petName())}${E.josa(petName(), '은/는').slice(-1)} 평균적으로 약 <b>${Math.round(life * 10) / 10}년</b>을 살아요. 1년 양육비 ${Math.round(y.min / 10000)}만~${Math.round(y.max / 10000)}만원이면, 평생 약 <b>${Math.round((y.min * life) / 1000000) * 100}만~${Math.round((y.max * life) / 1000000) * 100}만원</b> [계산]. 나이가 들수록 치료비가 늘어요(개 7세·고양이 6세 이후).</p></div>
       <button class="src-btn" data-src="banfield2023,kb2025,mafra2025,aaha_senior2023">출처</button></section>
     <section class="card next-steps"><h2>다음 단계</h2>

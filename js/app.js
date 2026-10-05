@@ -1,8 +1,9 @@
 // 키워봐도될까 — 내 생활 그대로 30일 키워 보고 반려 준비도를 확인하는 입양 전 체험
-import * as db from './db.js?v=202610051642';
-import * as E from './engine.js?v=202610051642';
-import { C, loadContent, eventById, lessonById, foodById } from './content.js?v=202610051642';
-import { track } from './track.js?v=202610051642';
+import * as db from './db.js?v=202610060839';
+import * as E from './engine.js?v=202610060839';
+import { C, loadContent, eventById, lessonById, foodById } from './content.js?v=202610060839';
+import { track } from './track.js?v=202610060839';
+import { roomHTML, mountRoom, timeOfDay } from './room.js?v=202610060839';
 
 const $ = (s, el = document) => el.querySelector(s);
 const view = $('#view');
@@ -17,7 +18,7 @@ const { won, toMin, toHM, TYPES, COURSE_DAYS } = E;
 const fresh = () => ({
   profile: null, stats: E.startStats(), results: {}, arrange: {}, closed: [], lastClosed: 0,
   dayEvents: {}, answers: [], pending: [], seen: [], chains: [], triggers: [], ledger: [],
-  quiz: { right: 0, total: 0 }, offset: 0,
+  quiz: { right: 0, total: 0 }, offset: 0, petted: {}, freePlay: {},
 });
 let S = fresh();
 const save = () => db.put('kv', S, 'state');
@@ -308,16 +309,23 @@ function today() {
   const canArrange = awayTasks.length > 0 && nm < firstAway + E.WINDOW;
   const helperOK = P().people.helper || P().people.live === 'family';
   const arrLabel = { self: '내가 점심에 들러요', helper: '가족·지인에게 부탁했어요', sitter: '펫시터를 불렀어요', none: '오늘은 못 챙겨요' };
+  const sleepNow = nm >= toMin(P().life.sleep) || nm < toMin(P().life.wake);
+  const roomState = sleepNow ? 'sleep' : mood.state;
+  const acts = actsFor(plan, key, d, nm, stage);
+  const openKinds = acts.filter((a) => a.cls === 'now').map((a) => a.kind);
+  const NEED = { feed: '배고파요!', potty: '쉬 마려워요', walk: '나가고 싶어요!', play: '놀아 주세요!', litter: '화장실이 지저분해요', train: '뭐 배울까요?', brush: '털이 엉켰어요' };
+  const need = roomState === 'sick' ? '몸이 안 좋아요…' : !sleepNow && openKinds.length ? NEED[openKinds[0]] : '';
+  const dirty = (kind) => plan.some((t) => t.kind === kind && E.taskPhase(t, nm) !== 'early' && !statusFor(t, key, d));
+  const prop = species() === 'dog' ? { pad: dirty('potty') ? 'used' : 'clean' } : { litter: dirty('litter') ? 'used' : 'clean' };
   view.innerHTML = `
-    <section class="today-head">
-      <figure class="photo"><span class="clip"></span><img src="${photoOf(stage, mood.state)}" alt="${esc(petName())} — ${esc(mood.text)}"><figcaption>${esc(petName())}</figcaption></figure>
-      <div>
-        <p class="pet-name">${esc(petName())}</p>
-        <p class="pet-meta">생후 ${Math.floor(weeks)}주 · ${T().label}</p>
-        <div class="gauges">${g('health', '건강')}${g('bond', '마음')}${g('habit', '습관')}</div>
-      </div>
+    <section class="room-layout">
+      ${roomHTML({ type: P().type, stage, state: roomState, tod: timeOfDay(nm), need, prop, clock: `${d}일째 ${toHM(nm)}`, tag: `${esc(petName())} · 생후 ${Math.floor(weeks)}주` })}
+      <div class="acts">${acts.map((a) => `<button class="act ${a.cls}" data-act="${a.kind}">${ICON[a.icon]}<b>${a.label}</b><small>${a.sub}</small></button>`).join('')}</div>
     </section>
-    <p class="mood" style="margin-top:12px">${esc(fill(`{name:은/는} 지금 ${mood.text}`))}</p>
+    <div class="pet-line"><p class="pet-name">${esc(petName())}</p><span class="sub">${T().label}</span></div>
+    <p class="mood" style="margin-top:6px">${esc(fill(`{name:은/는} 지금 ${sleepNow ? '새근새근 자고 있어요' : mood.text}`))}</p>
+    <div class="stat-row">${g('health', '건강')}${g('bond', '마음')}${g('habit', '습관')}</div>
+    <p class="fine" style="margin:8px 0 0">${species() === 'dog' ? '강아지' : '고양이'} 몸에 손가락(마우스)을 대고 문지르면 쓰다듬어 줄 수 있어요.</p>
     ${evs.map((p) => { const e = eventById(p.id); return `<section class="card event-card"><span class="pill ${e.kind}">${{ vet: '병원', food: '음식', behavior: '행동', life: '생활', law: '법·의무' }[e.kind]}</span>${p.day < d ? ' <span class="fine">어제 일</span>' : ''}<h2>${esc(fill(e.title))}</h2><p class="sub" style="margin:0 0 10px">${esc(fill(e.text))}</p><button class="btn btn-main btn-wide" data-ev="${e.id}">어떻게 할까요?</button></section>`; }).join('')}
     ${awayTasks.length && (canArrange || arr) ? `<section class="card away-card"><h2>${toHM(spans[0][0])}~${toHM(spans[0][1])} 집을 비워요</h2>
       <p class="sub" style="margin:0">그사이 ${awayTasks.map((t) => t.label).join('·')}${E.josa(awayTasks.at(-1).label, '이/가').slice(-1)} 있어요. 누가 챙길까요?</p>
@@ -330,13 +338,98 @@ function today() {
       <p class="fine" style="margin:6px 0 0">${limit ? `세로선 = 지금 월령의 권장 한계 약 ${Math.round(limit / 60 * 10) / 10}시간 (아기는 '월령 1개월당 1시간', 성견도 4시간 이하)` : '고양이는 혼자 두는 시간의 공식 기준을 찾지 못했어요 — 길수록 놀이·교감이 더 필요해요.'} <button class="src-btn" data-src="hw_potty,rspca_alone">출처</button></p>
     </section>
     <section class="card">
-      <h2>오늘의 돌봄 요청</h2>
-      <ul class="timeline">${plan.map((t) => taskRow(t, key, d, nm)).join('')}</ul>
+      <details class="plan-all"><summary>오늘 일정 전체</summary>
+      <ul class="timeline">${plan.map((t) => taskRow(t, key, d, nm)).join('')}</ul></details>
       <p class="fine" style="margin:8px 0 0">요청 시각부터 ${E.WINDOW}분 안에 하면 '제때', 지나면 '늦음', 그날 안에 못 하면 '놓침'이에요. 앱 버전에선 이 시각에 알림이 와요.</p>
     </section>
     ${DEV ? `<div class="dev"><b>빠른 체험</b><button class="btn btn-sm" data-dev="h">+1시간</button><button class="btn btn-sm" data-dev="h3">+3시간</button><button class="btn btn-sm" data-dev="d">다음 날 아침</button><span class="fine" style="flex-basis:100%">체험 속 지금: ${now().toLocaleString('ko-KR', { month: 'long', day: 'numeric', weekday: 'short', hour: '2-digit', minute: '2-digit' })} · 실제 30일 체험과 결과가 다를 수 있어요</span></div>` : ''}`;
   view.onclick = onTodayClick;
+  ROOM = mountRoom({
+    type: P().type, stage, state: roomState,
+    canPet: () => !sleepNow,
+    onStroke: (n) => {
+      if (sleepNow) { if (n === 1) ROOM?.nudge('자는 아이는 깨우지 말고 쉬게 둬요'); return; }
+      if (n === 3) {
+        const k = todayKey();
+        S.petted[k] = (S.petted[k] || 0) + 1;
+        if (S.petted[k] <= 5) { S.stats = E.applyFx(S.stats, { bond: 1 }); save(); }
+      }
+    },
+  });
   track('day_open');
+}
+let ROOM = null;
+let BUSY = false;
+const ICON = {
+  bowl: '<svg viewBox="0 0 32 32"><path d="M4 15h24c0 7-5 11-12 11S4 22 4 15z"/><path d="M10 12c1-2 3-3 6-3s5 1 6 3"/></svg>',
+  pad: '<svg viewBox="0 0 32 32"><rect x="5" y="7" width="22" height="18" rx="2"/><path d="M9 11h14M9 16h14M9 21h9"/></svg>',
+  litter: '<svg viewBox="0 0 32 32"><path d="M4 13h24l-3 12H7z"/><path d="M8 13c2-3 5-4 8-4s6 1 8 4"/></svg>',
+  leash: '<svg viewBox="0 0 32 32"><circle cx="9" cy="9" r="5"/><path d="M13 12l12 13M22 25h5v-5"/></svg>',
+  ball: '<svg viewBox="0 0 32 32"><circle cx="16" cy="16" r="10"/><path d="M8 11c5 2 11 2 16 0M8 21c5-2 11-2 16 0"/></svg>',
+  feather: '<svg viewBox="0 0 32 32"><path d="M6 26L22 10"/><path d="M22 10c4-4 6-4 6-4s0 6-5 9c-3 2-6 1-6 1s-1-3 5-6z"/></svg>',
+  star: '<svg viewBox="0 0 32 32"><path d="M16 5l3 7 7 .6-5.4 4.6 1.7 7.3L16 20.8 9.7 24.5l1.7-7.3L6 12.6l7-.6z"/></svg>',
+  comb: '<svg viewBox="0 0 32 32"><rect x="5" y="9" width="22" height="6" rx="2"/><path d="M8 15v8M12 15v8M16 15v8M20 15v8M24 15v8"/></svg>',
+  hand: '<svg viewBox="0 0 32 32"><path d="M10 28c-3-3-5-7-6-11-1-2 2-3 3-1l2 3V8c0-2 3-2 3 0v8h1V5c0-2 3-2 3 0v11h1V7c0-2 3-2 3 0v10h1V10c0-2 3-2 3 0v11c0 4-1 7-3 9z"/></svg>',
+};
+// 할 일 버튼과 지금 상태: 지금!/늦었어요/다음 시각/오늘 완료/집 비움
+function actsFor(plan, key, d, nm, stage) {
+  const dog = species() === 'dog';
+  const list = dog
+    ? [['feed', '밥 주기', 'bowl'], ['potty', '패드 갈기', 'pad'], ['walk', stage === 'baby' ? '바깥 구경' : '산책', 'leash'], ['play', '놀아 주기', 'ball'], ['train', '훈련', 'star'], ['brush', '빗질', 'comb']]
+    : [['feed', '밥 주기', 'bowl'], ['litter', '화장실', 'litter'], ['play', '사냥 놀이', 'feather'], ['brush', '빗질', 'comb'], ['pet', '쓰다듬기', 'hand'], ['free', '장난감', 'ball']];
+  return list.map(([kind, label, icon]) => {
+    if (kind === 'pet') return { kind, label, icon, cls: '', sub: '몸을 문질러요' };
+    if (kind === 'free') return { kind, label, icon, cls: '', sub: '언제든' };
+    const ts = plan.filter((t) => t.kind === kind);
+    if (!ts.length) return { kind, label, icon, cls: '', sub: '언제든' };
+    const open = ts.find((t) => !statusFor(t, key, d) && E.taskPhase(t, nm) !== 'early' && !(t.away && arrangeOf(key) === 'none'));
+    if (open) {
+      if (open.away && !arrangeOf(key)) return { kind, label, icon, cls: 'away', sub: '집 비움', task: open };
+      return { kind, label, icon, cls: 'now', sub: E.taskPhase(open, nm) === 'open' ? '지금!' : '늦었어요', task: open };
+    }
+    const next = ts.find((t) => !statusFor(t, key, d) && E.taskPhase(t, nm) === 'early');
+    if (next) return { kind, label, icon, cls: '', sub: next.time, next };
+    return { kind, label, icon, cls: 'done', sub: '오늘 완료' };
+  });
+}
+async function doAct(kind) {
+  if (BUSY || !ROOM) return;
+  const key = todayKey(), d = dayNow(), nm = nowMin();
+  const plan = E.dayPlan(P(), key);
+  const a = actsFor(plan, key, d, nm, E.stageOf(E.ageWeeks(d))).find((x) => x.kind === kind);
+  if (kind === 'pet') return ROOM.nudge('아이 몸에 손을 대고 살살 문질러 보세요');
+  if (nm >= toMin(P().life.sleep) || nm < toMin(P().life.wake)) return ROOM.nudge('지금은 잘 시간이에요');
+  if (a?.task && a.cls === 'now') {
+    BUSY = true;
+    const status = E.judge(a.task, nm);
+    S.results[a.task.id] = { status, at: nm };
+    S.lastDone = now().getTime();
+    await save();
+    track('task_done');
+    await ROOM.play(kind);
+    BUSY = false;
+    toast(status === 'done' ? `${a.task.label} — 제때 했어요` : `${a.task.label} — 늦었지만 챙겼어요`);
+    return today();
+  }
+  if (a?.cls === 'away') return ROOM.nudge('지금은 집에 없어요 — 아래에서 낮 돌봄을 정해요');
+  // 요청이 없을 때 자유롭게 놀아 주기: 하루 3번까지 마음 +1
+  if (kind === 'play' || kind === 'free') {
+    const n = S.freePlay[key] || 0;
+    if (n >= 3) return ROOM.nudge('오늘은 충분히 놀았어요. 쉬는 것도 중요해요');
+    BUSY = true;
+    S.freePlay[key] = n + 1;
+    S.stats = E.applyFx(S.stats, { bond: 1 });
+    S.lastDone = now().getTime();
+    await save();
+    await ROOM.play('play');
+    BUSY = false;
+    return today();
+  }
+  if (a?.next) {
+    const tip = kind === 'feed' ? ' 밥은 정해진 시간에 정해진 양을 주는 게 좋아요.' : '';
+    return ROOM.nudge(`다음 ${a.next.label}은 ${a.next.time}예요.${tip}`);
+  }
+  return ROOM.nudge(`오늘 ${a?.label ?? ''}은 다 했어요`);
 }
 function taskRow(t, key, d, nm) {
   const st = statusFor(t, key, d);
@@ -377,6 +470,7 @@ async function onTodayClick(e) {
     await save();
     return today();
   }
+  if (b.dataset.act) return doAct(b.dataset.act);
   if (b.dataset.ev) return openEvent(b.dataset.ev);
   if (b.dataset.dev) return devAction(b.dataset.dev);
 }

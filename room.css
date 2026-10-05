@@ -1,0 +1,87 @@
+/* 방 화면 (오늘) — 정사각형 방, 숨 쉬고 돌아다니는 아이, 할 일 버튼, 그림자 손 */
+.room { position: relative; width: 100%; aspect-ratio: 1; border-radius: 20px; overflow: hidden; background: #EFE4CF; box-shadow: var(--shadow); touch-action: pan-y; user-select: none; -webkit-user-select: none; }
+.room-bg { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; pointer-events: none; }
+.room-light { position: absolute; inset: 0; pointer-events: none; transition: background 1s; mix-blend-mode: multiply; z-index: 1; }
+.room[data-tod="morning"] .room-light { background: linear-gradient(120deg, rgba(255, 214, 170, .25), rgba(255, 255, 255, 0) 60%); }
+.room[data-tod="evening"] .room-light { background: linear-gradient(180deg, rgba(240, 150, 90, .32), rgba(200, 120, 80, .22)); }
+.room[data-tod="night"] .room-light { background: radial-gradient(circle at 78% 62%, rgba(255, 200, 120, .12), rgba(30, 40, 80, .58) 55%); }
+.prop { position: absolute; pointer-events: none; z-index: 1; }
+.prop-pad { left: 5%; bottom: 6%; width: 23%; }
+.prop-litter { right: 3%; bottom: 4%; width: 25%; }
+
+.pet { position: absolute; bottom: 9%; left: var(--x); height: var(--h); transform: translateX(-50%); transition: left 2.6s ease-in-out, opacity .5s; z-index: 2; cursor: grab; touch-action: none; }
+.pet-img { height: 100%; width: auto; display: block; transform-origin: 50% 100%; animation: breathe 3.2s ease-in-out infinite; pointer-events: none; }
+.pet.face-left { --flip: -1; }
+.pet-shadow { position: absolute; left: 12%; right: 12%; bottom: -3%; height: 9%; border-radius: 50%; background: radial-gradient(rgba(60, 40, 20, .28), transparent 70%); }
+.pet.out { opacity: 0; }
+@keyframes breathe { 0%, 100% { transform: scaleX(var(--flip, 1)) scale(1, 1); } 50% { transform: scaleX(var(--flip, 1)) scale(1.012, 1.03); } }
+.room[data-state="sleep"] .pet-img, .room[data-state="sick"] .pet-img { animation-duration: 5s; }
+.room[data-state="happy"] .pet-img { animation: hop .9s ease-in-out infinite; }
+@keyframes hop { 0%, 100% { transform: scaleX(var(--flip, 1)) translateY(0); } 40% { transform: scaleX(var(--flip, 1)) translateY(-7%); } }
+.room[data-state="oops"] .pet-img { animation: wiggle 1.4s ease-in-out infinite; }
+@keyframes wiggle { 0%, 100% { transform: scaleX(var(--flip, 1)) rotate(0); } 25% { transform: scaleX(var(--flip, 1)) rotate(-2deg); } 75% { transform: scaleX(var(--flip, 1)) rotate(2deg); } }
+.room.tilt .pet-img { animation: tilt .5s ease-in-out 2; }
+@keyframes tilt { 50% { transform: scaleX(var(--flip, 1)) rotate(-6deg); } }
+
+.zzz { position: absolute; left: 60%; bottom: 30%; display: none; font-weight: 900; color: #6F7FA8; pointer-events: none; z-index: 3; }
+.room[data-state="sleep"] .zzz { display: block; }
+.zzz i { position: absolute; font-style: normal; opacity: 0; animation: zz 3s ease-in infinite; }
+.zzz i:nth-child(2) { animation-delay: 1s; font-size: 1.2em; }
+.zzz i:nth-child(3) { animation-delay: 2s; font-size: 1.5em; }
+@keyframes zz { 0% { transform: translate(0, 0); opacity: 0; } 30% { opacity: 1; } 100% { transform: translate(24px, -50px); opacity: 0; } }
+
+.need { position: absolute; left: 50%; bottom: calc(100% + 12px); transform: translateX(-50%); background: #fff; border: 2px solid var(--ink); border-radius: 16px; padding: 6px 12px; font-weight: 900; font-size: 14px; z-index: 4; animation: bob 1.6s ease-in-out infinite; white-space: nowrap; box-shadow: 0 4px 10px rgba(0, 0, 0, .1); pointer-events: none; }
+.need::after { content: ""; position: absolute; left: 50%; bottom: -8px; width: 12px; height: 12px; background: #fff; border: 2px solid var(--ink); border-top: 0; border-left: 0; transform: translateX(-50%) rotate(45deg); }
+@keyframes bob { 50% { transform: translate(-50%, -5px); } }
+.room.busy .need { display: none; }
+
+.room-top { position: absolute; left: 10px; right: 10px; top: 10px; display: flex; justify-content: space-between; gap: 8px; z-index: 4; pointer-events: none; }
+.room-tag, .room-clock { background: rgba(255, 253, 248, .9); border-radius: 99px; padding: 3px 10px; font-size: 12.5px; font-weight: 800; }
+.room-clock { font-variant-numeric: tabular-nums; }
+.room-banner { position: absolute; left: 50%; top: 38%; transform: translateX(-50%); background: rgba(45, 42, 38, .86); color: #fff; border-radius: 14px; padding: 8px 14px; font-weight: 800; z-index: 5; white-space: nowrap; animation: pop .25s ease-out; pointer-events: none; }
+@keyframes pop { from { transform: translate(-50%, 8px); opacity: 0; } }
+
+.room.do-potty .prop-pad, .room.do-litter .prop-litter { animation: swap 1.5s; }
+@keyframes swap { 40% { opacity: .15; transform: scale(.94); } }
+.sparkle { position: absolute; left: 50%; top: -12%; transform: translateX(-50%); color: #E7B54A; font-size: 22px; font-weight: 900; white-space: nowrap; animation: sparkle 1.8s forwards; pointer-events: none; }
+@keyframes sparkle { 0% { opacity: 0; } 30% { opacity: 1; } 100% { opacity: 0; transform: translate(-50%, -24px); } }
+.room.do-play .pet-img { animation: hop .5s ease-in-out infinite; }
+.toy { position: absolute; width: 9%; z-index: 3; pointer-events: none; animation: toy 2.2s ease-in-out forwards; }
+@keyframes toy { 0% { left: 15%; bottom: 42%; } 25% { bottom: 10%; } 50% { left: 70%; bottom: 30%; } 75% { bottom: 10%; } 100% { left: 58%; bottom: 11%; } }
+
+/* 그림자 손 */
+.hand { position: absolute; width: 30%; aspect-ratio: 1; left: 0; top: 0; transform: translate(-50%, -38%) rotate(var(--tilt, 0deg)); transform-origin: 50% 80%; pointer-events: none; z-index: 6; opacity: 0; transition: opacity .2s; filter: blur(.9px); }
+.hand svg { width: 100%; height: 100%; fill: rgba(35, 28, 22, .5); }
+.room.hovering .need { opacity: 0; }
+.room.hovering .hand { opacity: 1; }
+.room.hovering .pet { cursor: none; }
+.fx { position: absolute; inset: 0; pointer-events: none; z-index: 7; }
+.heart { position: absolute; font-style: normal; color: #E8657A; font-size: 22px; font-weight: 900; animation: heart 1.4s ease-out forwards; }
+.heart.dim { color: #8A90A6; }
+@keyframes heart { 0% { transform: translate(-50%, 0) scale(.6); opacity: 0; } 20% { opacity: 1; transform: translate(-50%, -10px) scale(1.1); } 100% { transform: translate(-50%, -70px) scale(.9); opacity: 0; } }
+
+/* 할 일 버튼 */
+.acts { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-top: 10px; }
+.act { position: relative; border: 2px solid var(--paper-3); background: var(--card); border-radius: 16px; padding: 10px 4px 8px; cursor: pointer; display: flex; flex-direction: column; align-items: center; gap: 1px; min-height: 80px; }
+.act svg { width: 28px; height: 28px; fill: none; stroke: var(--ink); stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
+.act b { font-size: 14px; }
+.act small { font-size: 11.5px; font-weight: 800; color: var(--ink-3); }
+.act.now { border-color: var(--warn); background: #FFF6EE; animation: ring 1.8s ease-in-out infinite; }
+.act.now small { color: var(--warn); }
+.act.done small { color: var(--forest); }
+.act.away small { color: #9A5A30; }
+@keyframes ring { 50% { box-shadow: 0 0 0 4px rgba(224, 122, 63, .18); } }
+.stat-row { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-top: 12px; }
+.stat-row .gauge { grid-template-columns: auto 1fr; gap: 6px; font-size: 12.5px; }
+.stat-row .gauge span:last-child { display: none; }
+.pet-line { display: flex; justify-content: space-between; align-items: baseline; margin-top: 12px; }
+.pet-line .pet-name { font-size: 19px; }
+details.plan-all summary { cursor: pointer; font-weight: 800; font-size: 17px; list-style: none; display: flex; justify-content: space-between; align-items: center; }
+details.plan-all summary::-webkit-details-marker { display: none; }
+details.plan-all summary::after { content: "펼치기"; color: var(--ink-3); font-size: 13px; }
+details.plan-all[open] summary::after { content: "접기"; }
+@media (min-width: 900px) {
+  .room-layout { display: grid; grid-template-columns: 1fr 150px; gap: 12px; align-items: start; }
+  .room-layout .acts { grid-template-columns: 1fr; margin-top: 0; }
+}
+@media (prefers-reduced-motion: reduce) { .pet-img, .need, .zzz i { animation: none !important; } }

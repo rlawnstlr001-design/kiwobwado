@@ -1,9 +1,9 @@
 // 키워봐도될까 — 내 생활 그대로 30일 키워 보고 반려 준비도를 확인하는 입양 전 체험
-import * as db from './db.js?v=202610061854';
-import * as E from './engine.js?v=202610061854';
-import { C, loadContent, eventById, lessonById, foodById } from './content.js?v=202610061854';
-import { track } from './track.js?v=202610061854';
-import { roomHTML, mountRoom, timeOfDay, loadAnim } from './room.js?v=202610061854';
+import * as db from './db.js?v=202610070056';
+import * as E from './engine.js?v=202610070056';
+import { C, loadContent, eventById, lessonById, foodById } from './content.js?v=202610070056';
+import { track } from './track.js?v=202610070056';
+import { roomHTML, mountRoom, timeOfDay, loadAnim } from './room.js?v=202610070056';
 
 const $ = (s, el = document) => el.querySelector(s);
 const view = $('#view');

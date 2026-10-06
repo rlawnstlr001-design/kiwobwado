@@ -1,6 +1,8 @@
 // 방 화면 — 정사각형 방 그림 위에서 아이가 숨 쉬고 돌아다니고, 할 일 버튼에 반응하고, 그림자 손으로 쓰다듬을 수 있다
 // 그림: art/room/room.webp(방), art/sprite/<성향>_<단계>_<상태>.webp(배경 없는 아이), art/prop/*.webp(패드·화장실·장난감)
 
+import { mountRig, RIG } from './rig.js?v=202610061729';
+
 const HAND = `<svg viewBox="0 0 120 120" aria-hidden="true"><path d="M33 112c-9-10-17-26-21-40-2-7 6-11 11-5l9 13V30c0-6 9-6 9 0v30h3V18c0-6 9-6 9 0v40h3V22c0-6 9-6 9 0v38h3V32c0-6 9-6 9 0v44c0 14-4 26-12 36z"/></svg>`;
 
 // 아이 키(방 높이 대비 %) — 성향·단계별로 실제 크기 차이를 느끼게
@@ -29,7 +31,9 @@ export function roomHTML({ type, stage, state, tod, need, prop, clock, tag }) {
     <div class="pet" id="pet" style="--h:${h}%;--x:${SPOTS[0]}%">
       <i class="pet-shadow"></i>
       <img class="pet-img" id="pet-img" src="art/sprite/${type}_${stage}_${state}.webp" alt="" draggable="false">
+      <canvas class="pet-rig" id="pet-rig" hidden></canvas>
       <div class="pet-anim" id="pet-anim" hidden></div>
+      <img class="pet-clip" id="pet-clip" alt="" hidden draggable="false">
       ${need ? `<div class="need" id="need">${need}</div>` : ''}
     </div>
     <div class="zzz" aria-hidden="true"><i>z</i><i>z</i><i>Z</i></div>
@@ -41,9 +45,12 @@ export function roomHTML({ type, stage, state, tod, need, prop, clock, tag }) {
 }
 
 // 움직임 프레임 목록(art/anim/index.json): '<성향>_<단계>_<동작>' → 한 칸 가로/세로 비율
+// 영상 클립 목록(art/clip/index.json): 같은 이름 → 있으면 4장 프레임 대신 영상으로 만든 움직이는 WebP를 쓴다
 let ANIM = {};
+let CLIP = {};
 export async function loadAnim() {
-  try { ANIM = await fetch('art/anim/index.json?v=202610061013').then((r) => (r.ok ? r.json() : {})); } catch { ANIM = {}; }
+  const get = (u) => fetch(u).then((r) => (r.ok ? r.json() : {})).catch(() => ({}));
+  [ANIM, CLIP] = await Promise.all([get('art/anim/index.json?v=202610061729'), get('art/clip/index.json?v=202610061729')]);
 }
 
 let wanderTimer = null;
@@ -62,21 +69,51 @@ export function mountRoom({ type, stage, state, onStroke, canPet }) {
   const base = `art/sprite/${type}_${stage}_`;
   const anim = document.getElementById('pet-anim');
   const cat = type === 'short' || type === 'long';
-  const has = (k) => ANIM[`${type}_${stage}_${k}`];
-  // 프레임 스트립 재생(4칸, steps). 없으면 false → 정지 그림 유지
+  const name = `${type}_${stage}`;
+  const has = (k) => ANIM[`${name}_${k}`];
+  const clip = document.getElementById('pet-clip');
+  // 평소 모습: 그림 한 장을 부위별로 움직인다(js/rig.js). 준비되기 전·WebGL이 없으면 4장 프레임으로
+  const cv = document.getElementById('pet-rig');
+  let rig = null, rigReady = false;
+  if (RIG[name] && cv) {
+    rig = mountRig(cv, `${base}idle.webp`, RIG[name], { cat });
+    cv.addEventListener('rigready', () => {
+      cv.style.height = `${rig.scale() * 100}%`;
+      cv.style.aspectRatio = String(rig.aspect());
+      rigReady = true;
+      if (!room.classList.contains('busy') && clip.hidden && anim.hidden) rest(room.dataset.state);
+    }, { once: true });
+  }
+  const rigOn = (on) => { if (!rig) return; cv.hidden = !on; img.style.visibility = on ? 'hidden' : ''; };
+  // 큰 동작 재생: 영상 클립이 있으면 클립, 없으면 프레임 스트립(4칸, steps). 둘 다 없으면 false → 정지 그림 유지
   const showAnim = (k, dur) => {
+    rigOn(false);
+    if (CLIP[`${name}_${k}`]) {
+      const src = `art/clip/${name}_${k}.webp`;
+      if (!clip.src.endsWith(src)) clip.src = src;
+      clip.hidden = false; anim.hidden = true; img.hidden = true;
+      return true;
+    }
     const ratio = has(k);
     if (!ratio) return false;
-    anim.style.backgroundImage = `url(art/anim/${type}_${stage}_${k}.webp)`;
+    anim.style.backgroundImage = `url(art/anim/${name}_${k}.webp)`;
     anim.style.aspectRatio = String(ratio);
     anim.style.setProperty('--dur', dur);
     anim.dataset.k = k;
-    anim.hidden = false; img.hidden = true;
+    clip.hidden = true; anim.hidden = false; img.hidden = true;
     return true;
   };
-  const hideAnim = () => { anim.hidden = true; img.hidden = false; };
-  // 평소 상태면 꼬리 흔들기, 아니면 정지 그림
-  const rest = (s) => { if ((s === 'idle' || s === 'happy') && showAnim('wag', cat ? '1.6s' : s === 'happy' ? '.45s' : '.7s')) return; hideAnim(); };
+  const hideAnim = () => { anim.hidden = true; clip.hidden = true; img.hidden = false; };
+  // 평소·기분 좋은 상태면 부위별 움직임(없으면 꼬리 흔들기 프레임), 아니면 정지 그림
+  const rest = (s) => {
+    const calmish = s === 'idle' || s === 'happy';
+    if (calmish && rigReady) { hideAnim(); rigOn(true); rig.mood(s === 'happy'); return; }
+    rigOn(false);
+    if (calmish && showAnim('wag', cat ? '1.6s' : s === 'happy' ? '.45s' : '.7s')) return;
+    hideAnim();
+  };
+  // 클립 미리 받아 두기(처음 걸을 때 빈 칸이 보이지 않게)
+  for (const k of ['walk', 'eat']) if (CLIP[`${name}_${k}`]) new Image().src = `art/clip/${name}_${k}.webp`;
   const setState = (s) => { img.src = `${base}${s}.webp`; room.dataset.state = s; rest(s); };
   rest(state);
   const calm = state === 'sleep' || state === 'sick';
@@ -104,6 +141,7 @@ export function mountRoom({ type, stage, state, onStroke, canPet }) {
     if (e.pointerType !== 'mouse' && e.buttons === 0) return;
     showHand(e);
     room.classList.add('stroking');
+    rig?.pet(true);
     if (last) {
       const dx = e.clientX - last.x, dy = e.clientY - last.y;
       const d = Math.hypot(dx, dy);
@@ -120,6 +158,7 @@ export function mountRoom({ type, stage, state, onStroke, canPet }) {
   };
   const leave = () => {
     room.classList.remove('stroking');
+    rig?.pet(false);
     last = null;
     clearTimeout(revertTimer);
     if (hearts >= 3) revertTimer = setTimeout(() => setState(room.dataset.base), 2500);
@@ -136,6 +175,13 @@ export function mountRoom({ type, stage, state, onStroke, canPet }) {
     setTimeout(() => el.remove(), 1400);
   };
   room.dataset.base = state;
+  // 커서(손가락)가 방 안에서 움직이면 그쪽으로 고개를 살짝 돌린다
+  room.addEventListener('pointermove', (e) => {
+    if (!rig) return;
+    const pr = pet.getBoundingClientRect(), rr = room.getBoundingClientRect();
+    rig.look((e.clientX - (pr.left + pr.width / 2)) / (rr.width * .4));
+  });
+  room.addEventListener('pointerleave', () => rig?.look(0));
   pet.addEventListener('pointerenter', (e) => { showHand(e); room.classList.add('hovering'); });
   pet.addEventListener('pointermove', move);
   pet.addEventListener('pointerleave', () => { room.classList.remove('hovering'); leave(); });

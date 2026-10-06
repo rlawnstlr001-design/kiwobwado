@@ -92,3 +92,15 @@ details.plan-all[open] summary::after { content: "접기"; }
 .pet:has(.pet-anim:not([hidden])) .pet-img { display: none; }
 @keyframes frames { from { background-position: 0 0; } to { background-position: 133.333% 0; } }
 .room[data-state="happy"] .pet-anim { animation-duration: .45s; }
+
+/* 평소 모습(부위별 움직임 캔버스)·영상 클립 — 캔버스는 위·옆 여백만큼 커서 바닥에 맞춰 가운데 정렬 */
+.pet-rig { position: absolute; left: 50%; bottom: 0; transform: translateX(-50%) scaleX(var(--flip, 1)); pointer-events: none; display: block; }
+.pet-rig[hidden], .pet-clip[hidden] { display: none; }
+.pet-clip { height: 100%; width: auto; display: block; transform: scaleX(var(--flip, 1)); pointer-events: none; }
+.pet:has(.pet-clip:not([hidden])) .pet-img { display: none; }
+
+/* 휴대폰: 방을 화면 끝까지 넓히고 세로로 키워 화면 절반 이상을 차지하게(10/6 사용자 요청) — 방 그림은 양옆만 잘린다 */
+@media (max-width: 600px) {
+  .room { width: calc(100% + 32px); margin-inline: -16px; border-radius: 0; aspect-ratio: auto; height: max(100vw, 60vh); height: max(100vw, 60svh); max-height: 160vw; box-shadow: none; }
+  .room-top { top: 12px; left: 14px; right: 14px; }
+}

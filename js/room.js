@@ -43,7 +43,7 @@ export function roomHTML({ type, stage, state, tod, need, prop, clock, tag }) {
 // 움직임 프레임 목록(art/anim/index.json): '<성향>_<단계>_<동작>' → 한 칸 가로/세로 비율
 let ANIM = {};
 export async function loadAnim() {
-  try { ANIM = await fetch('art/anim/index.json?v=202610060913').then((r) => (r.ok ? r.json() : {})); } catch { ANIM = {}; }
+  try { ANIM = await fetch('art/anim/index.json?v=202610061013').then((r) => (r.ok ? r.json() : {})); } catch { ANIM = {}; }
 }
 
 let wanderTimer = null;
@@ -76,7 +76,7 @@ export function mountRoom({ type, stage, state, onStroke, canPet }) {
   };
   const hideAnim = () => { anim.hidden = true; img.hidden = false; };
   // 평소 상태면 꼬리 흔들기, 아니면 정지 그림
-  const rest = (s) => { if (s === 'idle' && showAnim('wag', cat ? '1.6s' : '.7s')) return; hideAnim(); };
+  const rest = (s) => { if ((s === 'idle' || s === 'happy') && showAnim('wag', cat ? '1.6s' : s === 'happy' ? '.45s' : '.7s')) return; hideAnim(); };
   const setState = (s) => { img.src = `${base}${s}.webp`; room.dataset.state = s; rest(s); };
   rest(state);
   const calm = state === 'sleep' || state === 'sick';

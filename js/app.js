@@ -1,9 +1,9 @@
 // 키워봐도될까 — 내 생활 그대로 30일 키워 보고 반려 준비도를 확인하는 입양 전 체험
-import * as db from './db.js?v=202610060913';
-import * as E from './engine.js?v=202610060913';
-import { C, loadContent, eventById, lessonById, foodById } from './content.js?v=202610060913';
-import { track } from './track.js?v=202610060913';
-import { roomHTML, mountRoom, timeOfDay, loadAnim } from './room.js?v=202610060913';
+import * as db from './db.js?v=202610061013';
+import * as E from './engine.js?v=202610061013';
+import { C, loadContent, eventById, lessonById, foodById } from './content.js?v=202610061013';
+import { track } from './track.js?v=202610061013';
+import { roomHTML, mountRoom, timeOfDay, loadAnim } from './room.js?v=202610061013';
 
 const $ = (s, el = document) => el.querySelector(s);
 const view = $('#view');
@@ -279,7 +279,7 @@ function moodOf(plan, key) {
   if (hungry) return { text: '배가 고파서 밥그릇 앞을 서성여요', state: 'hungry' };
   if (S.stats.health < 50) return { text: '기운이 없어 보여요', state: 'sick' };
   if (now() - (S.lastDone ?? 0) < 20 * 60000) return { text: species() === 'dog' ? '신이 나서 꼬리를 흔들어요' : '기분이 좋아 장난감을 쫓아요', state: 'happy' };
-  if (S.stats.habit < 25) return { text: species() === 'dog' ? '심심해서 뭔가를 물어뜯고 있어요' : '심심해서 사고를 치고 있어요', state: 'oops' };
+  if (S.stats.habit < 15) return { text: species() === 'dog' ? '심심해서 뭔가를 물어뜯고 있어요' : '심심해서 사고를 치고 있어요', state: 'oops' };
   if (S.stats.bond < 30) return { text: '아직 보호자를 조금 어려워해요', state: 'idle' };
   return { text: species() === 'dog' ? '졸졸 따라다니며 눈을 맞춰요' : '창밖을 구경하다 눈을 깜빡여요', state: 'idle' };
 }

@@ -85,3 +85,10 @@ details.plan-all[open] summary::after { content: "접기"; }
   .room-layout .acts { grid-template-columns: 1fr; margin-top: 0; }
 }
 @media (prefers-reduced-motion: reduce) { .pet-img, .need, .zzz i { animation: none !important; } }
+
+/* 프레임 애니메이션(걷기·꼬리·먹기): 4칸 스트립을 steps(4)로 넘긴다 */
+.pet-anim { height: 100%; background-repeat: no-repeat; background-size: 400% 100%; background-position: 0 0; animation: frames var(--dur, .7s) steps(4) infinite; transform: scaleX(var(--flip, 1)); pointer-events: none; }
+.pet-anim[hidden] { display: none; }
+.pet:has(.pet-anim:not([hidden])) .pet-img { display: none; }
+@keyframes frames { from { background-position: 0 0; } to { background-position: 133.333% 0; } }
+.room[data-state="happy"] .pet-anim { animation-duration: .45s; }

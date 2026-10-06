@@ -1,9 +1,9 @@
 // 키워봐도될까 — 내 생활 그대로 30일 키워 보고 반려 준비도를 확인하는 입양 전 체험
-import * as db from './db.js?v=202610060839';
-import * as E from './engine.js?v=202610060839';
-import { C, loadContent, eventById, lessonById, foodById } from './content.js?v=202610060839';
-import { track } from './track.js?v=202610060839';
-import { roomHTML, mountRoom, timeOfDay } from './room.js?v=202610060839';
+import * as db from './db.js?v=202610060913';
+import * as E from './engine.js?v=202610060913';
+import { C, loadContent, eventById, lessonById, foodById } from './content.js?v=202610060913';
+import { track } from './track.js?v=202610060913';
+import { roomHTML, mountRoom, timeOfDay, loadAnim } from './room.js?v=202610060913';
 
 const $ = (s, el = document) => el.querySelector(s);
 const view = $('#view');
@@ -722,7 +722,7 @@ async function devAction(a) {
 // ---------- 시작 ----------
 (async function init() {
   try {
-    await loadContent();
+    await Promise.all([loadContent(), loadAnim()]);
   } catch {
     view.innerHTML = '<section class="card locked"><h2>내용을 불러오지 못했어요</h2><p>인터넷 연결을 확인하고 다시 열어 주세요.</p></section>';
     return;

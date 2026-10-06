@@ -29,6 +29,7 @@ export function roomHTML({ type, stage, state, tod, need, prop, clock, tag }) {
     <div class="pet" id="pet" style="--h:${h}%;--x:${SPOTS[0]}%">
       <i class="pet-shadow"></i>
       <img class="pet-img" id="pet-img" src="art/sprite/${type}_${stage}_${state}.webp" alt="" draggable="false">
+      <div class="pet-anim" id="pet-anim" hidden></div>
       ${need ? `<div class="need" id="need">${need}</div>` : ''}
     </div>
     <div class="zzz" aria-hidden="true"><i>z</i><i>z</i><i>Z</i></div>
@@ -37,6 +38,12 @@ export function roomHTML({ type, stage, state, tod, need, prop, clock, tag }) {
     <div class="room-top"><span class="room-tag">${tag}</span><span class="room-clock">${clock}</span></div>
     <div class="room-banner" id="room-banner" hidden></div>
   </div>`;
+}
+
+// 움직임 프레임 목록(art/anim/index.json): '<성향>_<단계>_<동작>' → 한 칸 가로/세로 비율
+let ANIM = {};
+export async function loadAnim() {
+  try { ANIM = await fetch('art/anim/index.json?v=202610060913').then((r) => (r.ok ? r.json() : {})); } catch { ANIM = {}; }
 }
 
 let wanderTimer = null;
@@ -53,7 +60,25 @@ export function mountRoom({ type, stage, state, onStroke, canPet }) {
   const fx = document.getElementById('fx');
   if (!room) return null;
   const base = `art/sprite/${type}_${stage}_`;
-  const setState = (s) => { img.src = `${base}${s}.webp`; room.dataset.state = s; };
+  const anim = document.getElementById('pet-anim');
+  const cat = type === 'short' || type === 'long';
+  const has = (k) => ANIM[`${type}_${stage}_${k}`];
+  // 프레임 스트립 재생(4칸, steps). 없으면 false → 정지 그림 유지
+  const showAnim = (k, dur) => {
+    const ratio = has(k);
+    if (!ratio) return false;
+    anim.style.backgroundImage = `url(art/anim/${type}_${stage}_${k}.webp)`;
+    anim.style.aspectRatio = String(ratio);
+    anim.style.setProperty('--dur', dur);
+    anim.dataset.k = k;
+    anim.hidden = false; img.hidden = true;
+    return true;
+  };
+  const hideAnim = () => { anim.hidden = true; img.hidden = false; };
+  // 평소 상태면 꼬리 흔들기, 아니면 정지 그림
+  const rest = (s) => { if (s === 'idle' && showAnim('wag', cat ? '1.6s' : '.7s')) return; hideAnim(); };
+  const setState = (s) => { img.src = `${base}${s}.webp`; room.dataset.state = s; rest(s); };
+  rest(state);
   const calm = state === 'sleep' || state === 'sick';
   let spot = 0;
   // 돌아다니기: 깨어 있고 아프지 않을 때 7~10초마다 다른 자리로
@@ -62,8 +87,10 @@ export function mountRoom({ type, stage, state, onStroke, canPet }) {
       if (room.classList.contains('busy') || room.classList.contains('stroking')) return;
       const next = (spot + 1 + Math.floor(Math.random() * (SPOTS.length - 1))) % SPOTS.length;
       pet.classList.toggle('face-left', SPOTS[next] < SPOTS[spot]);
+      const walking = showAnim('walk', cat ? '.9s' : '.6s');
       pet.style.setProperty('--x', `${SPOTS[next]}%`);
       spot = next;
+      if (walking) setTimeout(() => { if (!room.classList.contains('busy')) rest(room.dataset.state); }, 2600);
     }, 8000);
   }
   // 쓰다듬기 — 마우스는 올려서 문지르기, 손가락은 대고 문지르기
@@ -123,14 +150,19 @@ export function mountRoom({ type, stage, state, onStroke, canPet }) {
     const say = (t) => { banner.textContent = t; banner.hidden = false; };
     const end = (ms, after) => new Promise((res) => setTimeout(() => { banner.hidden = true; room.classList.remove('busy', `do-${kind}`); after?.(); res(); }, ms));
     room.classList.add(`do-${kind}`);
-    if (kind === 'feed') { setState('hungry'); say('냠냠, 오도독…'); return end(1900, () => setState('happy')); }
+    if (kind === 'feed') {
+      if (!showAnim('eat', '.8s')) setState('hungry');
+      pet.classList.remove('face-left');
+      say('냠냠, 오도독…'); return end(2600, () => setState('happy'));
+    }
     if (kind === 'potty') { const p = room.querySelector('.prop-pad'); say('새 패드로 쓱싹'); return end(1500, () => { if (p) p.src = 'art/prop/pad_clean.webp'; setState('happy'); }); }
     if (kind === 'litter') { const p = room.querySelector('.prop-litter'); say('모래를 싹싹'); return end(1500, () => { if (p) p.src = 'art/prop/litter_clean.webp'; setState('happy'); }); }
     if (kind === 'walk') {
-      pet.classList.add('face-left'); pet.style.setProperty('--x', '20%');
+      pet.classList.add('face-left'); showAnim('walk', '.6s'); pet.style.setProperty('--x', '20%');
       say(stage === 'baby' ? '바깥 구경 다녀올게요' : '산책 다녀올게요');
       return new Promise((res) => setTimeout(() => { pet.classList.add('out'); setTimeout(() => {
-        say('🐾 다녀왔어요!'); pet.classList.remove('out', 'face-left'); pet.style.setProperty('--x', `${SPOTS[0]}%`); setState('happy');
+        say('🐾 다녀왔어요!'); pet.classList.remove('out', 'face-left'); showAnim('walk', '.6s'); pet.style.setProperty('--x', `${SPOTS[0]}%`);
+        setTimeout(() => setState('happy'), 1300);
         end(1300).then(res);
       }, 1600); }, 1100));
     }

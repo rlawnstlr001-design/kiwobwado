@@ -1,0 +1,20 @@
+{
+ "large_baby_eat": 1.2912,
+ "large_baby_wag": 1.1588,
+ "large_baby_walk": 1.3088,
+ "long_baby_eat": 1.3324,
+ "long_baby_wag": 1.1441,
+ "long_baby_walk": 1.3882,
+ "medium_baby_eat": 1.3412,
+ "medium_baby_wag": 1.0,
+ "medium_baby_walk": 1.3235,
+ "short_baby_eat": 1.3676,
+ "short_baby_wag": 1.0294,
+ "short_baby_walk": 1.3029,
+ "small_baby_eat": 1.3147,
+ "small_baby_wag": 1.1529,
+ "small_baby_walk": 1.15,
+ "small_teen_eat": 1.2765,
+ "small_teen_wag": 1.0647,
+ "small_teen_walk": 1.2735
+}

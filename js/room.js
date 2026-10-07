@@ -1,7 +1,7 @@
 // 방 화면 — 정사각형 방 그림 위에서 아이가 숨 쉬고 돌아다니고, 할 일 버튼에 반응하고, 그림자 손으로 쓰다듬을 수 있다
 // 그림: art/room/room.webp(방), art/sprite/<성향>_<단계>_<상태>.webp(배경 없는 아이), art/prop/*.webp(패드·화장실·장난감)
 
-import { mountRig, RIG } from './rig.js?v=202610071002';
+import { mountRig, RIG } from './rig.js?v=202610071458';
 
 const HAND = `<svg viewBox="0 0 120 120" aria-hidden="true"><path d="M33 112c-9-10-17-26-21-40-2-7 6-11 11-5l9 13V30c0-6 9-6 9 0v30h3V18c0-6 9-6 9 0v40h3V22c0-6 9-6 9 0v38h3V32c0-6 9-6 9 0v44c0 14-4 26-12 36z"/></svg>`;
 
@@ -50,7 +50,7 @@ let ANIM = {};
 let CLIP = {};
 export async function loadAnim() {
   const get = (u) => fetch(u).then((r) => (r.ok ? r.json() : {})).catch(() => ({}));
-  [ANIM, CLIP] = await Promise.all([get('art/anim/index.json?v=202610071002'), get('art/clip/index.json?v=202610071002')]);
+  [ANIM, CLIP] = await Promise.all([get('art/anim/index.json?v=202610071458'), get('art/clip/index.json?v=202610071458')]);
 }
 
 let wanderTimer = null;

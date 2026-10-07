@@ -1,11 +1,13 @@
 {
  "large_baby_eat": 1.8067,
  "large_baby_walk": 1.4933,
+ "long_baby_eat": 2.0367,
  "long_baby_walk": 1.6533,
  "medium_baby_eat": 1.8667,
  "medium_baby_walk": 1.5333,
  "short_baby_eat": 2.3133,
  "short_baby_walk": 1.4467,
  "small_baby_eat": 1.5233,
- "small_baby_walk": 1.32
+ "small_baby_walk": 1.32,
+ "small_teen_walk": 1.54
 }

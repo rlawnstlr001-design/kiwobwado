@@ -2,7 +2,7 @@
 const FILES = ['sources', 'costs', 'foods', 'lessons', 'events'];
 export const C = {};
 export async function loadContent() {
-  const res = await Promise.all(FILES.map((f) => fetch(`content/${f}.json?v=202610082104`).then((r) => { if (!r.ok) throw new Error(f); return r.json(); })));
+  const res = await Promise.all(FILES.map((f) => fetch(`content/${f}.json?v=202610082149`).then((r) => { if (!r.ok) throw new Error(f); return r.json(); })));
   FILES.forEach((f, i) => { C[f] = res[i]; });
   return C;
 }

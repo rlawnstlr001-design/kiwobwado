@@ -1,0 +1,483 @@
+{
+ "_note": "가격은 원. 판매가는 2026-10-09 다나와 최저가(출처 C, 참고값). [계산]·[추정]·[대체값]은 note에 밝힌다. 일수 = 그 아이가 그 양을 다 쓰는 데 걸리는 대략의 날수",
+ "allergy": {
+  "dog": [
+   [
+    "beef",
+    34
+   ],
+   [
+    "dairy",
+    17
+   ],
+   [
+    "chicken",
+    15
+   ],
+   [
+    "wheat",
+    13
+   ],
+   [
+    "lamb",
+    5
+   ],
+   [
+    "fish",
+    2
+   ],
+   [
+    "pork",
+    2
+   ]
+  ],
+  "cat": [
+   [
+    "beef",
+    18
+   ],
+   [
+    "fish",
+    17
+   ],
+   [
+    "chicken",
+    5
+   ],
+   [
+    "wheat",
+    4
+   ],
+   [
+    "dairy",
+    4
+   ],
+   [
+    "lamb",
+    3
+   ]
+  ],
+  "src": [
+   "cat2"
+  ]
+ },
+ "vet": {
+  "cytology": {
+   "label": "피부 세포 검사",
+   "price": 35973,
+   "note": "공식 평균 없음 → CBC 혈액검사 평균으로 대신 [대체값]",
+   "src": [
+    "vetfee2025",
+    "merck_pyoderma"
+   ]
+  },
+  "t4": {
+   "label": "갑상선 호르몬(T4) 검사",
+   "price": 35973,
+   "note": "공식 평균 없음 → CBC 혈액검사 평균으로 대신 [대체값]",
+   "src": [
+    "vetfee2025",
+    "merck_hypo"
+   ]
+  },
+  "ige": {
+   "label": "알레르기 혈액 검사(60항목)",
+   "price": 200000,
+   "src": [
+    "banksalad_allergy",
+    "cat4"
+   ]
+  }
+ },
+ "facts": {
+  "workup": {
+   "text": "가려움의 원인을 하나씩 좁혀요. ① 벼룩·진드기 같은 외부기생충 ② 피부 세포 검사로 세균 감염 확인 ③ 감염을 치료해도 가려우면 음식 알레르기를 의심해 8주 식이 제한 시험. 음식 알레르기는 가려운 개의 약 18%(9~40%), 가려운 고양이의 12~21% 정도예요 — 이 체험에선 배우기 위해 실제보다 자주 생기게 했어요.",
+   "src": [
+    "cat3",
+    "merck_pyoderma"
+   ]
+  },
+  "cyto_pos": {
+   "text": "세균이 보여요 — 긁은 자리에 생긴 2차 세균 감염(표재성 농피증)이에요. 개는 클로르헥시딘 약용 샴푸로 주 2~3회 씻기고(거품을 10~15분 두었다 헹굼) 보통 3~4주 치료해요. 고양이는 씻기기 어려워 먹는 약이 중심이에요.",
+   "src": [
+    "iscaid2025",
+    "merck_pyoderma",
+    "vin_catpyo"
+   ]
+  },
+  "cyto_neg": {
+   "text": "세균 감염은 아직 없어요. 지금 치료할 감염은 없으니 가려움의 원인(음식 등)을 계속 찾아요.",
+   "src": [
+    "merck_pyoderma"
+   ]
+  },
+  "ecto": {
+   "text": "벼룩·진드기 흔적은 없어요. 원인에서 하나 지웠어요. 외부기생충 예방은 앞으로도 정기적으로 해요.",
+   "src": [
+    "vetfee2025"
+   ]
+  },
+  "bath": {
+   "text": "약욕은 주 2~3회(이 체험에선 주 2회 이상), 거품을 10~15분 두었다가 헹궈요. 2~3주 뒤 다시 진찰받고, 다 나을 때까지(보통 3~4주) 계속해요. 빼먹으면 낫는 게 늦어져요.",
+   "src": [
+    "iscaid2025",
+    "merck_pyoderma"
+   ]
+  },
+  "catskin": {
+   "text": "고양이는 몸에 약을 바르거나 씻기기 어려워 먹는 항생제가 치료의 중심이에요. 처방받은 기간 동안 하루도 빼먹지 말고 먹여요.",
+   "src": [
+    "vin_catpyo"
+   ]
+  },
+  "trial_start": {
+   "text": "8주 동안 이 처방 사료와 물만 먹여요. 간식·사람 음식·다른 사료는 모두 금지예요. 개는 5주 안에 85% 이상, 8주면 95% 이상이 좋아지는지 판가름 나요(고양이는 8주에 약 90%).",
+   "src": [
+    "cat1"
+   ]
+  },
+  "trial": {
+   "text": "식이 제한으로 가려움이 거의 사라졌어요. 다음은 재도전 시험 — 예전 사료를 다시 먹여 2주(고양이는 1주) 안에 가려움이 돌아오면 그 재료가 원인이에요.",
+   "src": [
+    "cat1",
+    "cat9"
+   ]
+  },
+  "challenge": {
+   "text": "예전 사료를 다시 사서 먹여요. 개는 절반이 5일 안에, 90%가 14일 안에 다시 긁기 시작해요(고양이는 90%가 7일 안). 가려움이 돌아오면 원인 확인 → 다시 처방 사료로.",
+   "src": [
+    "cat9",
+    "cat2"
+   ]
+  },
+  "ige": {
+   "text": "혈액 알레르기 검사는 음식 알레르기를 진단하는 데 믿을 만하지 않아요 — 정확도가 들쭉날쭉하고 같은 피로 다시 해도 결과가 달라져요. 진단은 식이 제한 시험 + 재도전 시험으로 해요. 비싸기만 하고 답을 주지 않는 검사예요.",
+   "src": [
+    "cat4",
+    "banksalad_allergy"
+   ]
+  },
+  "t4_dog": {
+   "text": "갑상선 기능저하증은 보통 4~10살 중·대형견에게 생기고, 가렵지 않은 대칭 탈모가 특징이에요. 아기 강아지에겐 아주 드물어서 지금 가려움의 원인 검사로는 맞지 않아요.",
+   "src": [
+    "merck_hypo"
+   ]
+  },
+  "t4_cat": {
+   "text": "고양이의 갑상선 병은 주로 7살 넘은 고양이의 기능항진증이에요. 아기 고양이의 가려움과는 거리가 멀어요.",
+   "src": [
+    "merck_hyper",
+    "merck_hypo"
+   ]
+  },
+  "growth": {
+   "text": "아기 땐 '성장기' 또는 '전 연령' 표시가 있는 사료를 먹여요. 성장기 기준은 단백질·칼슘·인이 성견 유지용보다 높아요.",
+   "src": [
+    "merck_food"
+   ]
+  }
+ },
+ "items": [
+  {
+   "id": "food_chicken_d",
+   "cat": "food",
+   "sp": "dog",
+   "name": "닭고기 퍼피 사료 2kg",
+   "emoji": "🍗",
+   "price": 31300,
+   "protein": [
+    "chicken"
+   ],
+   "days": {
+    "small": 21,
+    "medium": 12,
+    "large": 7
+   },
+   "note": "성장기용",
+   "src": [
+    "dn_puppyfood",
+    "rc_feeding"
+   ]
+  },
+  {
+   "id": "food_beef_d",
+   "cat": "food",
+   "sp": "dog",
+   "name": "소고기 퍼피 사료 2kg",
+   "emoji": "🥩",
+   "price": 25590,
+   "protein": [
+    "beef"
+   ],
+   "days": {
+    "small": 21,
+    "medium": 12,
+    "large": 7
+   },
+   "note": "성장기용",
+   "src": [
+    "dn_puppyfood",
+    "rc_feeding"
+   ]
+  },
+  {
+   "id": "food_salmon_d",
+   "cat": "food",
+   "sp": "dog",
+   "name": "연어 퍼피 사료 2kg",
+   "emoji": "🐟",
+   "price": 25200,
+   "protein": [
+    "fish"
+   ],
+   "days": {
+    "small": 21,
+    "medium": 12,
+    "large": 7
+   },
+   "note": "성장기용",
+   "src": [
+    "dn_puppyfood",
+    "rc_feeding"
+   ]
+  },
+  {
+   "id": "food_lamb_d",
+   "cat": "food",
+   "sp": "dog",
+   "name": "양고기 퍼피 사료 2kg",
+   "emoji": "🐑",
+   "price": 22510,
+   "protein": [
+    "lamb"
+   ],
+   "days": {
+    "small": 21,
+    "medium": 12,
+    "large": 7
+   },
+   "note": "성장기용 · 저가형",
+   "src": [
+    "dn_puppyfood",
+    "rc_feeding"
+   ]
+  },
+  {
+   "id": "rxdiet_dog",
+   "cat": "food",
+   "sp": "dog",
+   "rx": true,
+   "name": "가수분해 처방 사료 2kg",
+   "emoji": "💊",
+   "price": 34600,
+   "protein": [
+    "hydro"
+   ],
+   "days": {
+    "small": 21,
+    "medium": 12,
+    "large": 7
+   },
+   "note": "동물병원 처방 · 식이 제한 시험용",
+   "src": [
+    "dn_rxdiet",
+    "cat1"
+   ]
+  },
+  {
+   "id": "food_chicken_c",
+   "cat": "food",
+   "sp": "cat",
+   "name": "닭고기 키튼 사료 2kg",
+   "emoji": "🍗",
+   "price": 18000,
+   "protein": [
+    "chicken"
+   ],
+   "days": {
+    "short": 30,
+    "long": 30
+   },
+   "note": "성장기용 · 가격은 키튼 2kg 가격대(1만~2.6만원) 중간값 [계산]",
+   "src": [
+    "dn_kittenfood"
+   ]
+  },
+  {
+   "id": "food_fish_c",
+   "cat": "food",
+   "sp": "cat",
+   "name": "생선 키튼 사료 2kg",
+   "emoji": "🐟",
+   "price": 18000,
+   "protein": [
+    "fish"
+   ],
+   "days": {
+    "short": 30,
+    "long": 30
+   },
+   "note": "성장기용 · 가격은 키튼 2kg 가격대 중간값 [계산]",
+   "src": [
+    "dn_kittenfood"
+   ]
+  },
+  {
+   "id": "food_beef_c",
+   "cat": "food",
+   "sp": "cat",
+   "name": "소고기 키튼 사료 2kg",
+   "emoji": "🥩",
+   "price": 18000,
+   "protein": [
+    "beef"
+   ],
+   "days": {
+    "short": 30,
+    "long": 30
+   },
+   "note": "성장기용 · 가격은 키튼 2kg 가격대 중간값 [계산]",
+   "src": [
+    "dn_kittenfood"
+   ]
+  },
+  {
+   "id": "rxdiet_cat",
+   "cat": "food",
+   "sp": "cat",
+   "rx": true,
+   "name": "가수분해 처방 사료 1.8kg",
+   "emoji": "💊",
+   "price": 44890,
+   "protein": [
+    "hydro"
+   ],
+   "days": {
+    "short": 27,
+    "long": 27
+   },
+   "note": "동물병원 처방 · 식이 제한 시험용",
+   "src": [
+    "dn_rxdiet",
+    "cat1"
+   ]
+  },
+  {
+   "id": "treat_beef",
+   "cat": "treat",
+   "sp": "dog",
+   "name": "소고기 육포 100g",
+   "emoji": "🥩",
+   "price": 3500,
+   "protein": [
+    "beef"
+   ],
+   "count": 10,
+   "unit": "번 분량",
+   "src": [
+    "dn_treats"
+   ]
+  },
+  {
+   "id": "treat_chicken",
+   "cat": "treat",
+   "sp": "dog",
+   "name": "닭가슴살 육포 50g",
+   "emoji": "🍗",
+   "price": 7640,
+   "protein": [
+    "chicken"
+   ],
+   "count": 8,
+   "unit": "번 분량",
+   "src": [
+    "dn_treats"
+   ]
+  },
+  {
+   "id": "treat_milk",
+   "cat": "treat",
+   "sp": "dog",
+   "name": "우유껌 50개",
+   "emoji": "🦴",
+   "price": 2350,
+   "protein": [
+    "dairy"
+   ],
+   "count": 50,
+   "src": [
+    "dn_treats"
+   ]
+  },
+  {
+   "id": "pads100",
+   "cat": "hygiene",
+   "sp": "dog",
+   "use": "pads",
+   "name": "배변패드 100매",
+   "emoji": "🧻",
+   "price": 13070,
+   "days": {
+    "small": 12,
+    "medium": 12,
+    "large": 12
+   },
+   "note": "아기 땐 2~3시간마다 → 하루 약 8장 [추정]",
+   "src": [
+    "dn_pads",
+    "petmd_potty"
+   ]
+  },
+  {
+   "id": "litter10",
+   "cat": "hygiene",
+   "sp": "cat",
+   "use": "litter",
+   "name": "벤토나이트 모래 10L",
+   "emoji": "🪣",
+   "price": 13000,
+   "days": {
+    "short": 20,
+    "long": 20
+   },
+   "note": "가격은 10L 가격대(9,400~17,700원) 중간값 [계산], 일수는 추정",
+   "src": [
+    "dn_litter"
+   ]
+  },
+  {
+   "id": "medshampoo",
+   "cat": "hygiene",
+   "sp": "dog",
+   "rx": true,
+   "use": "medshampoo",
+   "name": "약용 샴푸(클로르헥시딘) 250ml",
+   "emoji": "🧴",
+   "price": 20900,
+   "count": 10,
+   "unit": "번 약욕",
+   "note": "아기 강아지 기준 약 10번 [추정]",
+   "src": [
+    "dn_medshampoo",
+    "iscaid2025"
+   ]
+  },
+  {
+   "id": "catmeds",
+   "cat": "hygiene",
+   "sp": "cat",
+   "rx": true,
+   "use": "meds",
+   "name": "먹는 항생제 2주분",
+   "emoji": "💊",
+   "price": 7931,
+   "count": 14,
+   "unit": "일분",
+   "note": "약값 공식 평균이 없어 재진 진찰료로 대신 [대체값]",
+   "src": [
+    "vetfee2025",
+    "vin_catpyo"
+   ]
+  }
+ ]
+}

@@ -2,7 +2,7 @@
 // 아이가 숨 쉬고 돌아다니고, 방 안 물건(밥그릇·패드·현관)을 누르면 돌봄을 하고, 그림자 손으로 쓰다듬을 수 있다
 // 그림: art/room/room_wide.webp(방), art/sprite/<성향>_<단계>_<상태>.webp(배경 없는 아이), art/prop/*.webp(밥그릇·패드·화장실·장난감)
 
-import { mountRig, RIG } from './rig.js?v=202610091336';
+import { mountRig, RIG } from './rig.js?v=202610091357';
 
 const HAND = `<svg viewBox="0 0 120 120" aria-hidden="true"><path d="M33 112c-9-10-17-26-21-40-2-7 6-11 11-5l9 13V30c0-6 9-6 9 0v30h3V18c0-6 9-6 9 0v40h3V22c0-6 9-6 9 0v38h3V32c0-6 9-6 9 0v44c0 14-4 26-12 36z"/></svg>`;
 
@@ -63,7 +63,7 @@ let ANIM = {};
 let CLIP = {};
 export async function loadAnim() {
   const get = (u) => fetch(u).then((r) => (r.ok ? r.json() : {})).catch(() => ({}));
-  [ANIM, CLIP] = await Promise.all([get('art/anim/index.json?v=202610091336'), get('art/clip/index.json?v=202610091336')]);
+  [ANIM, CLIP] = await Promise.all([get('art/anim/index.json?v=202610091357'), get('art/clip/index.json?v=202610091357')]);
 }
 
 // 미니게임 등에서 쓰는 움직이는 그림(없으면 null)
@@ -252,6 +252,9 @@ export function mountRoom({ type, stage, state, onStroke, canPet }) {
     }
     if (kind === 'train') { say('앉아! … 잘했어'); setTimeout(() => { setState('happy'); sparkle(); }, 700); return end(1900); }
     if (kind === 'brush') { setState('idle'); say('빗질 쓱쓱'); sparkle(); return end(1900, () => setState('happy')); }
+    if (kind === 'treat') { say('냠! 간식 맛있어요'); setState('happy'); sparkle(); return end(1700); }
+    if (kind === 'bath') { setState('idle'); say('약욕 — 거품 내고 10분 기다렸다 헹궈요'); sparkle(); return end(2400, () => setState('happy')); }
+    if (kind === 'meds') { setState('idle'); say('약 꿀꺽 — 잘했어!'); return end(1800, () => setState('happy')); }
     return end(800);
   }
   // 알려 주기만 하는 짧은 반응(아직 시간이 아님 등)

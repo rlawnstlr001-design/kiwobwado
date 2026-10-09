@@ -1,10 +1,12 @@
 // 키워봐도될까 — 내 생활 그대로 30일 키워 보고 반려 준비도를 확인하는 입양 전 체험
-import * as db from './db.js?v=202610091336';
-import * as E from './engine.js?v=202610091336';
-import { C, loadContent, eventById, lessonById, foodById } from './content.js?v=202610091336';
-import { track } from './track.js?v=202610091336';
-import { roomHTML, mountRoom, timeOfDay, loadAnim, clipInfo } from './room.js?v=202610091336';
-import { openGames, GAMES, titleOf } from './games.js?v=202610091336';
+import * as db from './db.js?v=202610091357';
+import * as E from './engine.js?v=202610091357';
+import { C, loadContent, eventById, lessonById, foodById } from './content.js?v=202610091357';
+import { track } from './track.js?v=202610091357';
+import { roomHTML, mountRoom, timeOfDay, loadAnim, clipInfo } from './room.js?v=202610091357';
+import { openGames, GAMES, titleOf } from './games.js?v=202610091357';
+import * as K from './care.js?v=202610091357';
+import { openShop, openVet, openTreats } from './shop.js?v=202610091357';
 
 const $ = (s, el = document) => el.querySelector(s);
 const view = $('#view');
@@ -21,6 +23,7 @@ const fresh = () => ({
   dayEvents: {}, answers: [], pending: [], seen: [], chains: [], triggers: [], ledger: [],
   quiz: { right: 0, total: 0 }, offset: 0, petted: {}, freePlay: {},
   coins: 0, earned: {}, best: {}, coinLog: [], // 미니게임 코인(1코인 = 1,000원)
+  inv: null, skin: null, allergy: null, vet: { visits: 0, lastExam: null }, buyLog: [], treatLog: {}, careNotes: [], // 살림·피부(care.js)
 });
 const COIN_CAP = 50; // 하루에 벌 수 있는 코인
 let S = fresh();
@@ -38,6 +41,33 @@ const dayNow = () => E.dayNo(P().startKey, todayKey());
 const keyOf = (n) => E.addDays(P().startKey, n - 1);
 const imgOf = (type, stage) => `art/pet/${type}_${stage}.webp`;
 const word = { dog: '강아지', cat: '고양이' };
+
+// ---------- 살림·피부 ----------
+// 숨은 알레르기와 데려온 날의 살림은 펫마다 정해진 난수로(같은 사람이면 같은 결과). 예전 저장본에도 채워 준다
+function initCare() {
+  const r = E.rng(`${P().seed}:care`);
+  S.allergy = K.pickAllergy(r, C.shop.allergy[species()]);
+  S.inv = K.starterInv(C.shop, species(), S.allergy, r);
+  S.skin = K.skinStart();
+  S.vet = S.vet ?? { visits: 0, lastExam: null };
+}
+const careApi = {
+  S: () => S, save: () => save(), shop: () => C.shop, costs: () => C.costs, species: () => species(), type: () => P().type,
+  day: () => dayNow(), key: () => todayKey(), weeks: () => E.ageWeeks(dayNow()), weight: () => E.weightClass(P().type, E.ageWeeks(dayNow())),
+  toast: (m) => toast(m), openSheet: (h, o) => openSheet(h, o), showSources: (k) => showSources(k), track: (n) => track(n), won: (n) => won(n),
+  fx: (st, f) => E.applyFx(st, f), room: () => ROOM, rerender: () => route(),
+};
+const NOTE = {
+  itch_start: ['피부', '{name:이/가} 자꾸 몸을 긁고 발을 핥아요', '가려움의 흔한 원인은 벼룩·진드기, 피부 감염, 아토피, 음식 알레르기예요. 병원에서 원인을 하나씩 좁혀 가요.'],
+  infected: ['피부', '긁은 자리가 빨개지고 냄새가 나요', '계속 긁으면 피부에 2차 세균 감염이 생길 수 있어요. 병원에 가 보세요.'],
+  healed: ['피부', '피부 감염이 가라앉았어요', '처방대로 꾸준히 치료한 덕분이에요. 가려움의 원인(음식 등)이 남아 있으면 다시 생길 수 있어요.'],
+  itch_gone: ['피부', '가려움이 줄었어요', '요즘 덜 긁어요. 무엇이 달라졌는지(사료·간식) 기억해 두세요.'],
+  trial_broken: ['피부', '식이 제한 중에 다른 걸 먹였어요', '처방 사료와 물 말고 다른 걸 먹으면 시험 결과를 믿기 어려워져요. 간식·다른 사료는 시험이 끝날 때까지 참아요.'],
+  trial_better: ['피부', '식이 제한 4주째, 가려움이 거의 사라졌어요', '병원에서 재도전 시험(예전 사료를 다시 먹여 원인 확인)을 상의해 보세요.'],
+  found: ['피부', '원인을 찾았어요', ''],
+  challenge_clear: ['피부', '다시 먹여도 괜찮았어요', '2주 동안 예전 사료를 먹였는데 가려움이 돌아오지 않았어요. 그 사료의 재료는 원인이 아닐 가능성이 커요.'],
+  food_out: ['살림', '사료가 다 떨어졌어요', '펫샵에서 사 와야 내일 밥을 줄 수 있어요.'],
+};
 
 // ---------- 알림·시트 ----------
 let toastTimer;
@@ -101,6 +131,12 @@ function closeDayN(n) {
   S.stats = E.applyFx(S.stats, r.fx);
   S.triggers = r.triggers;
   S.closed.push({ day: n, key, count: r.count, alone: stretch, over: r.over, sitter: arr === 'sitter' ? 1 : 0, fx: r.fx });
+  if (S.inv) {
+    const did = (kind) => plan.some((t) => t.kind === kind && ['done', 'late'].includes(results[t.id]?.status));
+    const c = K.closeCareDay(S.inv, S.skin, C.shop, { day: n, fed: did('feed'), cleaned: did('potty') || did('litter'), treatsGiven: S.treatLog[key] || [], allergy: S.allergy, species: species() });
+    S.stats = E.applyFx(S.stats, c.fx);
+    for (const code of c.notes) S.careNotes.push({ day: n, code, read: false });
+  }
   S.lastClosed = n;
   // 마감 후 지난 날의 무작위 사건은 남기지 않는다(병원·법 같은 정해진 일만 이어서)
   S.pending = S.pending.filter((p) => p.day > n || ['fixed', 'chain'].includes(eventById(p.id)?.when.type) || p.day === n);
@@ -265,6 +301,7 @@ function start(dr) {
   if (a.amount) S.ledger.push({ day: 1, label: `입양비 — ${a.label}`, amount: a.amount, src: a.src });
   const m = C.costs.monthly[TYPES[dr.type].species];
   S.ledger.push({ day: 1, label: '첫 달 양육비(사료·간식·용품 평균, 병원비 제외)', amount: m.amount, src: m.src });
+  initCare();
   save();
   track('start');
   location.hash = '#/';
@@ -306,7 +343,7 @@ function today() {
   const stretch = aloneFor(key, d, !!arr && arr !== 'none');
   const limit = E.aloneLimit(species(), weeks);
   const evs = visibleEvents();
-  const mood = moodOf(plan, key);
+  const mood = S.skin?.state !== 'ok' && S.skin ? { text: S.skin.state === 'infected' ? '피부가 빨갛게 부어 계속 긁어요' : '자꾸 몸을 긁고 발을 핥아요', state: S.skin.state === 'infected' ? 'sick' : 'idle' } : moodOf(plan, key);
   const firstAway = awayTasks.length ? Math.min(...awayTasks.map((t) => toMin(t.time))) : 0;
   const canArrange = awayTasks.length > 0 && nm < firstAway + E.WINDOW;
   const helperOK = P().people.helper || P().people.live === 'family';
@@ -316,13 +353,19 @@ function today() {
   const acts = actsFor(plan, key, d, nm, stage);
   const openKinds = acts.filter((a) => a.cls === 'now').map((a) => a.kind);
   const NEED = { feed: '배고파요!', potty: '쉬 마려워요', walk: '나가고 싶어요!', play: '놀아 주세요!', litter: '화장실이 지저분해요', train: '뭐 배울까요?', brush: '털이 엉켰어요' };
-  const need = roomState === 'sick' ? '몸이 안 좋아요…' : !sleepNow && openKinds.length ? NEED[openKinds[0]] : '';
+  const need = !sleepNow && openKinds.length ? NEED[openKinds[0]] : roomState === 'sick' ? '몸이 안 좋아요…' : !sleepNow && S.skin?.state !== 'ok' ? '긁적긁적…' : '';
   const dirty = (kind) => plan.some((t) => t.kind === kind && E.taskPhase(t, nm) !== 'early' && !statusFor(t, key, d));
   const prop = species() === 'dog' ? { pad: dirty('potty') ? 'used' : 'clean' } : { litter: dirty('litter') ? 'used' : 'clean' };
   // 방 안 물건이 맡는 일(밥그릇·패드·화장실·현관)은 물건을 누르고, 나머지는 오른쪽 아래 도구로
   const OBJ = new Set(species() === 'dog' ? ['feed', 'potty', 'walk'] : ['feed', 'litter']);
   const spots = Object.fromEntries(acts.filter((a) => OBJ.has(a.kind)).map((a) => [a.kind, { cls: a.cls, sub: a.sub }]));
   const tools = acts.filter((a) => !OBJ.has(a.kind));
+  tools.push({ kind: 'treat', label: '간식', icon: 'treat', cls: '', sub: `${Object.values(S.inv.treats).reduce((x, y) => x + y, 0)}개` });
+  if (S.skin.rx && species() === 'dog') { const w = S.skin.baths.filter((x) => x > d - 7).length; tools.push({ kind: 'bath', label: '약욕', icon: 'bath', cls: w < K.BATHS_PER_WEEK && !S.skin.baths.includes(d) ? 'now' : 'done', sub: `이번 주 ${w}/${K.BATHS_PER_WEEK}` }); }
+  if (S.skin.rx && species() === 'cat') { const t = S.skin.med.includes(d); tools.push({ kind: 'meds', label: '약', icon: 'pill', cls: t ? 'done' : 'now', sub: t ? '오늘 ✓' : '지금!' }); }
+  const low = (n) => (n <= 2 ? ' class="low"' : '');
+  const foodLeft = K.ensureFood(S.inv) ? S.inv.food[S.inv.cur] : 0;
+  const notes = S.careNotes.map((x, i) => ({ ...x, i })).filter((x) => !x.read).slice(-3);
   const mg = (k, label, c) => `<span>${label}<i style="--v:${S.stats[k]}%;--c:${c}"></i></span>`;
   const KIND = { vet: '병원', food: '음식', behavior: '행동', life: '생활', law: '법·의무' };
   const awayAlert = awayTasks.length && (canArrange || arr);
@@ -331,9 +374,11 @@ function today() {
     <div class="hud hud-tl"><div class="hud-card">
       <div class="hud-name"><b>${esc(petName())}</b><span>생후 ${Math.floor(weeks)}주 · ${d}일째/${COURSE_DAYS}</span><time>${toHM(nm)}</time></div>
       <div class="mini-g">${mg('health', '건강', 'var(--sky)')}${mg('bond', '마음', 'var(--apricot)')}${mg('habit', '습관', 'var(--forest)')}</div>
+      <p class="hud-stock"><span${low(foodLeft)}>사료 ${foodLeft}일분</span><span${low(species() === 'dog' ? S.inv.pads : S.inv.litter)}>${species() === 'dog' ? '패드' : '모래'} ${species() === 'dog' ? S.inv.pads : S.inv.litter}일분</span></p>
       <p class="hud-mood">${esc(fill(`{name:은/는} ${sleepNow ? '새근새근 자고 있어요' : mood.text}`))}</p>
     </div>
       ${evs.map((p) => { const e = eventById(p.id); return `<button class="alert hot" data-ev="${e.id}"><span class="pill ${e.kind}">${KIND[e.kind]}</span><span>${esc(fill(e.title))}</span></button>`; }).join('')}
+      ${notes.map((x) => `<button class="alert hot" data-note="${x.i}"><span class="pill vet">${NOTE[x.code][0]}</span><span>${esc(fill(NOTE[x.code][1]))}</span></button>`).join('')}
       ${awayAlert ? `<button class="alert${arr ? '' : ' hot'}" data-hud="away"><span class="pill life">낮</span><span>${arr ? arrLabel[arr] : `${toHM(spans[0][0])}~${toHM(spans[0][1])} 누가 챙길까요?`}</span></button>` : ''}
       <button class="alert" data-hud="plan"><span class="pill law">오늘</span><span>일정 · 혼자 ${stretch ? `${Math.floor(stretch / 60)}시간${stretch % 60 ? ` ${stretch % 60}분` : ''}` : '없음'}${limit && stretch > limit ? ' ⚠' : ''}</span></button>
     </div>
@@ -372,6 +417,9 @@ const ICON = {
   feather: '<svg viewBox="0 0 32 32"><path d="M6 26L22 10"/><path d="M22 10c4-4 6-4 6-4s0 6-5 9c-3 2-6 1-6 1s-1-3 5-6z"/></svg>',
   star: '<svg viewBox="0 0 32 32"><path d="M16 5l3 7 7 .6-5.4 4.6 1.7 7.3L16 20.8 9.7 24.5l1.7-7.3L6 12.6l7-.6z"/></svg>',
   comb: '<svg viewBox="0 0 32 32"><rect x="5" y="9" width="22" height="6" rx="2"/><path d="M8 15v8M12 15v8M16 15v8M20 15v8M24 15v8"/></svg>',
+  treat: '<svg viewBox="0 0 32 32"><circle cx="16" cy="16" r="10"/><circle cx="12" cy="13" r="1.3"/><circle cx="19" cy="12" r="1.3"/><circle cx="17" cy="19" r="1.3"/></svg>',
+  bath: '<svg viewBox="0 0 32 32"><path d="M4 16h24v3a7 7 0 0 1-7 7H11a7 7 0 0 1-7-7z"/><path d="M8 16V8a3 3 0 0 1 6 0"/><circle cx="20" cy="10" r="1.5"/><circle cx="24" cy="7" r="1"/></svg>',
+  pill: '<svg viewBox="0 0 32 32"><rect x="5" y="11" width="22" height="10" rx="5" transform="rotate(-35 16 16)"/><path d="M13 9l6 14" /></svg>',
   hand: '<svg viewBox="0 0 32 32"><path d="M10 28c-3-3-5-7-6-11-1-2 2-3 3-1l2 3V8c0-2 3-2 3 0v8h1V5c0-2 3-2 3 0v11h1V7c0-2 3-2 3 0v10h1V10c0-2 3-2 3 0v11c0 4-1 7-3 9z"/></svg>',
 };
 // 할 일 버튼과 지금 상태: 지금!/늦었어요/다음 시각/오늘 완료/집 비움
@@ -401,6 +449,11 @@ async function doAct(kind) {
   const plan = E.dayPlan(P(), key);
   const a = actsFor(plan, key, d, nm, E.stageOf(E.ageWeeks(d))).find((x) => x.kind === kind);
   if (kind === 'pet') return ROOM.nudge('아이 몸에 손을 대고 살살 문질러 보세요');
+  if (kind === 'treat') return openTreats(careApi);
+  if (kind === 'bath' || kind === 'meds') return careAct(kind);
+  if (kind === 'feed' && a?.cls === 'now' && !K.ensureFood(S.inv)) { ROOM.nudge('사료가 없어요 — 펫샵에서 사 와요'); return setTimeout(() => openShop(careApi, 'food'), 900); }
+  if (kind === 'potty' && a?.cls === 'now' && S.inv.pads <= 0) { ROOM.nudge('새 패드가 없어요 — 펫샵에서 사 와요'); return setTimeout(() => openShop(careApi, 'hygiene'), 900); }
+  if (kind === 'litter' && a?.cls === 'now' && S.inv.litter <= 0) { ROOM.nudge('모래가 없어요 — 펫샵에서 사 와요'); return setTimeout(() => openShop(careApi, 'hygiene'), 900); }
   if (nm >= toMin(P().life.sleep) || nm < toMin(P().life.wake)) return ROOM.nudge('지금은 잘 시간이에요');
   if (a?.task && a.cls === 'now') {
     BUSY = true;
@@ -433,6 +486,38 @@ async function doAct(kind) {
     return ROOM.nudge(`다음 ${a.next.label}은 ${a.next.time}예요.${tip}`);
   }
   return ROOM.nudge(`오늘 ${a?.label ?? ''}은 다 했어요`);
+}
+// 약욕(개, 주 2회)·먹는 약(고양이, 하루 1번) — 병원에서 처방받았을 때만
+async function careAct(kind) {
+  const d = dayNow();
+  const sk = S.skin;
+  if (kind === 'bath') {
+    if (S.inv.medshampoo <= 0) return ROOM.nudge('약용 샴푸를 다 썼어요 — 병원에서 다시 처방받아요');
+    if (sk.baths.includes(d)) return ROOM.nudge('오늘은 이미 씻겼어요. 너무 자주 씻기면 피부가 마를 수 있어요');
+    S.inv.medshampoo--; sk.baths.push(d);
+  } else {
+    if (S.inv.meds <= 0) return ROOM.nudge('약을 다 먹였어요');
+    if (sk.med.includes(d)) return ROOM.nudge('오늘 약은 이미 먹였어요');
+    S.inv.meds--; sk.med.push(d);
+  }
+  if (S.inv.medshampoo <= 0 && S.inv.meds <= 0) sk.rx = sk.state === 'infected';
+  BUSY = true;
+  await save();
+  track(kind);
+  await ROOM.play(kind);
+  BUSY = false;
+  today();
+}
+function openNote(i) {
+  const nt = S.careNotes[i];
+  if (!nt) return;
+  nt.read = true; save();
+  const [tag, title, text] = NOTE[nt.code];
+  const body = nt.code === 'found' ? `예전 사료를 다시 먹였더니 가려움이 돌아왔어요 → <b>${K.PROTEIN[S.skin.found]}</b> 알레르기로 확인됐어요. 앞으로 ${K.PROTEIN[S.skin.found]}이(가) 없는 사료·간식을 골라요. 펫샵에서 피해야 할 상품에 표시가 붙어요.` : esc(text);
+  const { sheet, close } = openSheet(`<span class="pill vet">${tag}</span><h2>${esc(fill(title))}</h2><p>${body}</p>
+    <div class="chips">${tag === '살림' ? '<button class="chip" data-go="shop">펫샵 가기</button>' : '<button class="chip" data-go="vet">병원 가기</button>'}</div>
+    <button class="btn btn-wide" data-close>확인</button>`, { onClose: () => route() });
+  sheet.addEventListener('click', (e) => { const b = e.target.closest('[data-go]'); if (!b) return; close(); if (b.dataset.go === 'shop') openShop(careApi, 'food'); else openVet(careApi); });
 }
 function taskRow(t, key, d, nm) {
   const st = statusFor(t, key, d);
@@ -474,6 +559,7 @@ async function onTodayClick(e) {
   if (b.dataset.ev) return openEvent(b.dataset.ev);
   if (b.dataset.dev) return devAction(b.dataset.dev);
   if (b.dataset.hud) return hudAction(b.dataset.hud);
+  if (b.dataset.note) return openNote(Number(b.dataset.note));
 }
 
 // ---------- 게임 화면 구석 버튼 ----------
@@ -489,11 +575,8 @@ function hudAction(k) {
   if (k === 'plan') return openPlan();
   if (k === 'games') return openMiniGames();
   if (k === 'wallet') return openWallet();
-  const SOON = {
-    shop: ['펫샵', '사료·간식·패드·장난감·옷과 액세서리를 사는 곳이에요. 미니게임으로 모은 코인으로 사요(1코인 = 1,000원, 가격은 실제 평균값).'],
-    vet: ['동물병원', '접종·검진, 피부 가려움 진료(알레르기 의심 시 8주 식이 제한 시험), 갑상선·부신 호르몬 검사(피부병 원인 감별) 같은 진료를 받는 곳이에요. 진료비는 진료비 게시제 평균값이에요.'],
-  }[k];
-  if (SOON) openSheet(`<h2>${SOON[0]}</h2><p class="sub">${SOON[1]}</p><p class="mood">곧 열려요 — 지금 만들고 있어요.</p><button class="btn btn-wide" data-close>닫기</button>`);
+  if (k === 'shop') return openShop(careApi);
+  if (k === 'vet') return openVet(careApi);
 }
 function openMiniGames() {
   const name = `${P().type}_${E.stageOf(E.ageWeeks(dayNow()))}`;
@@ -833,7 +916,9 @@ async function devAction(a) {
   }
   const saved = await db.get('kv', 'state').catch(() => null);
   if (saved?.profile) S = { ...fresh(), ...saved };
+  if (P() && !S.inv) { initCare(); save(); }
   db.askPersist();
+  if (DEV) window.__kiwo = { get S() { return S; }, save, route }; // 빠른 체험(지인 테스트·점검)용 상태 보기
   route();
   // 화면을 켜 둔 채 시간이 지나면(응답 창이 열리고 닫힘) 다시 그린다
   setInterval(() => { if (P() && !$('#sheet-root').classList.contains('on') && !document.body.classList.contains('playing') && document.body.dataset.route !== 'onboard') route(); }, 60000);

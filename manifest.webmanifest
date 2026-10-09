@@ -3,6 +3,7 @@
   "short_name": "키워봐도될까",
   "start_url": "./",
   "display": "standalone",
+  "orientation": "landscape",
   "background_color": "#FBF7EF",
   "theme_color": "#FBF7EF",
   "icons": [

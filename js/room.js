@@ -1,7 +1,8 @@
-// 방 화면 — 정사각형 방 그림 위에서 아이가 숨 쉬고 돌아다니고, 할 일 버튼에 반응하고, 그림자 손으로 쓰다듬을 수 있다
-// 그림: art/room/room.webp(방), art/sprite/<성향>_<단계>_<상태>.webp(배경 없는 아이), art/prop/*.webp(패드·화장실·장난감)
+// 방 화면 — 가로로 넓은 방(10/9 사용자 스케치: 왼쪽 현관=산책, 오른쪽 소파, 왼쪽 아래 패드, 아이 옆 밥그릇).
+// 아이가 숨 쉬고 돌아다니고, 방 안 물건(밥그릇·패드·현관)을 누르면 돌봄을 하고, 그림자 손으로 쓰다듬을 수 있다
+// 그림: art/room/room_wide.webp(방), art/sprite/<성향>_<단계>_<상태>.webp(배경 없는 아이), art/prop/*.webp(밥그릇·패드·화장실·장난감)
 
-import { mountRig, RIG } from './rig.js?v=202610091142';
+import { mountRig, RIG } from './rig.js?v=202610091313';
 
 const HAND = `<svg viewBox="0 0 120 120" aria-hidden="true"><path d="M33 112c-9-10-17-26-21-40-2-7 6-11 11-5l9 13V30c0-6 9-6 9 0v30h3V18c0-6 9-6 9 0v40h3V22c0-6 9-6 9 0v38h3V32c0-6 9-6 9 0v44c0 14-4 26-12 36z"/></svg>`;
 
@@ -10,7 +11,10 @@ const HEIGHT = {
   small: { baby: 28, teen: 32, adult: 34 }, medium: { baby: 30, teen: 37, adult: 42 }, large: { baby: 31, teen: 42, adult: 48 },
   short: { baby: 28, teen: 32, adult: 35 }, long: { baby: 29, teen: 33, adult: 37 },
 };
-const SPOTS = [48, 36, 58, 44, 62]; // 바닥에서 돌아다니는 가로 위치(%)
+const SPOTS = [54, 46, 63, 50, 70]; // 바닥에서 돌아다니는 가로 위치(%)
+const DOOR = { x: 35.8, y: 41, s: 0.5 }; // 현관 앞(멀리 있으니 작게)
+const BOWL_X = 41; // 밥그릇 가운데(%)
+let lastX = SPOTS[0]; // 다시 그려도 아이가 있던 자리에서 이어지게
 
 export function timeOfDay(min) {
   if (min < 300 || min >= 1260) return 'night';
@@ -19,16 +23,25 @@ export function timeOfDay(min) {
   return 'evening';
 }
 
-// need: { text } 말풍선, prop: { pad: 'clean'|'used' } 또는 { litter: 'clean'|'used' }
-export function roomHTML({ type, stage, state, tod, need, prop, clock, tag }) {
+// 방 안 물건 = 누를 수 있는 버튼. spots[kind] = { cls: 'now'|'done'|'away'|'', sub } — 지금 할 일이면 물건이 반짝인다
+const tagOf = (label, sp) => `<span class="spot-tag ${sp?.cls ?? ''}">${label}${sp?.sub ? `<small>${sp.sub}</small>` : ''}</span>`;
+const spotCls = (sp) => (sp?.cls ? ` ${sp.cls}` : '');
+
+// need: 말풍선 글, prop: { pad|litter: 'clean'|'used', bowl: 'empty'|'full' }
+export function roomHTML({ type, stage, state, tod, need, prop, spots = {}, clock, tag }) {
   const h = HEIGHT[type][stage] * (state === 'sleep' || state === 'sick' ? 0.78 : 1);
-  const pad = prop.pad ? `<img class="prop prop-pad" src="art/prop/pad_${prop.pad}.webp" alt="">` : '';
-  const litter = prop.litter ? `<img class="prop prop-litter" src="art/prop/litter_${prop.litter}.webp" alt="">` : '';
+  const cat = type === 'short' || type === 'long';
+  const pad = prop.pad ? `<button class="prop-btn prop-pad${spotCls(spots.potty)}" data-act="potty" aria-label="패드 갈기"><img src="art/prop/pad_${prop.pad}.webp" alt="" draggable="false">${tagOf('패드', spots.potty)}</button>` : '';
+  const litter = prop.litter ? `<button class="prop-btn prop-litter${spotCls(spots.litter)}" data-act="litter" aria-label="화장실 치우기"><img src="art/prop/litter_${prop.litter}.webp" alt="" draggable="false">${tagOf('화장실', spots.litter)}</button>` : '';
+  const bowl = `<button class="prop-btn prop-bowl${spotCls(spots.feed)}" data-act="feed" aria-label="밥 주기"><img id="bowl-img" src="art/prop/bowl_${prop.bowl ?? 'empty'}.webp" alt="" draggable="false">${tagOf('밥', spots.feed)}</button>`;
+  const water = '<img class="prop prop-water" src="art/prop/bowl_water.webp" alt="">';
+  const out = stage === 'baby' ? '바깥 구경' : '산책 가기';
+  const door = cat ? '' : `<button class="spot spot-door${spotCls(spots.walk)}" data-act="walk" aria-label="${out}">${tagOf(out, spots.walk)}</button>`;
   return `<div class="room" id="room" data-tod="${tod}" data-state="${state}">
-    <img class="room-bg" src="art/room/room.webp" alt="">
+    <img class="room-bg" src="art/room/room_wide.webp" alt="">
     <div class="room-light"></div>
-    ${pad}${litter}
-    <div class="pet" id="pet" style="--h:${h}%;--x:${SPOTS[0]}%">
+    ${door}${pad}${litter}${water}${bowl}
+    <div class="pet" id="pet" style="--h:${h}%;--x:${lastX}%">
       <i class="pet-shadow"></i>
       <img class="pet-img" id="pet-img" src="art/sprite/${type}_${stage}_${state}.webp" alt="" draggable="false">
       <canvas class="pet-rig" id="pet-rig" hidden></canvas>
@@ -39,7 +52,7 @@ export function roomHTML({ type, stage, state, tod, need, prop, clock, tag }) {
     <div class="zzz" aria-hidden="true"><i>z</i><i>z</i><i>Z</i></div>
     <div class="hand" id="hand">${HAND}</div>
     <div class="fx" id="fx" aria-hidden="true"></div>
-    <div class="room-top"><span class="room-tag">${tag}</span><span class="room-clock">${clock}</span></div>
+    ${tag ? `<div class="room-top"><span class="room-tag">${tag}</span><span class="room-clock">${clock}</span></div>` : ''}
     <div class="room-banner" id="room-banner" hidden></div>
   </div>`;
 }
@@ -50,7 +63,7 @@ let ANIM = {};
 let CLIP = {};
 export async function loadAnim() {
   const get = (u) => fetch(u).then((r) => (r.ok ? r.json() : {})).catch(() => ({}));
-  [ANIM, CLIP] = await Promise.all([get('art/anim/index.json?v=202610091142'), get('art/clip/index.json?v=202610091142')]);
+  [ANIM, CLIP] = await Promise.all([get('art/anim/index.json?v=202610091313'), get('art/clip/index.json?v=202610091313')]);
 }
 
 let wanderTimer = null;
@@ -106,7 +119,7 @@ export function mountRoom({ type, stage, state, onStroke, canPet }) {
   const hideAnim = () => { anim.hidden = true; clip.hidden = true; img.hidden = false; };
   // 평소·기분 좋은 상태면 부위별 움직임(없으면 꼬리 흔들기 프레임), 아니면 정지 그림
   const rest = (s) => {
-    const calmish = s === 'idle' || s === 'happy';
+    const calmish = s === 'idle' || s === 'happy' || s === 'hungry'; // 배고픔 그림엔 그릇이 그려져 있어 방 그릇과 겹친다 → 평소 모습 + 말풍선
     if (calmish && rigReady) { hideAnim(); rigOn(true); rig.mood(s === 'happy'); return; }
     rigOn(false);
     if (calmish && showAnim('wag', cat ? '1.6s' : s === 'happy' ? '.45s' : '.7s')) return;
@@ -125,7 +138,7 @@ export function mountRoom({ type, stage, state, onStroke, canPet }) {
       const next = (spot + 1 + Math.floor(Math.random() * (SPOTS.length - 1))) % SPOTS.length;
       pet.classList.toggle('face-left', SPOTS[next] < SPOTS[spot]);
       const walking = showAnim('walk', cat ? '.9s' : '.6s');
-      pet.style.setProperty('--x', `${SPOTS[next]}%`);
+      pet.style.setProperty('--x', `${SPOTS[next]}%`); lastX = SPOTS[next];
       spot = next;
       if (walking) setTimeout(() => { if (!room.classList.contains('busy')) rest(room.dataset.state); }, 2600);
     }, 8000);
@@ -197,22 +210,37 @@ export function mountRoom({ type, stage, state, onStroke, canPet }) {
     const end = (ms, after) => new Promise((res) => setTimeout(() => { banner.hidden = true; room.classList.remove('busy', `do-${kind}`); after?.(); res(); }, ms));
     room.classList.add(`do-${kind}`);
     if (kind === 'feed') {
-      if (!showAnim('eat', '.8s')) setState('hungry');
-      pet.classList.remove('face-left');
-      say('냠냠, 오도독…'); return end(2600, () => setState('happy'));
+      // 그릇에 사료를 붓고 → 아이가 그릇 앞으로 걸어와 먹는다(먹는 영상엔 그릇이 함께 있어 방 그릇은 잠시 숨김) → 빈 그릇
+      const bowlBtn = room.querySelector('.prop-bowl'), bowlImg = document.getElementById('bowl-img');
+      if (bowlImg) bowlImg.src = 'art/prop/bowl_full.webp';
+      say('사료를 담았어요');
+      const rr = room.getBoundingClientRect(), br = bowlBtn.getBoundingClientRect();
+      const ratio = CLIP[`${name}_eat`] || has('eat');
+      const petW = rr.height * (parseFloat(pet.style.getPropertyValue('--h')) / 100) * (ratio || 1);
+      const x = ratio ? ((br.right - rr.left) - petW / 2) / rr.width * 100 : BOWL_X - 8;
+      pet.classList.toggle('face-left', x < parseFloat(pet.style.getPropertyValue('--x')));
+      showAnim('walk', cat ? '.9s' : '.6s');
+      pet.style.setProperty('--x', `${x}%`); lastX = x;
+      return new Promise((res) => setTimeout(() => {
+        pet.classList.remove('face-left');
+        if (showAnim('eat', '.8s')) bowlBtn.classList.add('eating'); else setState('hungry');
+        say('냠냠, 오도독…');
+        end(2800, () => { bowlBtn.classList.remove('eating'); if (bowlImg) bowlImg.src = 'art/prop/bowl_empty.webp'; setState('happy'); }).then(res);
+      }, 2600));
     }
-    if (kind === 'potty') { const p = room.querySelector('.prop-pad'); say('새 패드로 쓱싹'); return end(1500, () => { if (p) p.src = 'art/prop/pad_clean.webp'; setState('happy'); }); }
-    if (kind === 'litter') { const p = room.querySelector('.prop-litter'); say('모래를 싹싹'); return end(1500, () => { if (p) p.src = 'art/prop/litter_clean.webp'; setState('happy'); }); }
+    if (kind === 'potty') { const p = room.querySelector('.prop-pad img'); say('새 패드로 쓱싹'); return end(1500, () => { if (p) p.src = 'art/prop/pad_clean.webp'; setState('happy'); }); }
+    if (kind === 'litter') { const p = room.querySelector('.prop-litter img'); say('모래를 싹싹'); return end(1500, () => { if (p) p.src = 'art/prop/litter_clean.webp'; setState('happy'); }); }
     if (kind === 'walk') {
-      pet.classList.add('face-left'); showAnim('walk', '.6s'); pet.style.setProperty('--x', '20%');
+      // 현관까지 걸어가(멀어질수록 작아짐) 문밖으로 → 잠시 뒤 돌아온다
+      const go = (x, y, sc) => { pet.style.setProperty('--x', `${x}%`); pet.style.setProperty('--y', `${y}%`); pet.style.setProperty('--s', sc); };
+      pet.classList.add('face-left'); showAnim('walk', '.6s'); go(DOOR.x, DOOR.y, DOOR.s);
       say(stage === 'baby' ? '바깥 구경 다녀올게요' : '산책 다녀올게요');
       return new Promise((res) => setTimeout(() => { pet.classList.add('out'); setTimeout(() => {
-        say('🐾 다녀왔어요!'); pet.classList.remove('out', 'face-left'); showAnim('walk', '.6s'); pet.style.setProperty('--x', `${SPOTS[0]}%`);
-        setTimeout(() => setState('happy'), 1300);
-        end(1300).then(res);
-      }, 1600); }, 1100));
+        say('🐾 다녀왔어요!'); pet.classList.remove('out', 'face-left'); showAnim('walk', '.6s'); go(SPOTS[0], 8, 1); lastX = SPOTS[0];
+        setTimeout(() => setState('happy'), 2600);
+        end(2600).then(res);
+      }, 1800); }, 2600));
     }
-    const cat = type === 'short' || type === 'long';
     const sparkle = () => { const sp = document.createElement('span'); sp.className = 'sparkle'; sp.textContent = '✦ ✧ ✦'; pet.appendChild(sp); setTimeout(() => sp.remove(), 1900); };
     if (kind === 'play') {
       const toy = document.createElement('img'); toy.className = 'toy'; toy.src = `art/prop/${cat ? 'feather' : 'ball'}.webp`; toy.alt = '';

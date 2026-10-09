@@ -1,9 +1,9 @@
 // 키워봐도될까 — 내 생활 그대로 30일 키워 보고 반려 준비도를 확인하는 입양 전 체험
-import * as db from './db.js?v=202610091142';
-import * as E from './engine.js?v=202610091142';
-import { C, loadContent, eventById, lessonById, foodById } from './content.js?v=202610091142';
-import { track } from './track.js?v=202610091142';
-import { roomHTML, mountRoom, timeOfDay, loadAnim } from './room.js?v=202610091142';
+import * as db from './db.js?v=202610091313';
+import * as E from './engine.js?v=202610091313';
+import { C, loadContent, eventById, lessonById, foodById } from './content.js?v=202610091313';
+import { track } from './track.js?v=202610091313';
+import { roomHTML, mountRoom, timeOfDay, loadAnim } from './room.js?v=202610091313';
 
 const $ = (s, el = document) => el.querySelector(s);
 const view = $('#view');
@@ -304,7 +304,6 @@ function today() {
   const limit = E.aloneLimit(species(), weeks);
   const evs = visibleEvents();
   const mood = moodOf(plan, key);
-  const g = (k, label) => `<div class="gauge ${k}"><span>${label}</span><span class="bar"><i style="width:${S.stats[k]}%"></i></span><span>${S.stats[k]}</span></div>`;
   const firstAway = awayTasks.length ? Math.min(...awayTasks.map((t) => toMin(t.time))) : 0;
   const canArrange = awayTasks.length > 0 && nm < firstAway + E.WINDOW;
   const helperOK = P().people.helper || P().people.live === 'family';
@@ -317,32 +316,33 @@ function today() {
   const need = roomState === 'sick' ? '몸이 안 좋아요…' : !sleepNow && openKinds.length ? NEED[openKinds[0]] : '';
   const dirty = (kind) => plan.some((t) => t.kind === kind && E.taskPhase(t, nm) !== 'early' && !statusFor(t, key, d));
   const prop = species() === 'dog' ? { pad: dirty('potty') ? 'used' : 'clean' } : { litter: dirty('litter') ? 'used' : 'clean' };
-  view.innerHTML = `
-    <section class="room-layout">
-      ${roomHTML({ type: P().type, stage, state: roomState, tod: timeOfDay(nm), need, prop, clock: `${d}일째 ${toHM(nm)}`, tag: `${esc(petName())} · 생후 ${Math.floor(weeks)}주` })}
-      <div class="acts">${acts.map((a) => `<button class="act ${a.cls}" data-act="${a.kind}">${ICON[a.icon]}<b>${a.label}</b><small>${a.sub}</small></button>`).join('')}</div>
-    </section>
-    <div class="pet-line"><p class="pet-name">${esc(petName())}</p><span class="sub">${T().label}</span></div>
-    <p class="mood" style="margin-top:6px">${esc(fill(`{name:은/는} 지금 ${sleepNow ? '새근새근 자고 있어요' : mood.text}`))}</p>
-    <div class="stat-row">${g('health', '건강')}${g('bond', '마음')}${g('habit', '습관')}</div>
-    <p class="fine" style="margin:8px 0 0">${species() === 'dog' ? '강아지' : '고양이'} 몸에 손가락(마우스)을 대고 문지르면 쓰다듬어 줄 수 있어요.</p>
-    ${evs.map((p) => { const e = eventById(p.id); return `<section class="card event-card"><span class="pill ${e.kind}">${{ vet: '병원', food: '음식', behavior: '행동', life: '생활', law: '법·의무' }[e.kind]}</span>${p.day < d ? ' <span class="fine">어제 일</span>' : ''}<h2>${esc(fill(e.title))}</h2><p class="sub" style="margin:0 0 10px">${esc(fill(e.text))}</p><button class="btn btn-main btn-wide" data-ev="${e.id}">어떻게 할까요?</button></section>`; }).join('')}
-    ${awayTasks.length && (canArrange || arr) ? `<section class="card away-card"><h2>${toHM(spans[0][0])}~${toHM(spans[0][1])} 집을 비워요</h2>
-      <p class="sub" style="margin:0">그사이 ${awayTasks.map((t) => t.label).join('·')}${E.josa(awayTasks.at(-1).label, '이/가').slice(-1)} 있어요. 누가 챙길까요?</p>
-      ${arr && !canArrange ? `<p style="margin:8px 0 0;font-weight:800">${arrLabel[arr]}</p>` : `<div class="chips">
-        ${[['self', '내가 점심에 들른다'], ...(helperOK ? [['helper', '가족·지인에게 부탁']] : []), ['sitter', `펫시터 1시간 ${won(C.costs.care.sitter_hour.amount)}`], ['none', '못 챙긴다']].map(([v, l]) => `<button class="chip${arr === v ? ' on' : ''}" data-arr="${v}" ${canArrange ? '' : 'disabled'}>${l}</button>`).join('')}</div>
-        <p class="fine" style="margin:6px 0 0">'내가 들른다'는 실제로 가능할 때만 골라 주세요. <button class="src-btn" data-src="dogmate_price">요금 출처</button></p>`}</section>` : ''}
-    <section class="card">
-      <h2>오늘 혼자 있는 시간</h2>
-      <div class="alone"><div class="alone-bar">${stretch ? `<i class="${limit && stretch > limit ? 'over' : ''}" style="width:${Math.min(100, (stretch / 720) * 100)}%"></i>` : ''}${limit ? `<b style="left:${(limit / 720) * 100}%"></b>` : ''}</div><b>${stretch ? `${Math.floor(stretch / 60)}시간 ${stretch % 60 ? `${stretch % 60}분` : ''}` : '없음'}</b></div>
-      <p class="fine" style="margin:6px 0 0">${limit ? `세로선 = 지금 월령의 권장 한계 약 ${Math.round(limit / 60 * 10) / 10}시간 (아기는 '월령 1개월당 1시간', 성견도 4시간 이하)` : '고양이는 혼자 두는 시간의 공식 기준을 찾지 못했어요 — 길수록 놀이·교감이 더 필요해요.'} <button class="src-btn" data-src="hw_potty,rspca_alone">출처</button></p>
-    </section>
-    <section class="card">
-      <details class="plan-all"><summary>오늘 일정 전체</summary>
-      <ul class="timeline">${plan.map((t) => taskRow(t, key, d, nm)).join('')}</ul></details>
-      <p class="fine" style="margin:8px 0 0">요청 시각부터 ${E.WINDOW}분 안에 하면 '제때', 지나면 '늦음', 그날 안에 못 하면 '놓침'이에요. 앱 버전에선 이 시각에 알림이 와요.</p>
-    </section>
-    ${DEV ? `<div class="dev"><b>빠른 체험</b><button class="btn btn-sm" data-dev="h">+1시간</button><button class="btn btn-sm" data-dev="h3">+3시간</button><button class="btn btn-sm" data-dev="d">다음 날 아침</button><span class="fine" style="flex-basis:100%">체험 속 지금: ${now().toLocaleString('ko-KR', { month: 'long', day: 'numeric', weekday: 'short', hour: '2-digit', minute: '2-digit' })} · 실제 30일 체험과 결과가 다를 수 있어요</span></div>` : ''}`;
+  // 방 안 물건이 맡는 일(밥그릇·패드·화장실·현관)은 물건을 누르고, 나머지는 오른쪽 아래 도구로
+  const OBJ = new Set(species() === 'dog' ? ['feed', 'potty', 'walk'] : ['feed', 'litter']);
+  const spots = Object.fromEntries(acts.filter((a) => OBJ.has(a.kind)).map((a) => [a.kind, { cls: a.cls, sub: a.sub }]));
+  const tools = acts.filter((a) => !OBJ.has(a.kind));
+  const mg = (k, label, c) => `<span>${label}<i style="--v:${S.stats[k]}%;--c:${c}"></i></span>`;
+  const KIND = { vet: '병원', food: '음식', behavior: '행동', life: '생활', law: '법·의무' };
+  const awayAlert = awayTasks.length && (canArrange || arr);
+  view.innerHTML = `<section class="game" id="game">
+    ${roomHTML({ type: P().type, stage, state: roomState, tod: timeOfDay(nm), need, prop: { ...prop, bowl: 'empty' }, spots })}
+    <div class="hud hud-tl"><div class="hud-card">
+      <div class="hud-name"><b>${esc(petName())}</b><span>생후 ${Math.floor(weeks)}주 · ${d}일째/${COURSE_DAYS}</span><time>${toHM(nm)}</time></div>
+      <div class="mini-g">${mg('health', '건강', 'var(--sky)')}${mg('bond', '마음', 'var(--apricot)')}${mg('habit', '습관', 'var(--forest)')}</div>
+      <p class="hud-mood">${esc(fill(`{name:은/는} ${sleepNow ? '새근새근 자고 있어요' : mood.text}`))}</p>
+    </div>
+      ${evs.map((p) => { const e = eventById(p.id); return `<button class="alert hot" data-ev="${e.id}"><span class="pill ${e.kind}">${KIND[e.kind]}</span><span>${esc(fill(e.title))}</span></button>`; }).join('')}
+      ${awayAlert ? `<button class="alert${arr ? '' : ' hot'}" data-hud="away"><span class="pill life">낮</span><span>${arr ? arrLabel[arr] : `${toHM(spans[0][0])}~${toHM(spans[0][1])} 누가 챙길까요?`}</span></button>` : ''}
+      <button class="alert" data-hud="plan"><span class="pill law">오늘</span><span>일정 · 혼자 ${stretch ? `${Math.floor(stretch / 60)}시간${stretch % 60 ? ` ${stretch % 60}분` : ''}` : '없음'}${limit && stretch > limit ? ' ⚠' : ''}</span></button>
+    </div>
+    <nav class="hud hud-tr" aria-label="메뉴">
+      <button class="hud-btn" data-hud="shop">샵</button><button class="hud-btn" data-hud="vet">병원</button><button class="hud-btn" data-hud="games">미니게임</button>
+      <button class="hud-btn icon" data-hud="menu" aria-label="메뉴·설정"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3M4.9 4.9l2.1 2.1M17 17l2.1 2.1M4.9 19.1 7 17M17 7l2.1-2.1"/></svg></button>
+    </nav>
+    <div class="hud hud-br">${tools.map((a) => `<button class="tool ${a.cls}" data-act="${a.kind}">${ICON[a.icon]}<b>${a.label}</b><small>${a.sub}</small></button>`).join('')}</div>
+    ${DEV ? `<div class="hud hud-dev"><button class="hud-btn" data-dev="h">+1시간</button><button class="hud-btn" data-dev="h3">+3시간</button><button class="hud-btn" data-dev="d">다음 날</button></div>` : ''}
+    <div class="rotate-hint${lsGet('kiwo:portrait') ? ' dismissed' : ''}" id="rotate-hint"><b>휴대폰을 가로로 돌려 주세요</b><p>방 전체가 한 화면에 보여요.</p>
+      <div class="chips" style="justify-content:center"><button class="btn btn-main" data-hud="land">가로 화면으로</button><button class="btn" data-hud="portrait">세로로 볼게요</button></div></div>
+  </section>`;
   view.onclick = onTodayClick;
   ROOM = mountRoom({
     type: P().type, stage, state: roomState,
@@ -446,33 +446,102 @@ function taskRow(t, key, d, nm) {
   const sub = t.away ? '집 비운 시간' : `${t.minutes}분 정도`;
   return `<li class="task${phase === 'open' && !st ? ' open' : ''}"><time>${t.time}</time><span><span class="t-label">${esc(t.label)}</span><span class="t-sub">${sub}</span></span>${right}</li>`;
 }
+async function markTask(id) {
+  const t = E.dayPlan(P(), todayKey()).find((x) => x.id === id);
+  const status = E.judge(t, nowMin());
+  S.results[t.id] = { status, at: nowMin() };
+  S.lastDone = now().getTime();
+  await save();
+  track('task_done');
+  toast(status === 'done' ? `${t.label} — 제때 했어요` : `${t.label} — 늦었지만 챙겼어요`);
+}
+async function setArrange(v) {
+  const key = todayKey();
+  const prev = S.arrange[key];
+  if (prev === 'sitter' && v !== 'sitter') S.ledger = S.ledger.filter((l) => !(l.day === dayNow() && l.tag === 'sitter-day'));
+  if (v === 'sitter' && prev !== 'sitter') S.ledger.push({ day: dayNow(), label: '낮 돌봄 — 방문 펫시터 1시간', amount: C.costs.care.sitter_hour.amount, src: C.costs.care.sitter_hour.src, tag: 'sitter-day' });
+  S.arrange[key] = v;
+  await save();
+}
 async function onTodayClick(e) {
   const b = e.target.closest('button');
   if (!b) return;
   if (b.dataset.src) return showSources(b.dataset.src.split(','));
-  const key = todayKey();
-  if (b.dataset.task) {
-    const t = E.dayPlan(P(), key).find((x) => x.id === b.dataset.task);
-    const status = E.judge(t, nowMin());
-    S.results[t.id] = { status, at: nowMin() };
-    S.lastDone = now().getTime();
-    await save();
-    track('task_done');
-    toast(status === 'done' ? `${t.label} — 제때 했어요` : `${t.label} — 늦었지만 챙겼어요`);
-    return today();
-  }
-  if (b.dataset.arr) {
-    const prev = S.arrange[key];
-    const v = b.dataset.arr;
-    if (prev === 'sitter' && v !== 'sitter') S.ledger = S.ledger.filter((l) => !(l.day === dayNow() && l.tag === 'sitter-day'));
-    if (v === 'sitter' && prev !== 'sitter') S.ledger.push({ day: dayNow(), label: '낮 돌봄 — 방문 펫시터 1시간', amount: C.costs.care.sitter_hour.amount, src: C.costs.care.sitter_hour.src, tag: 'sitter-day' });
-    S.arrange[key] = v;
-    await save();
-    return today();
-  }
   if (b.dataset.act) return doAct(b.dataset.act);
   if (b.dataset.ev) return openEvent(b.dataset.ev);
   if (b.dataset.dev) return devAction(b.dataset.dev);
+  if (b.dataset.hud) return hudAction(b.dataset.hud);
+}
+
+// ---------- 게임 화면 구석 버튼 ----------
+async function goLandscape() {
+  try { await document.documentElement.requestFullscreen?.({ navigationUI: 'hide' }); } catch { /* 전체 화면 불가 */ }
+  try { await screen.orientation?.lock?.('landscape'); } catch { /* iOS 등 방향 고정 불가 */ }
+}
+function hudAction(k) {
+  if (k === 'land') { lsSet('kiwo:portrait', null); return goLandscape(); }
+  if (k === 'portrait') { lsSet('kiwo:portrait', '1'); $('#rotate-hint')?.classList.add('dismissed'); return; }
+  if (k === 'menu') return openMenu();
+  if (k === 'away') return openAway();
+  if (k === 'plan') return openPlan();
+  const SOON = {
+    shop: ['펫샵', '사료·간식·패드·장난감·옷과 액세서리를 사는 곳이에요. 미니게임으로 모은 코인으로 사요(1코인 = 1,000원, 가격은 실제 평균값).'],
+    vet: ['동물병원', '접종·검진, 피부 가려움 진료(알레르기 의심 시 8주 식이 제한 시험), 갑상선·부신 호르몬 검사(피부병 원인 감별) 같은 진료를 받는 곳이에요. 진료비는 진료비 게시제 평균값이에요.'],
+    games: ['미니게임', '산책 달리기·사천성·간식 맞추기로 코인을 모아요. 반려 생활에 드는 돈이 얼마만큼의 노력인지 느껴 보는 장치예요.'],
+  }[k];
+  if (SOON) openSheet(`<h2>${SOON[0]}</h2><p class="sub">${SOON[1]}</p><p class="mood">곧 열려요 — 지금 만들고 있어요.</p><button class="btn btn-wide" data-close>닫기</button>`);
+}
+function openMenu() {
+  const { sheet, close } = openSheet(`<h2>메뉴</h2>
+    <div class="menu-grid"><a class="btn" href="#/book" data-close>수첩·가계부</a><a class="btn" href="#/learn" data-close>배움</a><a class="btn" href="#/report" data-close>리포트</a><button class="btn" id="m-full">전체 화면</button></div>
+    <button class="btn btn-soft btn-wide" id="m-settings">설정</button><button class="btn btn-wide" data-close>닫기</button>`);
+  $('#m-full', sheet).addEventListener('click', () => { close(); goLandscape(); });
+  $('#m-settings', sheet).addEventListener('click', () => { close(); openSettings(); });
+}
+function openAway() {
+  const key = todayKey(), d = dayNow(), nm = nowMin();
+  const plan = E.dayPlan(P(), key);
+  const awayTasks = plan.filter((t) => t.away && statusFor(t, key, d)?.status !== 'skip');
+  if (!awayTasks.length) return;
+  const spans = E.awaySpans(P(), key);
+  const arr = arrangeOf(key);
+  const canArrange = nm < Math.min(...awayTasks.map((t) => toMin(t.time))) + E.WINDOW;
+  const helperOK = P().people.helper || P().people.live === 'family';
+  const { sheet, close } = openSheet(`<h2>${toHM(spans[0][0])}~${toHM(spans[0][1])} 집을 비워요</h2>
+    <p class="sub">그사이 ${awayTasks.map((t) => t.label).join('·')}${E.josa(awayTasks.at(-1).label, '이/가').slice(-1)} 있어요. 누가 챙길까요?</p>
+    <div class="chips">${[['self', '내가 점심에 들른다'], ...(helperOK ? [['helper', '가족·지인에게 부탁']] : []), ['sitter', `펫시터 1시간 ${won(C.costs.care.sitter_hour.amount)}`], ['none', '못 챙긴다']].map(([v, l]) => `<button class="chip${arr === v ? ' on' : ''}" data-arr="${v}" ${canArrange ? '' : 'disabled'}>${l}</button>`).join('')}</div>
+    <p class="fine" style="margin:8px 0 0">'내가 들른다'는 실제로 가능할 때만 골라 주세요.${canArrange ? '' : ' 이미 집을 비운 시간이라 바꿀 수 없어요.'} <button class="src-btn" data-src="dogmate_price">요금 출처</button></p>
+    <button class="btn btn-wide" data-close>닫기</button>`, { onClose: () => route() });
+  sheet.addEventListener('click', async (e) => {
+    const b = e.target.closest('button');
+    if (b?.dataset.src) return showSources(b.dataset.src.split(','));
+    if (!b?.dataset.arr) return;
+    await setArrange(b.dataset.arr);
+    close();
+  });
+}
+function openPlan() {
+  const key = todayKey(), d = dayNow(), nm = nowMin();
+  const plan = E.dayPlan(P(), key);
+  const weeks = E.ageWeeks(d);
+  const arr = arrangeOf(key);
+  const stretch = aloneFor(key, d, !!arr && arr !== 'none');
+  const limit = E.aloneLimit(species(), weeks);
+  const { sheet, close } = openSheet(`<h2>오늘 일정</h2>
+    <ul class="timeline">${plan.map((t) => taskRow(t, key, d, nm)).join('')}</ul>
+    <p class="fine" style="margin:8px 0 0">요청 시각부터 ${E.WINDOW}분 안에 하면 '제때', 지나면 '늦음', 그날 안에 못 하면 '놓침'이에요. 앱 버전에선 이 시각에 알림이 와요.</p>
+    <div class="card"><h2>오늘 혼자 있는 시간</h2>
+      <div class="alone"><div class="alone-bar">${stretch ? `<i class="${limit && stretch > limit ? 'over' : ''}" style="width:${Math.min(100, (stretch / 720) * 100)}%"></i>` : ''}${limit ? `<b style="left:${(limit / 720) * 100}%"></b>` : ''}</div><b>${stretch ? `${Math.floor(stretch / 60)}시간 ${stretch % 60 ? `${stretch % 60}분` : ''}` : '없음'}</b></div>
+      <p class="fine" style="margin:6px 0 0">${limit ? `세로선 = 지금 월령의 권장 한계 약 ${Math.round(limit / 60 * 10) / 10}시간 (아기는 '월령 1개월당 1시간', 성견도 4시간 이하)` : '고양이는 혼자 두는 시간의 공식 기준을 찾지 못했어요 — 길수록 놀이·교감이 더 필요해요.'} <button class="src-btn" data-src="hw_potty,rspca_alone">출처</button></p></div>
+    <p class="fine">${species() === 'dog' ? '강아지' : '고양이'} 몸에 손가락(마우스)을 대고 문지르면 쓰다듬어 줄 수 있어요.</p>
+    <button class="btn btn-wide" data-close>닫기</button>`, { onClose: () => route() });
+  sheet.addEventListener('click', async (e) => {
+    const b = e.target.closest('button');
+    if (b?.dataset.src) return showSources(b.dataset.src.split(','));
+    if (!b?.dataset.task) return;
+    await markTask(b.dataset.task);
+    close();
+  });
 }
 
 // ---------- 사건 ----------
@@ -693,18 +762,19 @@ function confirmReset() {
   const { sheet, close } = openSheet(`<h2>처음부터 다시 할까요?</h2><p class="sub">${esc(petName())}의 기록이 모두 지워져요. 되돌릴 수 없어요.</p><button class="btn btn-warn btn-wide" id="do-reset">지우고 다시 시작</button><button class="btn btn-wide" data-close>취소</button>`);
   $('#do-reset', sheet).addEventListener('click', async () => { S = fresh(); await save(); close(); location.hash = '#/'; route(); });
 }
-$('#btn-settings').addEventListener('click', () => {
+$('#btn-settings').addEventListener('click', () => openSettings());
+function openSettings() {
   if (!P()) return;
   const { sheet } = openSheet(`<h2>설정</h2>
     <div class="card" style="margin-top:0"><p style="margin:0"><b>${esc(petName())}</b> · ${T().label} · ${E.dayNo(P().startKey, todayKey()) > COURSE_DAYS ? '체험 완료' : `${dayNow()}일째`}</p>
     <p class="sub" style="margin:4px 0 0">기상 ${P().life.wake} · ${P().life.remote ? '재택' : `출근 ${P().life.leave} · 귀가 ${P().life.back}`} · 취침 ${P().life.sleep} · 예산 ${won(P().budget)}</p></div>
     <p class="sub">모든 기록은 이 기기에만 저장돼요. 펫 이름·생활 시간·예산은 서버로 보내지 않아요.</p>
     <p class="disclaimer">비용은 공식 통계·진료비 게시제 평균이며 지역·병원마다 달라요. 건강 정보는 일반 정보이며 진료를 대신하지 않아요.</p>
-    <div class="card"><h2>빠른 체험 ${DEV ? '켜짐' : '꺼짐'}</h2><p class="sub" style="margin:0">30일을 기다리지 않고 시간을 앞으로 돌려 볼 수 있어요(체험해 보는 분용). '오늘' 화면 아래에 시간 이동 버튼이 생겨요.</p><button class="btn btn-soft btn-wide" id="s-fast">${DEV ? '빠른 체험 끄기' : '빠른 체험 켜기'}</button></div>
+    <div class="card"><h2>빠른 체험 ${DEV ? '켜짐' : '꺼짐'}</h2><p class="sub" style="margin:0">30일을 기다리지 않고 시간을 앞으로 돌려 볼 수 있어요(체험해 보는 분용). 방 화면 위쪽에 시간 이동 버튼이 생겨요.</p><button class="btn btn-soft btn-wide" id="s-fast">${DEV ? '빠른 체험 끄기' : '빠른 체험 켜기'}</button></div>
     <button class="btn btn-wide" id="s-reset">처음부터 다시</button><button class="btn btn-wide" data-close>닫기</button>`);
   $('#s-reset', sheet).addEventListener('click', confirmReset);
   $('#s-fast', sheet).addEventListener('click', () => { DEV = !DEV; lsSet('kiwo:fast', DEV ? '1' : null); track(DEV ? 'fast_on' : 'fast_off'); location.reload(); });
-});
+}
 
 // ---------- 개발용 시간 이동 (?dev) ----------
 async function devAction(a) {

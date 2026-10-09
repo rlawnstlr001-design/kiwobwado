@@ -1,9 +1,10 @@
 // 키워봐도될까 — 내 생활 그대로 30일 키워 보고 반려 준비도를 확인하는 입양 전 체험
-import * as db from './db.js?v=202610091313';
-import * as E from './engine.js?v=202610091313';
-import { C, loadContent, eventById, lessonById, foodById } from './content.js?v=202610091313';
-import { track } from './track.js?v=202610091313';
-import { roomHTML, mountRoom, timeOfDay, loadAnim } from './room.js?v=202610091313';
+import * as db from './db.js?v=202610091336';
+import * as E from './engine.js?v=202610091336';
+import { C, loadContent, eventById, lessonById, foodById } from './content.js?v=202610091336';
+import { track } from './track.js?v=202610091336';
+import { roomHTML, mountRoom, timeOfDay, loadAnim, clipInfo } from './room.js?v=202610091336';
+import { openGames, GAMES, titleOf } from './games.js?v=202610091336';
 
 const $ = (s, el = document) => el.querySelector(s);
 const view = $('#view');
@@ -19,7 +20,9 @@ const fresh = () => ({
   profile: null, stats: E.startStats(), results: {}, arrange: {}, closed: [], lastClosed: 0,
   dayEvents: {}, answers: [], pending: [], seen: [], chains: [], triggers: [], ledger: [],
   quiz: { right: 0, total: 0 }, offset: 0, petted: {}, freePlay: {},
+  coins: 0, earned: {}, best: {}, coinLog: [], // 미니게임 코인(1코인 = 1,000원)
 });
+const COIN_CAP = 50; // 하루에 벌 수 있는 코인
 let S = fresh();
 const save = () => db.put('kv', S, 'state');
 
@@ -335,7 +338,7 @@ function today() {
       <button class="alert" data-hud="plan"><span class="pill law">오늘</span><span>일정 · 혼자 ${stretch ? `${Math.floor(stretch / 60)}시간${stretch % 60 ? ` ${stretch % 60}분` : ''}` : '없음'}${limit && stretch > limit ? ' ⚠' : ''}</span></button>
     </div>
     <nav class="hud hud-tr" aria-label="메뉴">
-      <button class="hud-btn" data-hud="shop">샵</button><button class="hud-btn" data-hud="vet">병원</button><button class="hud-btn" data-hud="games">미니게임</button>
+      <button class="hud-btn coin" data-hud="wallet" aria-label="코인"><i class="ci"></i> ${S.coins}</button><button class="hud-btn" data-hud="shop">샵</button><button class="hud-btn" data-hud="vet">병원</button><button class="hud-btn" data-hud="games">미니게임</button>
       <button class="hud-btn icon" data-hud="menu" aria-label="메뉴·설정"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3M4.9 4.9l2.1 2.1M17 17l2.1 2.1M4.9 19.1 7 17M17 7l2.1-2.1"/></svg></button>
     </nav>
     <div class="hud hud-br">${tools.map((a) => `<button class="tool ${a.cls}" data-act="${a.kind}">${ICON[a.icon]}<b>${a.label}</b><small>${a.sub}</small></button>`).join('')}</div>
@@ -484,12 +487,43 @@ function hudAction(k) {
   if (k === 'menu') return openMenu();
   if (k === 'away') return openAway();
   if (k === 'plan') return openPlan();
+  if (k === 'games') return openMiniGames();
+  if (k === 'wallet') return openWallet();
   const SOON = {
     shop: ['펫샵', '사료·간식·패드·장난감·옷과 액세서리를 사는 곳이에요. 미니게임으로 모은 코인으로 사요(1코인 = 1,000원, 가격은 실제 평균값).'],
     vet: ['동물병원', '접종·검진, 피부 가려움 진료(알레르기 의심 시 8주 식이 제한 시험), 갑상선·부신 호르몬 검사(피부병 원인 감별) 같은 진료를 받는 곳이에요. 진료비는 진료비 게시제 평균값이에요.'],
-    games: ['미니게임', '산책 달리기·사천성·간식 맞추기로 코인을 모아요. 반려 생활에 드는 돈이 얼마만큼의 노력인지 느껴 보는 장치예요.'],
   }[k];
   if (SOON) openSheet(`<h2>${SOON[0]}</h2><p class="sub">${SOON[1]}</p><p class="mood">곧 열려요 — 지금 만들고 있어요.</p><button class="btn btn-wide" data-close>닫기</button>`);
+}
+function openMiniGames() {
+  const name = `${P().type}_${E.stageOf(E.ageWeeks(dayNow()))}`;
+  const pet = clipInfo(name, 'walk') ?? { src: `art/sprite/${name}_idle.webp`, ratio: 1 };
+  track('games_open');
+  openGames({
+    species: species(), petName: petName(), pet, coins: S.coins, earned: S.earned[todayKey()] || 0, cap: COIN_CAP, best: { ...S.best },
+    onReward: (game, score) => {
+      const k = todayKey();
+      const earned = S.earned[k] || 0;
+      const given = Math.max(0, Math.min(GAMES[game].coins(score), COIN_CAP - earned));
+      S.coins += given;
+      S.earned[k] = earned + given;
+      S.best[game] = Math.max(S.best[game] || 0, score);
+      if (given) S.coinLog.push({ day: dayNow(), game, score, coins: given });
+      save();
+      track('game_end');
+      return { given, earned: S.earned[k], coins: S.coins };
+    },
+    onClose: () => route(),
+  });
+}
+function openWallet() {
+  const recent = S.coinLog.slice(-6).reverse();
+  const { sheet, close } = openSheet(`<h2><i class="ci"></i> 코인 ${S.coins}개</h2>
+    <p class="sub">1코인 = 1,000원으로 쳐요. 지금 가진 코인은 실제라면 <b>${won(S.coins * 1000)}</b>이에요. 펫샵·병원 가격은 실제 평균값 그대로라, 사료 한 포대·진료 한 번이 미니게임 몇 판인지 느껴 볼 수 있어요.</p>
+    <p class="mood">오늘 번 코인 ${S.earned[todayKey()] || 0} / ${COIN_CAP} — 하루에 일할 수 있는 시간이 정해져 있듯 한도가 있어요.</p>
+    ${recent.length ? `<ul class="timeline">${recent.map((l) => `<li class="task"><time>${l.day}일째</time><span><span class="t-label">${titleOf(l.game, species())}</span><span class="t-sub">${l.score}점</span></span><span class="st done">+${l.coins}</span></li>`).join('')}</ul>` : '<p class="fine">아직 번 코인이 없어요. 미니게임으로 모아 보세요.</p>'}
+    <button class="btn btn-main btn-wide" id="w-play">미니게임 하러 가기</button><button class="btn btn-wide" data-close>닫기</button>`);
+  $('#w-play', sheet).addEventListener('click', () => { close(); openMiniGames(); });
 }
 function openMenu() {
   const { sheet, close } = openSheet(`<h2>메뉴</h2>
@@ -802,6 +836,6 @@ async function devAction(a) {
   db.askPersist();
   route();
   // 화면을 켜 둔 채 시간이 지나면(응답 창이 열리고 닫힘) 다시 그린다
-  setInterval(() => { if (P() && !$('#sheet-root').classList.contains('on') && document.body.dataset.route !== 'onboard') route(); }, 60000);
-  document.addEventListener('visibilitychange', () => { if (!document.hidden && P()) route(); });
+  setInterval(() => { if (P() && !$('#sheet-root').classList.contains('on') && !document.body.classList.contains('playing') && document.body.dataset.route !== 'onboard') route(); }, 60000);
+  document.addEventListener('visibilitychange', () => { if (!document.hidden && P() && !document.body.classList.contains('playing')) route(); });
 })();

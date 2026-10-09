@@ -1,6 +1,6 @@
 // 펫샵·동물병원·간식 주기 화면. 코인(1코인 = 1,000원)으로 사고, 가격은 실제 평균값(content/shop.json·costs.json, 출처 표시)
 // 상태는 앱(app.js)이 넘기는 api로만 읽고 쓴다
-import { PROTEIN, itemsFor, itemById, hasProtein, addItem, TRIAL_DAYS, BATHS_PER_WEEK } from './care.js?v=202610091357';
+import { PROTEIN, itemsFor, itemById, hasProtein, addItem, TRIAL_DAYS, BATHS_PER_WEEK } from './care.js?v=202610091409';
 
 export const coinOf = (won) => Math.ceil(won / 1000);
 const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
@@ -50,13 +50,23 @@ export function openShop(api, tab = 'food') {
         <span><b>간식</b> ${Object.values(inv.treats).reduce((s, n) => s + n, 0)}개</span>
       </div>
       <div class="shop-tabs">${Object.entries(TABS).filter(([k]) => k === 'wear' || itemsFor(shop, sp).some((i) => i.cat === k && !i.rx)).map(([k, l]) => `<button class="${k === tab ? 'on' : ''}" data-tab="${k}">${l}</button>`).join('')}</div>
-      <div class="shop-list">${tab === 'wear' ? '<p class="shop-empty">옷·액세서리는 다음 단계에서 열려요. 목줄·인식표처럼 꼭 필요한 것부터 들어와요.</p>' : list.map((i) => `<div class="shop-item${i.id === inv.cur ? ' cur' : ''}">
+      <div class="shop-list">${tab === 'wear' ? wearList() : list.map((i) => `<div class="shop-item${i.id === inv.cur ? ' cur' : ''}">
           <span class="si-ic">${i.emoji}</span>
           <span class="si-txt"><b>${esc(i.name)}</b><small>${esc(tag(i))}</small>${warn(i)}${i.note ? `<small class="si-note">${esc(i.note)}</small>` : ''}</span>
           <span class="si-buy">${i.cat === 'food' && (inv.food[i.id] || 0) > 0 && i.id !== inv.cur ? `<button class="btn btn-sm" data-use="${i.id}">이걸로 먹이기</button>` : ''}${i.id === inv.cur ? '<small class="si-cur">지금 먹는 중</small>' : ''}
             <button class="btn btn-sm btn-main" data-buy="${i.id}">${CI} ${coinOf(i.price)}</button><small>${api.won(i.price)}</small></span>
         </div>`).join('')}</div>
-      <p class="mg-note">가격은 온라인 판매가 평균(참고값, 출처 C)이에요. ${tab === 'food' ? '아기 때는 성장기용(퍼피·키튼) 사료를 먹여요. 사료를 바꿀 땐 며칠에 걸쳐 섞어 바꾸는 게 좋아요. ' : ''}<button class="src-btn" data-src="${[...new Set(list.flatMap((i) => i.src))].join(',')}">출처</button></p>`;
+      <p class="mg-note">가격은 온라인 판매가(참고값, 출처 C)예요. ${tab === 'wear' ? '옷·액세서리는 가만히 있을 때 보이고, 걷거나 먹는 영상에선 잠깐 벗겨져 보여요. ' : ''} ${tab === 'food' ? '아기 때는 성장기용(퍼피·키튼) 사료를 먹여요. 사료를 바꿀 땐 며칠에 걸쳐 섞어 바꾸는 게 좋아요. ' : ''}<button class="src-btn" data-src="${[...new Set((tab === 'wear' ? itemsFor(shop, sp).filter((i) => i.cat === 'wear') : list).flatMap((i) => i.src))].join(',')}">출처</button></p>`;
+  };
+  // 옷·액세서리: 산 것은 입히기·벗기기(목 하나·머리 하나)
+  const wearList = () => {
+    const S = api.S(), on = S.wearing;
+    return itemsFor(api.shop(), api.species()).filter((i) => i.cat === 'wear').map((i) => {
+      const owned = (S.inv.wear ?? []).includes(i.id), wearing = on[i.slot] === i.id;
+      return `<div class="shop-item${wearing ? ' cur' : ''}"><img class="si-art" src="art/wear/${i.art}.webp" alt="">
+        <span class="si-txt"><b>${esc(i.name)}</b><small>${i.slot === 'head' ? '머리' : '목'}</small>${i.note ? `<small class="si-note">${esc(i.note)}</small>` : ''}</span>
+        <span class="si-buy">${owned ? `<button class="btn btn-sm ${wearing ? '' : 'btn-main'}" data-wear="${i.id}">${wearing ? '벗기기' : '입히기'}</button>` : `<button class="btn btn-sm btn-main" data-buy="${i.id}">${CI} ${coinOf(i.price)}</button><small>${api.won(i.price)}</small>`}</span></div>`;
+    }).join('');
   };
   shopRoot.addEventListener('click', (e) => {
     const b = e.target.closest('button');
@@ -66,10 +76,12 @@ export function openShop(api, tab = 'food') {
     if (b.dataset.tab) { tab = b.dataset.tab; return draw(); }
     const S = api.S(), shop = api.shop();
     if (b.dataset.use) { S.inv.cur = b.dataset.use; api.save(); api.toast('사료를 바꿨어요'); return draw(); }
+    if (b.dataset.wear) { const it = itemById(shop, b.dataset.wear); S.wearing[it.slot] = S.wearing[it.slot] === it.id ? null : it.id; api.save(); api.track('wear'); return draw(); }
     if (b.dataset.buy) {
       const it = itemById(shop, b.dataset.buy);
       if (!pay(api, it.price, it.name)) { b.classList.add('shake'); setTimeout(() => b.classList.remove('shake'), 500); return; }
       addItem(S.inv, it, api.type());
+      if (it.cat === 'wear') S.wearing[it.slot] = it.id; // 사면 바로 입혀 본다
       api.save(); api.track('shop_buy');
       api.toast(`${it.name} 샀어요`);
       draw();

@@ -33,7 +33,7 @@ export function starterInv(shop, species, allergy, rand) {
   const bad = foods.filter((f) => hasProtein(f, allergy));
   const pool = allergy && bad.length && rand() < 0.7 ? bad : foods;
   const first = pool[Math.floor(rand() * pool.length)];
-  return { cur: first.id, food: { [first.id]: 7 }, pads: species === 'dog' ? 7 : 0, litter: species === 'cat' ? 7 : 0, treats: {}, medshampoo: 0, meds: 0, toys: [] };
+  return { cur: first.id, food: { [first.id]: 7 }, pads: species === 'dog' ? 7 : 0, litter: species === 'cat' ? 7 : 0, treats: {}, medshampoo: 0, meds: 0, toys: [], wear: [] };
 }
 export const skinStart = () => ({ itch: 0, state: 'ok', itchyDays: 0, heal: 0, rx: false, trial: null, challenge: null, found: null, baths: [], med: [], seen: [] });
 
@@ -54,6 +54,7 @@ export function addItem(inv, item, type) {
   else if (item.use === 'meds') inv.meds += item.count;
   else if (item.cat === 'treat') inv.treats[item.id] = (inv.treats[item.id] || 0) + item.count;
   else if (item.cat === 'toy' && !inv.toys.includes(item.id)) inv.toys.push(item.id);
+  else if (item.cat === 'wear') { inv.wear ||= []; if (!inv.wear.includes(item.id)) inv.wear.push(item.id); }
 }
 
 // 하루 마감: 재고를 쓰고(먹였으면 사료 1일, 배변 돌봄을 했으면 패드·모래 1일), 알레르기 노출에 따라 피부가 변한다.

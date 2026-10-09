@@ -271,3 +271,4 @@ body.playing { overflow: hidden; }
 .vet-opts .choice { display: flex; justify-content: space-between; align-items: center; gap: 8px; }
 .vo-price { flex: none; font-weight: 900; }
 .treat-list { display: grid; gap: 6px; }
+.si-art { width: 44px; height: 44px; object-fit: contain; flex: none; }

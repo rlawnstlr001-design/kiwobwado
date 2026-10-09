@@ -2,7 +2,7 @@
 // 아이가 숨 쉬고 돌아다니고, 방 안 물건(밥그릇·패드·현관)을 누르면 돌봄을 하고, 그림자 손으로 쓰다듬을 수 있다
 // 그림: art/room/room_wide.webp(방), art/sprite/<성향>_<단계>_<상태>.webp(배경 없는 아이), art/prop/*.webp(밥그릇·패드·화장실·장난감)
 
-import { mountRig, RIG } from './rig.js?v=202610091357';
+import { mountRig, RIG } from './rig.js?v=202610091409';
 
 const HAND = `<svg viewBox="0 0 120 120" aria-hidden="true"><path d="M33 112c-9-10-17-26-21-40-2-7 6-11 11-5l9 13V30c0-6 9-6 9 0v30h3V18c0-6 9-6 9 0v40h3V22c0-6 9-6 9 0v38h3V32c0-6 9-6 9 0v44c0 14-4 26-12 36z"/></svg>`;
 
@@ -63,7 +63,7 @@ let ANIM = {};
 let CLIP = {};
 export async function loadAnim() {
   const get = (u) => fetch(u).then((r) => (r.ok ? r.json() : {})).catch(() => ({}));
-  [ANIM, CLIP] = await Promise.all([get('art/anim/index.json?v=202610091357'), get('art/clip/index.json?v=202610091357')]);
+  [ANIM, CLIP] = await Promise.all([get('art/anim/index.json?v=202610091409'), get('art/clip/index.json?v=202610091409')]);
 }
 
 // 미니게임 등에서 쓰는 움직이는 그림(없으면 null)
@@ -73,7 +73,7 @@ let wanderTimer = null;
 let revertTimer = null;
 
 // 방을 살린다: 돌아다니기 + 쓰다듬기. onStroke(누적 쓰다듬은 정도)로 앱이 마음 점수를 올린다
-export function mountRoom({ type, stage, state, onStroke, canPet }) {
+export function mountRoom({ type, stage, state, onStroke, canPet, wear = [] }) {
   clearInterval(wanderTimer);
   clearTimeout(revertTimer);
   const room = document.getElementById('room');
@@ -93,6 +93,7 @@ export function mountRoom({ type, stage, state, onStroke, canPet }) {
   let rig = null, rigReady = false;
   if (RIG[name] && cv) {
     rig = mountRig(cv, `${base}idle.webp`, RIG[name], { cat });
+    rig?.wear(wear);
     cv.addEventListener('rigready', () => {
       cv.style.height = `${rig.scale() * 100}%`;
       cv.style.aspectRatio = String(rig.aspect());
@@ -122,7 +123,8 @@ export function mountRoom({ type, stage, state, onStroke, canPet }) {
   const hideAnim = () => { anim.hidden = true; clip.hidden = true; img.hidden = false; };
   // 평소·기분 좋은 상태면 부위별 움직임(없으면 꼬리 흔들기 프레임), 아니면 정지 그림
   const rest = (s) => {
-    const calmish = s === 'idle' || s === 'happy' || s === 'hungry'; // 배고픔 그림엔 그릇이 그려져 있어 방 그릇과 겹친다 → 평소 모습 + 말풍선
+    // 배고픔 그림엔 그릇이 그려져 있어 방 그릇과 겹친다 → 평소 모습 + 말풍선. 옷·액세서리를 입었으면 말썽 상태도 움직이는 모습으로(입은 게 보이게)
+    const calmish = s === 'idle' || s === 'happy' || s === 'hungry' || (s === 'oops' && wear.length > 0);
     if (calmish && rigReady) { hideAnim(); rigOn(true); rig.mood(s === 'happy'); return; }
     rigOn(false);
     if (calmish && showAnim('wag', cat ? '1.6s' : s === 'happy' ? '.45s' : '.7s')) return;

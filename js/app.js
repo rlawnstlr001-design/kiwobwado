@@ -1,12 +1,12 @@
 // 키워봐도될까 — 내 생활 그대로 30일 키워 보고 반려 준비도를 확인하는 입양 전 체험
-import * as db from './db.js?v=202610091357';
-import * as E from './engine.js?v=202610091357';
-import { C, loadContent, eventById, lessonById, foodById } from './content.js?v=202610091357';
-import { track } from './track.js?v=202610091357';
-import { roomHTML, mountRoom, timeOfDay, loadAnim, clipInfo } from './room.js?v=202610091357';
-import { openGames, GAMES, titleOf } from './games.js?v=202610091357';
-import * as K from './care.js?v=202610091357';
-import { openShop, openVet, openTreats } from './shop.js?v=202610091357';
+import * as db from './db.js?v=202610091409';
+import * as E from './engine.js?v=202610091409';
+import { C, loadContent, eventById, lessonById, foodById } from './content.js?v=202610091409';
+import { track } from './track.js?v=202610091409';
+import { roomHTML, mountRoom, timeOfDay, loadAnim, clipInfo } from './room.js?v=202610091409';
+import { openGames, GAMES, titleOf } from './games.js?v=202610091409';
+import * as K from './care.js?v=202610091409';
+import { openShop, openVet, openTreats } from './shop.js?v=202610091409';
 
 const $ = (s, el = document) => el.querySelector(s);
 const view = $('#view');
@@ -23,7 +23,7 @@ const fresh = () => ({
   dayEvents: {}, answers: [], pending: [], seen: [], chains: [], triggers: [], ledger: [],
   quiz: { right: 0, total: 0 }, offset: 0, petted: {}, freePlay: {},
   coins: 0, earned: {}, best: {}, coinLog: [], // 미니게임 코인(1코인 = 1,000원)
-  inv: null, skin: null, allergy: null, vet: { visits: 0, lastExam: null }, buyLog: [], treatLog: {}, careNotes: [], // 살림·피부(care.js)
+  wearing: { neck: null, head: null }, inv: null, skin: null, allergy: null, vet: { visits: 0, lastExam: null }, buyLog: [], treatLog: {}, careNotes: [], // 살림·피부(care.js)
 });
 const COIN_CAP = 50; // 하루에 벌 수 있는 코인
 let S = fresh();
@@ -394,6 +394,7 @@ function today() {
   view.onclick = onTodayClick;
   ROOM = mountRoom({
     type: P().type, stage, state: roomState,
+    wear: Object.values(S.wearing).filter(Boolean).map((id) => C.shop.items.find((i) => i.id === id)).filter(Boolean).map((i) => ({ src: `art/wear/${i.art}.webp`, slot: i.slot, wf: i.wf, fb: i.fb })),
     canPet: () => !sleepNow,
     onStroke: (n) => {
       if (sleepNow) { if (n === 1) ROOM?.nudge('자는 아이는 깨우지 말고 쉬게 둬요'); return; }
@@ -451,6 +452,7 @@ async function doAct(kind) {
   if (kind === 'pet') return ROOM.nudge('아이 몸에 손을 대고 살살 문질러 보세요');
   if (kind === 'treat') return openTreats(careApi);
   if (kind === 'bath' || kind === 'meds') return careAct(kind);
+  if (kind === 'walk' && a?.cls === 'now' && S.wearing.neck !== 'w_tag') toast('인식표 없이 외출하면 과태료 대상이에요 — 펫샵 옷·액세서리에서 달아 주세요');
   if (kind === 'feed' && a?.cls === 'now' && !K.ensureFood(S.inv)) { ROOM.nudge('사료가 없어요 — 펫샵에서 사 와요'); return setTimeout(() => openShop(careApi, 'food'), 900); }
   if (kind === 'potty' && a?.cls === 'now' && S.inv.pads <= 0) { ROOM.nudge('새 패드가 없어요 — 펫샵에서 사 와요'); return setTimeout(() => openShop(careApi, 'hygiene'), 900); }
   if (kind === 'litter' && a?.cls === 'now' && S.inv.litter <= 0) { ROOM.nudge('모래가 없어요 — 펫샵에서 사 와요'); return setTimeout(() => openShop(careApi, 'hygiene'), 900); }

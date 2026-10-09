@@ -2,6 +2,7 @@
 // 부위 = 머리(목 기준 회전)·귀(붙은 자리 기준 회전)·꼬리(뿌리 기준 회전)·가슴(숨)·눈(위아래로 눌러 깜빡임)
 // 좌표는 모두 원본 스프라이트 픽셀 기준. 칸 사이가 이어져 있어 부위를 잘라 붙일 때 생기는 틈·겹침이 없다
 // 큰 동작(걷기·먹기)은 영상 클립/프레임이 맡고, 여기는 가만히 있을 때만 쓴다
+// 옷·액세서리(wear): 목(목걸이·반다나·나비넥타이)은 목 자리에, 머리(모자)는 머리와 함께 돌도록 같은 변형을 받아 그 위에 그린다
 
 const smooth = (a, b, x) => { const t = Math.min(1, Math.max(0, (x - a) / (b - a))); return t * t * (3 - 2 * t); };
 const rot = (x, y, cx, cy, a) => { const c = Math.cos(a), s = Math.sin(a); const dx = x - cx, dy = y - cy; return [cx + dx * c - dy * s, cy + dx * s + dy * c]; };
@@ -10,14 +11,15 @@ const NX = 72, NY = 100;
 export function mountRig(canvas, src, cfg, { cat = false } = {}) {
   const gl = canvas.getContext('webgl', { premultipliedAlpha: true, alpha: true, antialias: true });
   if (!gl) return null;
-  const st = { look: 0, pet: 0, petTarget: 0, blink: 0, nextBlink: 1.5, blinkT: -1, flick: [0, 0], nextFlick: 3, tilt: 0, tiltTarget: 0, nextTilt: 4, wag: 0, happy: 0, force: null };
-  let W = 0, H = 0, rest, pos, draw, idx, buf, prog, loc, alive = true, ready = false;
+  const st = { headA: 0, breath: 0, look: 0, pet: 0, petTarget: 0, blink: 0, nextBlink: 1.5, blinkT: -1, flick: [0, 0], nextFlick: 3, tilt: 0, tiltTarget: 0, nextTilt: 4, wag: 0, happy: 0, force: null };
+  let W = 0, H = 0, rest, pos, draw, idx, buf, prog, loc, alive = true, ready = false, bodyTex, bodyUV, ul, geo = null;
+  let wears = []; // { slot, wf, fb, aspect, tex, uv, pb, ok }
   const t0 = performance.now(); let last = t0;
   // 귀가 붙은 자리보다 아래로 늘어진 귀면 바깥으로 들리는 방향이 반대
   const earOut = cfg.ears.map((e, i) => (e.cy > e.py ? 1 : -1) * (i === 0 ? 1 : -1));
 
   const img = new Image();
-  img.onload = () => { if (!alive) return; W = img.width; H = img.height; setup(); ready = true; canvas.dispatchEvent(new Event('rigready')); requestAnimationFrame(frame); };
+  img.onload = () => { if (!alive) return; W = img.width; H = img.height; setup(); geo = headGeo(); ready = true; canvas.dispatchEvent(new Event('rigready')); requestAnimationFrame(frame); };
   img.src = src;
 
   function setup() {
@@ -36,17 +38,62 @@ export function mountRig(canvas, src, cfg, { cat = false } = {}) {
     const ids = [];
     for (let j = 0; j < NY; j++) for (let i = 0; i < NX; i++) { const a = j * (NX + 1) + i, b = a + 1, c = a + NX + 1, d = c + 1; ids.push(a, b, c, b, d, c); }
     idx = new Uint16Array(ids);
-    const ub = gl.createBuffer(); gl.bindBuffer(gl.ARRAY_BUFFER, ub); gl.bufferData(gl.ARRAY_BUFFER, uv, gl.STATIC_DRAW);
-    const ul = gl.getAttribLocation(prog, 'u'); gl.enableVertexAttribArray(ul); gl.vertexAttribPointer(ul, 2, gl.FLOAT, false, 0, 0);
+    bodyUV = gl.createBuffer(); gl.bindBuffer(gl.ARRAY_BUFFER, bodyUV); gl.bufferData(gl.ARRAY_BUFFER, uv, gl.STATIC_DRAW);
+    ul = gl.getAttribLocation(prog, 'u'); gl.enableVertexAttribArray(ul); gl.vertexAttribPointer(ul, 2, gl.FLOAT, false, 0, 0);
     buf = gl.createBuffer();
     const ib = gl.createBuffer(); gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, ib); gl.bufferData(gl.ELEMENT_ARRAY_BUFFER, idx, gl.STATIC_DRAW);
-    const tex = gl.createTexture(); gl.bindTexture(gl.TEXTURE_2D, tex);
+    bodyTex = gl.createTexture(); gl.bindTexture(gl.TEXTURE_2D, bodyTex);
     gl.pixelStorei(gl.UNPACK_PREMULTIPLY_ALPHA_WEBGL, true);
     gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, img);
     gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR); gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
     gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE); gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
     gl.enable(gl.BLEND); gl.blendFunc(gl.ONE, gl.ONE_MINUS_SRC_ALPHA);
     loc = { sz: gl.getUniformLocation(prog, 'sz'), p: gl.getAttribLocation(prog, 'p') };
+  }
+  // 머리 크기·정수리: 두 눈 사이 거리로 크기를 재고, 두 눈 가운데 세로줄에서 처음 불투명한 점을 정수리로 본다
+  function headGeo() {
+    const [a, b] = cfg.eyes;
+    const cx = (a[0] + b[0]) / 2, eyeY = (a[1] + b[1]) / 2, ed = Math.abs(b[0] - a[0]);
+    let top = eyeY - ed;
+    try {
+      const cv = document.createElement('canvas'); cv.width = W; cv.height = H;
+      const g = cv.getContext('2d'); g.drawImage(img, 0, 0);
+      const col = g.getImageData(Math.round(cx), 0, 1, Math.round(eyeY)).data;
+      for (let y = 0; y < eyeY; y++) if (col[y * 4 + 3] > 120) { top = y; break; }
+    } catch { /* 픽셀을 못 읽으면 눈 거리로 추정 */ }
+    return { cx, eyeY, ed, top };
+  }
+  // 액세서리 한 장을 텍스처로
+  function loadWear(w) {
+    const im = new Image();
+    im.onload = () => {
+      if (!alive) return;
+      w.aspect = im.width / im.height;
+      w.tex = gl.createTexture(); gl.bindTexture(gl.TEXTURE_2D, w.tex);
+      gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, im);
+      gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR); gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
+      gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE); gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+      w.uv = gl.createBuffer(); gl.bindBuffer(gl.ARRAY_BUFFER, w.uv); gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([0, 0, 1, 0, 0, 1, 1, 1]), gl.STATIC_DRAW);
+      w.pb = gl.createBuffer();
+      w.ok = true;
+    };
+    im.src = w.src;
+  }
+  // 액세서리 네 모서리(원본 픽셀): 목 = 목 자리 아래로 걸치고, 머리 = 정수리부터 이마까지 덮게
+  function wearQuad(w) {
+    const c = cfg, { cx, eyeY, ed, top } = geo;
+    const wd = ed * w.wf, ht = wd / w.aspect;
+    let x0, y0;
+    if (w.slot === 'head') { const bottom = top + (eyeY - top) * w.fb; x0 = cx - wd / 2; y0 = bottom - ht; }
+    else { x0 = c.neck[0] - wd / 2; y0 = c.neck[1] - ed * (w.fb ?? 0.12); }
+    const pts = [[x0, y0], [x0 + wd, y0], [x0, y0 + ht], [x0 + wd, y0 + ht]];
+    const hw = w.slot === 'head' ? 1 : smooth(c.headBottom, c.headTop, y0);
+    const [ncx, ncy] = c.neck, g = c.ground;
+    return pts.map(([x, y]) => {
+      [x, y] = rot(x, y, ncx, ncy, st.headA * hw); y += st.pet * 4 * hw; x += st.look * 3 * hw;
+      y = g + (y - g) * (1 + st.breath * .012);
+      return [x, y];
+    });
   }
 
   function deform(t, dt) {
@@ -70,6 +117,7 @@ export function mountRig(canvas, src, cfg, { cat = false } = {}) {
 
     const breath = Math.sin(t * Math.PI * 2 / (cat ? 3.6 : 3.2));
     const head = f.head ?? Math.sin(t * Math.PI * 2 / 5.5) * .03 + st.tilt + st.look * .09 - st.pet * .09;
+    st.headA = head; st.breath = breath;
     // 꼬리: 강아지는 빠르게 흔들고(기분 좋으면 더 빠르게), 고양이는 끝을 천천히 살랑
     const period = cat ? 2.4 : st.happy ? .34 : .55;
     st.wag += dt * Math.PI * 2 / period * (1 + st.pet * (cat ? .4 : 1.2));
@@ -124,12 +172,22 @@ export function mountRig(canvas, src, cfg, { cat = false } = {}) {
         if (canvas.width !== cw || canvas.height !== ch) { canvas.width = cw; canvas.height = ch; }
         gl.viewport(0, 0, cw, ch);
         gl.clearColor(0, 0, 0, 0); gl.clear(gl.COLOR_BUFFER_BIT);
-        const pad = cfg.pad ?? 24;
+        const pad = cfg.pad ?? 70;
         gl.uniform2f(loc.sz, W + pad * 2, H + pad);
         for (let k = 0; k < pos.length; k += 2) { draw[k] = pos[k] + pad; draw[k + 1] = pos[k + 1] + pad; }
+        gl.bindTexture(gl.TEXTURE_2D, bodyTex);
+        gl.bindBuffer(gl.ARRAY_BUFFER, bodyUV); gl.vertexAttribPointer(ul, 2, gl.FLOAT, false, 0, 0);
         gl.bindBuffer(gl.ARRAY_BUFFER, buf); gl.bufferData(gl.ARRAY_BUFFER, draw, gl.DYNAMIC_DRAW);
         gl.enableVertexAttribArray(loc.p); gl.vertexAttribPointer(loc.p, 2, gl.FLOAT, false, 0, 0);
         gl.drawElements(gl.TRIANGLES, idx.length, gl.UNSIGNED_SHORT, 0);
+        for (const w of wears) {
+          if (!w.ok || !geo) continue;
+          const q = new Float32Array(wearQuad(w).flatMap(([x, y]) => [x + pad, y + pad]));
+          gl.bindTexture(gl.TEXTURE_2D, w.tex);
+          gl.bindBuffer(gl.ARRAY_BUFFER, w.uv); gl.vertexAttribPointer(ul, 2, gl.FLOAT, false, 0, 0);
+          gl.bindBuffer(gl.ARRAY_BUFFER, w.pb); gl.bufferData(gl.ARRAY_BUFFER, q, gl.DYNAMIC_DRAW); gl.vertexAttribPointer(loc.p, 2, gl.FLOAT, false, 0, 0);
+          gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
+        }
       }
     }
     requestAnimationFrame(frame);
@@ -142,13 +200,15 @@ export function mountRig(canvas, src, cfg, { cat = false } = {}) {
 
   return {
     // 캔버스 가로/세로 비율(위·옆 여백 포함) — 그림이 늦게 오면 0
-    aspect: () => (ready ? (W + (cfg.pad ?? 24) * 2) / (H + (cfg.pad ?? 24)) : 0),
+    aspect: () => (ready ? (W + (cfg.pad ?? 70) * 2) / (H + (cfg.pad ?? 70)) : 0),
     // 원본 그림 높이 대비 캔버스 높이(여백만큼 커짐) → 방 안에서 같은 키로 보이게 맞출 때
-    scale: () => (ready ? (H + (cfg.pad ?? 24)) / H : 1),
+    scale: () => (ready ? (H + (cfg.pad ?? 70)) / H : 1),
     look(v) { st.look = Math.max(-1, Math.min(1, v)); },
     pet(on) { st.petTarget = on ? 1 : 0; },
     mood(happy) { st.happy = happy ? 1 : 0; },
     debug(f) { st.force = f; },   // 시험용: {close, tail, head} 고정
+    // 입힐 것 목록 [{ src, slot: 'neck'|'head', wf: 눈 사이 거리의 몇 배 너비, fb }] — 머리는 아래 목(목)부터 그린다
+    wear(list) { for (const w of wears) if (w.tex) gl.deleteTexture(w.tex); wears = [...list].sort((a, b) => (a.slot === 'head') - (b.slot === 'head')).map((w) => ({ ...w })); wears.forEach(loadWear); },
     destroy,
   };
 }

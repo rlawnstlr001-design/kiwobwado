@@ -1,12 +1,13 @@
 // 키워봐도될까 — 내 생활 그대로 30일 키워 보고 반려 준비도를 확인하는 입양 전 체험
-import * as db from './db.js?v=202610091642';
-import * as E from './engine.js?v=202610091642';
-import { C, loadContent, eventById, lessonById, foodById } from './content.js?v=202610091642';
-import { track } from './track.js?v=202610091642';
-import { roomHTML, mountRoom, timeOfDay, loadAnim, clipInfo } from './room.js?v=202610091642';
-import { openGames, GAMES, titleOf } from './games.js?v=202610091642';
-import * as K from './care.js?v=202610091642';
-import { openShop, openVet, openTreats } from './shop.js?v=202610091642';
+import * as db from './db.js?v=202610091653';
+import * as E from './engine.js?v=202610091653';
+import { C, loadContent, eventById, lessonById, foodById } from './content.js?v=202610091653';
+import { track } from './track.js?v=202610091653';
+import { roomHTML, mountRoom, timeOfDay, loadAnim, clipInfo } from './room.js?v=202610091653';
+import { openGames, GAMES, titleOf } from './games.js?v=202610091653';
+import * as K from './care.js?v=202610091653';
+import { openShop, openVet, openTreats } from './shop.js?v=202610091653';
+import { isApp, initNative, scheduleCare, exactAlarm } from './native.js?v=202610091653';
 
 const $ = (s, el = document) => el.querySelector(s);
 const view = $('#view');
@@ -68,6 +69,24 @@ const NOTE = {
   challenge_clear: ['피부', '다시 먹여도 괜찮았어요', '2주 동안 예전 사료를 먹였는데 가려움이 돌아오지 않았어요. 그 사료의 재료는 원인이 아닐 가능성이 커요.'],
   food_out: ['살림', '사료가 다 떨어졌어요', '펫샵에서 사 와야 내일 밥을 줄 수 있어요.'],
 };
+
+// ---------- 앱 돌봄 알림 ----------
+// 오늘 남은 요청과 내일 요청을 그 시각에 알린다(집 비운 시간의 요청·빠른 체험은 빼고)
+function careAlarms(ask) {
+  if (!isApp || !P() || S.offset) return;
+  const d = dayNow(), at = (key, hm) => { const [y, m, dd] = key.split('-').map(Number); const [h, mi] = hm.split(':').map(Number); return new Date(y, m - 1, dd, h, mi); };
+  const items = [];
+  for (const n of [d, d + 1]) {
+    if (n < 1 || n > COURSE_DAYS) continue;
+    const key = keyOf(n);
+    for (const t of E.dayPlan(P(), key)) {
+      const when = at(key, t.time);
+      if (t.away || when <= new Date() || statusFor(t, key, n)) continue;
+      items.push({ at: when, title: `${petName()} — ${t.label}`, body: `지금 ${t.label} 시간이에요. ${E.WINDOW}분 안에 챙기면 '제때'예요.` });
+    }
+  }
+  scheduleCare(items, ask);
+}
 
 // ---------- 알림·시트 ----------
 let toastTimer;
@@ -304,6 +323,7 @@ function start(dr) {
   initCare();
   save();
   track('start');
+  careAlarms(true); // 앱: 첫 돌봄 알림 허락을 여기서 묻는다
   location.hash = '#/';
   route();
   toast(`${dr.name}${E.josa(dr.name, '이/가').slice(-1)} 집에 왔어요`);
@@ -406,6 +426,7 @@ function today() {
     },
   });
   track('day_open');
+  careAlarms(false);
 }
 let ROOM = null;
 let BUSY = false;
@@ -890,8 +911,10 @@ function openSettings() {
     <p class="sub">모든 기록은 이 기기에만 저장돼요. 펫 이름·생활 시간·예산은 서버로 보내지 않아요.</p>
     <p class="disclaimer">비용은 공식 통계·진료비 게시제 평균이며 지역·병원마다 달라요. 건강 정보는 일반 정보이며 진료를 대신하지 않아요.</p>
     <div class="card"><h2>빠른 체험 ${DEV ? '켜짐' : '꺼짐'}</h2><p class="sub" style="margin:0">30일을 기다리지 않고 시간을 앞으로 돌려 볼 수 있어요(체험해 보는 분용). 방 화면 위쪽에 시간 이동 버튼이 생겨요.</p><button class="btn btn-soft btn-wide" id="s-fast">${DEV ? '빠른 체험 끄기' : '빠른 체험 켜기'}</button></div>
+    ${isApp ? '<div class="card"><h2>돌봄 알림</h2><p class="sub" style="margin:0">밥·배변·산책 시간마다 알림이 와요. 갤럭시는 <b>알람 및 리마인더</b>를 허용해야 제시각에 와요(안 하면 몇 분 늦을 수 있어요).</p><button class="btn btn-soft btn-wide" id="s-exact">알람 및 리마인더 설정 열기</button></div>' : ''}
     <button class="btn btn-wide" id="s-reset">처음부터 다시</button><button class="btn btn-wide" data-close>닫기</button>`);
   $('#s-reset', sheet).addEventListener('click', confirmReset);
+  $('#s-exact', sheet)?.addEventListener('click', async () => { const ok = await exactAlarm(true); toast(ok ? '정확한 알림이 켜져 있어요' : '설정에서 허용해 주세요'); });
   $('#s-fast', sheet).addEventListener('click', () => { DEV = !DEV; lsSet('kiwo:fast', DEV ? '1' : null); track(DEV ? 'fast_on' : 'fast_off'); location.reload(); });
 }
 
@@ -920,6 +943,16 @@ async function devAction(a) {
   if (saved?.profile) S = { ...fresh(), ...saved };
   if (P() && !S.inv) { initCare(); save(); }
   db.askPersist();
+  initNative({
+    // 뒤로 가기: 열린 창 → 미니게임·펫샵 → 다른 화면이면 방으로, 방이면 앱 종료
+    onBack: () => {
+      const back = $('#sheet-root .sheet-back'); if (back) { back.click(); return true; }
+      const x = document.querySelector('.mg .mg-x, .mg [data-x]'); if (x) { x.click(); return true; }
+      if (P() && document.body.dataset.route !== 'today' && document.body.dataset.route !== 'onboard') { location.hash = '#/'; return true; }
+      return false;
+    },
+    onResume: () => { if (P() && !document.body.classList.contains('playing')) route(); },
+  });
   if (DEV) window.__kiwo = { get S() { return S; }, save, route }; // 빠른 체험(지인 테스트·점검)용 상태 보기
   route();
   // 화면을 켜 둔 채 시간이 지나면(응답 창이 열리고 닫힘) 다시 그린다

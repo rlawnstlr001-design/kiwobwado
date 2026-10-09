@@ -1,7 +1,7 @@
 // 미니게임 — 코인 벌기(1코인 = 1,000원, 가격은 실제 평균값이라 "반려 생활비 = 이만큼의 노력"을 느끼게)
 // 산책 달리기(먹이면 안 되는 음식은 뛰어넘고 줘도 되는 간식은 모으기) · 사천성(반려용품 짝 맞추기) · 간식 맞추기(3개 맞추기)
 // 그림 없이 코드·이모지로만. 판마다 받는 코인은 앱(app.js)이 하루 한도 안에서 정한다
-import { C } from './content.js?v=202610091642';
+import { C } from './content.js?v=202610091653';
 
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 const shuffle = (a) => { for (let i = a.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [a[i], a[j]] = [a[j], a[i]]; } return a; };

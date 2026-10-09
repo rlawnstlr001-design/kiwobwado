@@ -1,12 +1,12 @@
 // 키워봐도될까 — 내 생활 그대로 30일 키워 보고 반려 준비도를 확인하는 입양 전 체험
-import * as db from './db.js?v=202610091409';
-import * as E from './engine.js?v=202610091409';
-import { C, loadContent, eventById, lessonById, foodById } from './content.js?v=202610091409';
-import { track } from './track.js?v=202610091409';
-import { roomHTML, mountRoom, timeOfDay, loadAnim, clipInfo } from './room.js?v=202610091409';
-import { openGames, GAMES, titleOf } from './games.js?v=202610091409';
-import * as K from './care.js?v=202610091409';
-import { openShop, openVet, openTreats } from './shop.js?v=202610091409';
+import * as db from './db.js?v=202610091642';
+import * as E from './engine.js?v=202610091642';
+import { C, loadContent, eventById, lessonById, foodById } from './content.js?v=202610091642';
+import { track } from './track.js?v=202610091642';
+import { roomHTML, mountRoom, timeOfDay, loadAnim, clipInfo } from './room.js?v=202610091642';
+import { openGames, GAMES, titleOf } from './games.js?v=202610091642';
+import * as K from './care.js?v=202610091642';
+import { openShop, openVet, openTreats } from './shop.js?v=202610091642';
 
 const $ = (s, el = document) => el.querySelector(s);
 const view = $('#view');

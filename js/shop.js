@@ -1,6 +1,6 @@
 // 펫샵·동물병원·간식 주기 화면. 코인(1코인 = 1,000원)으로 사고, 가격은 실제 평균값(content/shop.json·costs.json, 출처 표시)
 // 상태는 앱(app.js)이 넘기는 api로만 읽고 쓴다
-import { PROTEIN, itemsFor, itemById, hasProtein, addItem, TRIAL_DAYS, BATHS_PER_WEEK } from './care.js?v=202610091642';
+import { PROTEIN, itemsFor, itemById, hasProtein, addItem, TRIAL_DAYS, BATHS_PER_WEEK } from './care.js?v=202610091653';
 
 export const coinOf = (won) => Math.ceil(won / 1000);
 const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));

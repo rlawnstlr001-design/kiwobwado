@@ -1,13 +1,13 @@
 // 키워봐도될까 — 내 생활 그대로 30일 키워 보고 반려 준비도를 확인하는 입양 전 체험
-import * as db from './db.js?v=202610091653';
-import * as E from './engine.js?v=202610091653';
-import { C, loadContent, eventById, lessonById, foodById } from './content.js?v=202610091653';
-import { track } from './track.js?v=202610091653';
-import { roomHTML, mountRoom, timeOfDay, loadAnim, clipInfo } from './room.js?v=202610091653';
-import { openGames, GAMES, titleOf } from './games.js?v=202610091653';
-import * as K from './care.js?v=202610091653';
-import { openShop, openVet, openTreats } from './shop.js?v=202610091653';
-import { isApp, initNative, scheduleCare, exactAlarm } from './native.js?v=202610091653';
+import * as db from './db.js?v=202610120857';
+import * as E from './engine.js?v=202610120857';
+import { C, loadContent, eventById, lessonById, foodById } from './content.js?v=202610120857';
+import { track } from './track.js?v=202610120857';
+import { roomHTML, mountRoom, timeOfDay, loadAnim, clipInfo } from './room.js?v=202610120857';
+import { openGames, GAMES, titleOf } from './games.js?v=202610120857';
+import * as K from './care.js?v=202610120857';
+import { openShop, openVet, openTreats } from './shop.js?v=202610120857';
+import { isApp, initNative, scheduleCare, exactAlarm } from './native.js?v=202610120857';
 
 const $ = (s, el = document) => el.querySelector(s);
 const view = $('#view');
@@ -953,7 +953,7 @@ async function devAction(a) {
     },
     onResume: () => { if (P() && !document.body.classList.contains('playing')) route(); },
   });
-  if (DEV) window.__kiwo = { get S() { return S; }, save, route }; // 빠른 체험(지인 테스트·점검)용 상태 보기
+  if (DEV) window.__kiwo = { get S() { return S; }, get room() { return ROOM; }, save, route }; // 빠른 체험(지인 테스트·점검)용 상태 보기
   route();
   // 화면을 켜 둔 채 시간이 지나면(응답 창이 열리고 닫힘) 다시 그린다
   setInterval(() => { if (P() && !$('#sheet-root').classList.contains('on') && !document.body.classList.contains('playing') && document.body.dataset.route !== 'onboard') route(); }, 60000);

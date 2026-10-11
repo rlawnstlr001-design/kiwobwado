@@ -2,7 +2,7 @@
 // 아이가 숨 쉬고 돌아다니고, 방 안 물건(밥그릇·패드·현관)을 누르면 돌봄을 하고, 그림자 손으로 쓰다듬을 수 있다
 // 그림: art/room/room_wide.webp(방), art/sprite/<성향>_<단계>_<상태>.webp(배경 없는 아이), art/prop/*.webp(밥그릇·패드·화장실·장난감)
 
-import { mountRig, RIG } from './rig.js?v=202610091653';
+import { mountRig, RIG } from './rig.js?v=202610120857';
 
 const HAND = `<svg viewBox="0 0 120 120" aria-hidden="true"><path d="M33 112c-9-10-17-26-21-40-2-7 6-11 11-5l9 13V30c0-6 9-6 9 0v30h3V18c0-6 9-6 9 0v40h3V22c0-6 9-6 9 0v38h3V32c0-6 9-6 9 0v44c0 14-4 26-12 36z"/></svg>`;
 
@@ -61,9 +61,10 @@ export function roomHTML({ type, stage, state, tod, need, prop, spots = {}, cloc
 // 영상 클립 목록(art/clip/index.json): 같은 이름 → 있으면 4장 프레임 대신 영상으로 만든 움직이는 WebP를 쓴다
 let ANIM = {};
 let CLIP = {};
+let CSCALE = {}; // 클립 높이 배율(art/clip/scale.json, tools/clip_scale.py) — 옆모습 영상이 평소 그림과 같은 몸집으로 보이게
 export async function loadAnim() {
   const get = (u) => fetch(u).then((r) => (r.ok ? r.json() : {})).catch(() => ({}));
-  [ANIM, CLIP] = await Promise.all([get('art/anim/index.json?v=202610091653'), get('art/clip/index.json?v=202610091653')]);
+  [ANIM, CLIP, CSCALE] = await Promise.all([get('art/anim/index.json?v=202610120857'), get('art/clip/index.json?v=202610120857'), get('art/clip/scale.json?v=202610120857')]);
 }
 
 // 미니게임 등에서 쓰는 움직이는 그림(없으면 null)
@@ -108,6 +109,7 @@ export function mountRoom({ type, stage, state, onStroke, canPet, wear = [] }) {
     if (CLIP[`${name}_${k}`]) {
       const src = `art/clip/${name}_${k}.webp`;
       if (!clip.src.endsWith(src)) clip.src = src;
+      clip.style.height = `${(CSCALE[`${name}_${k}`] ?? 1) * 100}%`;
       clip.hidden = false; anim.hidden = true; img.hidden = true;
       return true;
     }
@@ -221,7 +223,7 @@ export function mountRoom({ type, stage, state, onStroke, canPet, wear = [] }) {
       say('사료를 담았어요');
       const rr = room.getBoundingClientRect(), br = bowlBtn.getBoundingClientRect();
       const ratio = CLIP[`${name}_eat`] || has('eat');
-      const petW = rr.height * (parseFloat(pet.style.getPropertyValue('--h')) / 100) * (ratio || 1);
+      const petW = rr.height * (parseFloat(pet.style.getPropertyValue('--h')) / 100) * (ratio || 1) * (CSCALE[`${name}_eat`] ?? 1);
       const x = ratio ? ((br.right - rr.left) - petW / 2) / rr.width * 100 : BOWL_X - 8;
       pet.classList.toggle('face-left', x < parseFloat(pet.style.getPropertyValue('--x')));
       showAnim('walk', cat ? '.9s' : '.6s');

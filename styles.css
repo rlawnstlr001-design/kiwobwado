@@ -203,10 +203,10 @@ input[type=range] { width: 100%; accent-color: var(--forest); }
 
 /* ---------- 배움 ---------- */
 .food-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-top: 10px; }
-.food { border: var(--line); background: var(--card); border-radius: 14px; padding: 10px 6px; text-align: center; cursor: pointer; min-height: 96px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px; }
-.food .em { font-size: 28px; line-height: 1; }
-.food .em.txt { width: 34px; height: 34px; border-radius: 50%; background: var(--paper-2); display: grid; place-items: center; font-size: 15px; font-weight: 900; color: var(--ink-2); }
-.food b { font-size: 13px; line-height: 1.3; }
+.food-grid .food { border: var(--line); background: var(--card); border-radius: 14px; padding: 10px 6px; text-align: center; cursor: pointer; min-height: 96px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px; }
+.food-grid .food .em { font-size: 28px; line-height: 1; }
+.food-grid .food .em.txt { width: 34px; height: 34px; border-radius: 50%; background: var(--paper-2); display: grid; place-items: center; font-size: 15px; font-weight: 900; color: var(--ink-2); }
+.food-grid .food b { font-size: 13px; line-height: 1.3; }
 .verdict { font-size: 11.5px; font-weight: 900; padding: 1px 8px; border-radius: 99px; }
 .verdict.no { background: var(--warn); color: #fff; }
 .verdict.avoid { background: var(--warn-2); color: var(--red); }

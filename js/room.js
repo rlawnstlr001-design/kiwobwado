@@ -2,7 +2,7 @@
 // 아이가 숨 쉬고 돌아다니고, 방 안 물건(밥그릇·패드·현관)을 누르면 돌봄을 하고, 그림자 손으로 쓰다듬을 수 있다
 // 그림: art/room/room_wide.webp(방), art/sprite/<성향>_<단계>_<상태>.webp(배경 없는 아이), art/prop/*.webp(밥그릇·패드·화장실·장난감)
 
-import { mountRig, RIG } from './rig.js?v=202610121043';
+import { mountRig, RIG } from './rig.js?v=202610121305';
 
 // 그림자 손 — 만지는 자리에 따라 모양이 바뀐다(10/12 사용자 요청)
 // head: 위에서 손바닥을 얹어 머리를 쓰다듬기(손가락이 아래로) · chin: 아래에서 손가락을 구부려 턱 긁기 · body: 옆으로 눕힌 손으로 몸 쓸어 주기
@@ -70,6 +70,7 @@ export function roomHTML({ type, stage, state, tod, need, prop, spots = {}, cloc
       <canvas class="pet-rig" id="pet-rig" hidden></canvas>
       <div class="pet-anim" id="pet-anim" hidden></div>
       <img class="pet-clip" id="pet-clip" alt="" hidden draggable="false">
+      <img class="pet-link" id="pet-link" alt="" hidden draggable="false">
       ${need ? `<div class="need" id="need">${need}</div>` : ''}
     </div>
     <div class="zzz" aria-hidden="true"><i>z</i><i>z</i><i>Z</i></div>
@@ -84,13 +85,17 @@ export function roomHTML({ type, stage, state, tod, need, prop, spots = {}, cloc
 // 영상 클립 목록(art/clip/index.json): 같은 이름 → 있으면 4장 프레임 대신 영상으로 만든 움직이는 WebP를 쓴다
 let ANIM = {};
 let CLIP = {};
+// 연결 영상 목록(art/link/index.json, tools/make_link.py): 앉은 평소 그림에서 그대로 이어지는 영상
+//   <이름>_stand(일어나 옆으로 돌아 걷기 시작) · <이름>_sit(거꾸로 — 걷다가 앉기) · <이름>_eatf(앉은 채 앞 그릇에서 먹고 같은 자세로)
+//   <이름>.box = 평소 그림 속 몸 상자, _geom = 영상 속 몸 상자 → 둘을 맞춰 겹치면 자세가 끊기지 않는다
+let LINK = {};
 // 그림 메타(art/meta.json): sprite/clip/anim[이름] = { foot: 발 아래 빈 여백, body: 몸 높이, area: 넓이 } (모두 프레임 높이 대비)
 // clip 걷기엔 speed(1초에 프레임 높이의 몇 배를 가야 발이 안 미끄러지나), 먹기엔 bowl(그릇 가운데 가로 위치)
 let META = { sprite: {}, clip: {}, anim: {} };
 export async function loadAnim() {
   const get = (u) => fetch(u).then((r) => (r.ok ? r.json() : {})).catch(() => ({}));
   let meta;
-  [ANIM, CLIP, meta] = await Promise.all([get('art/anim/index.json?v=202610121043'), get('art/clip/index.json?v=202610121043'), get('art/meta.json?v=202610121043')]);
+  [ANIM, CLIP, meta, LINK] = await Promise.all([get('art/anim/index.json?v=202610121305'), get('art/clip/index.json?v=202610121305'), get('art/meta.json?v=202610121305'), get('art/link/index.json?v=202610121305')]);
   META = { sprite: {}, clip: {}, anim: {}, ...meta };
 }
 
@@ -138,14 +143,17 @@ export function mountRoom({ type, stage, state, onStroke, canPet, wear = [] }) {
   // 클립 크기: 앉은 그림과 화면 넓이가 SIZE 배가 되게(자세가 달라도 같은 아이로 보이게). 메타가 없으면 예전처럼 상자 높이 그대로
   const clipK = (k) => {
     const a = META.sprite[`${name}_idle`]?.area, b = META.clip[`${name}_${k}`]?.area;
-    return a && b ? Math.sqrt(SIZE[k] * a / b) : 1;
+    // 연결 영상이 있으면 걷기 크기는 영상 속 일어선 모습 넓이로(일어나기 끝 장면과 같은 크기로 이어지게)
+    const size = k === 'walk' && LINK[name]?.walk ? LINK[name].walk : SIZE[k];
+    return a && b ? Math.sqrt(size * a / b) : 1;
   };
   dropImg(state);
 
   // 모습이 바뀔 때: 나가는 모습을 그대로 복사해 FADE 동안 겹쳐 두고 사라지게 → 갑자기 바뀌는 '툭' 끊김을 줄인다
   let shownFlip = 1;
   const flipNow = () => (pet.classList.contains('face-left') ? -1 : 1);
-  const visible = () => (rig && !cv.hidden ? cv : !clip.hidden ? clip : !anim.hidden ? anim : img);
+  const link = document.getElementById('pet-link');
+  const visible = () => (rig && !cv.hidden ? cv : !link.hidden ? link : !clip.hidden ? clip : !anim.hidden ? anim : img);
   const ghost = (next) => {
     if (REDUCE) return;
     const el = visible();
@@ -165,7 +173,8 @@ export function mountRoom({ type, stage, state, onStroke, canPet, wear = [] }) {
       try { g.getContext('2d').drawImage(el, 0, 0, g.width, g.height); } catch { return; }
     }
     g.className = 'pet-ghost';
-    Object.assign(g.style, { left: `${r.left - pr.left}px`, top: `${r.top - pr.top}px`, width: `${r.width}px`, height: `${r.height}px`, transform: `scaleX(${shownFlip})`, animationDuration: `${FADE}ms` });
+    // 가로는 pet 가운데 기준(pet은 가운데 정렬이라 안에 든 모습에 따라 너비가 바뀌어도 가운데는 그대로다)
+    Object.assign(g.style, { left: `calc(50% + ${r.left - pr.left - pr.width / 2}px)`, top: `${r.top - pr.top}px`, width: `${r.width}px`, height: `${r.height}px`, transform: `scaleX(${shownFlip})`, animationDuration: `${FADE}ms` });
     pet.appendChild(g);
     setTimeout(() => g.remove(), FADE + 60);
     if (next) {
@@ -180,8 +189,9 @@ export function mountRoom({ type, stage, state, onStroke, canPet, wear = [] }) {
       const src = `art/clip/${name}_${k}.webp`;
       const same = !clip.hidden && clip.src.endsWith(src);
       if (!same) ghost(clip);
-      rigOn(false);
+      rigOn(false); linkOff();
       if (!clip.src.endsWith(src)) clip.src = src;
+      clip.style.translate = '';
       clip.style.setProperty('--k', clipK(k).toFixed(3));
       clip.style.setProperty('--drop', foot(META.clip[`${name}_${k}`]));
       clip.hidden = false; anim.hidden = true; img.hidden = true;
@@ -190,7 +200,7 @@ export function mountRoom({ type, stage, state, onStroke, canPet, wear = [] }) {
     }
     const ratio = has(k);
     if (!ratio) { rigOn(false); return false; }
-    ghost(anim); rigOn(false);
+    ghost(anim); rigOn(false); linkOff();
     anim.style.backgroundImage = `url(art/anim/${name}_${k}.webp)`;
     anim.style.aspectRatio = String(ratio);
     anim.style.setProperty('--dur', dur);
@@ -200,17 +210,85 @@ export function mountRoom({ type, stage, state, onStroke, canPet, wear = [] }) {
     shownFlip = flipNow();
     return true;
   };
-  const hideAnim = () => { anim.hidden = true; clip.hidden = true; img.hidden = false; };
+  const hideAnim = () => { anim.hidden = true; clip.hidden = true; img.hidden = false; linkOff(); };
+  // 배고픔 그림엔 그릇이 그려져 있어 방 그릇과 겹친다 → 평소 모습 + 말풍선. 옷·액세서리를 입었으면 말썽 상태도 움직이는 모습으로(입은 게 보이게)
+  const calmOf = (s) => s === 'idle' || s === 'happy' || s === 'hungry' || (s === 'oops' && wear.length > 0);
   // 평소·기분 좋은 상태면 부위별 움직임(없으면 꼬리 흔들기 프레임), 아니면 정지 그림
   const rest = (s) => {
-    // 배고픔 그림엔 그릇이 그려져 있어 방 그릇과 겹친다 → 평소 모습 + 말풍선. 옷·액세서리를 입었으면 말썽 상태도 움직이는 모습으로(입은 게 보이게)
-    const calmish = s === 'idle' || s === 'happy' || s === 'hungry' || (s === 'oops' && wear.length > 0);
+    const calmish = calmOf(s);
     if (calmish && rigReady) { if (cv.hidden) ghost(cv); hideAnim(); rigOn(true); rig.mood(s === 'happy'); shownFlip = flipNow(); return; }
     if (calmish && has('wag') && !CLIP[`${name}_wag`] && showAnim('wag', cat ? '1.6s' : s === 'happy' ? '.45s' : '.7s')) return;
     if (img.hidden || (rig && !cv.hidden)) ghost(img);   // 클립·스트립·움직임 캔버스 → 정지 그림
     rigOn(false);
     hideAnim();
     shownFlip = flipNow();
+  };
+
+  // 연결 영상: 미리 받아 두고(Blob), 틀 때마다 새 주소를 만들어 첫 장면부터 다시 재생한다(같은 주소면 이어서 돈다)
+  const blobs = {};
+  if (LINK[name] && !REDUCE) for (const k of ['stand', 'sit', 'eatf']) {
+    if (LINK[`${name}_${k}`]) fetch(`art/link/${name}_${k}.webp?v=202610121305`).then((r) => (r.ok ? r.blob() : null)).then((b) => { if (b) blobs[k] = b; }).catch(() => {});
+  }
+  // 앉은 모습(움직임 캔버스)이 보이고 있을 때만 이어 붙인다 — 다른 자세(아픔·말썽 그림)에서 시작하면 끊겨 보인다
+  const linkable = (k) => blobs[k] && rigReady && rig && !cv.hidden;
+  // 화면 속 평소 그림의 몸 상자(그림은 pet 높이 꽉, 가로 가운데, 발 = pet 바닥)에 영상 속 몸 상자를 맞춘다
+  const placeLink = () => {
+    const g = LINK._geom, [x0, y0, x1, y1] = LINK[name].box;
+    const ph = pet.offsetHeight, iw = ph * (img.naturalWidth / img.naturalHeight || 1);
+    const bodyH = ph * (y1 - y0), cx = (pet.offsetWidth - iw) / 2 + (x0 + x1) / 2 * iw;
+    const h = bodyH / g.body, w = h * g.aspect;
+    Object.assign(link.style, { height: `${h}px`, width: `${w}px`, left: `${cx - g.cx * w}px`, top: `${ph - g.foot * h}px`, transformOrigin: `${g.cx * 100}% 0` });
+  };
+  // 연결 영상 틀기 → 재생 시간(ms). 못 틀면 0
+  const playLink = (k) => {
+    if (!blobs[k]) return 0;
+    ghost(link);
+    const old = link.src;
+    link.src = URL.createObjectURL(blobs[k]);
+    if (old.startsWith('blob:')) setTimeout(() => URL.revokeObjectURL(old), 1000);
+    anim.hidden = true; clip.hidden = true; img.hidden = false;
+    rigOn(false);
+    img.style.visibility = 'hidden';   // 그림은 자리(pet 너비)만 지킨다
+    placeLink();                       // 걷기 클립이 빠져 pet 너비가 앉은 그림 너비로 돌아온 뒤에 잰다
+    link.hidden = false;
+    shownFlip = flipNow();
+    return LINK[`${name}_${k}`].ms;
+  };
+  function linkOff() { if (!link.hidden) { link.hidden = true; img.style.visibility = ''; } }
+  // 일어나기 끝 장면과 걷기 클립의 무게중심 차이(px, pet 기준) — 바꿔 끼울 때 이만큼 pet을 순간 이동해 아이가 제자리에 있게
+  const joinPx = () => {
+    const L = LINK[name], g = LINK._geom;
+    if (L?.dEnd === undefined || !CLIP[`${name}_walk`]) return 0;
+    const [x0, y0, x1, y1] = L.box, f = flipNow();
+    const ph = pet.offsetHeight;
+    const iw = ph * (img.naturalWidth / img.naturalHeight || 1);
+    const end = ((x0 + x1) / 2 - 0.5) * iw + L.dEnd * ph * (y1 - y0) * f;          // 끝 장면 무게중심(pet 가운데 기준)
+    const walkW = ph * clipK('walk') * CLIP[`${name}_walk`];
+    return end - (L.wcx - 0.5) * walkW * f;                                          // − 걷기 클립 무게중심
+  };
+  // pet을 px만큼 순간 이동하되 지금 보이는 모습은 반대로 밀어 화면에선 그대로 → 다음 모습으로 바꿀 때 겹쳐 사라지는 모습(ghost)도 제자리
+  const shiftPet = (px) => {
+    if (!px) return;
+    const rw = room.getBoundingClientRect().width;
+    const el = visible();
+    if (el === link) link.style.left = `${parseFloat(link.style.left) - px}px`;
+    else if (el === clip) clip.style.translate = `${-px}px 0`;
+    pet.style.setProperty('--walk', '0ms');
+    lastX += px / rw * 100;
+    pet.style.setProperty('--x', `${lastX}%`);
+    void pet.offsetWidth;
+  };
+  // 일어나기(연결 영상) → then. 연결 영상이 없으면 바로 then
+  const getUp = (then) => {
+    const ms = linkable('stand') ? playLink('stand') : 0;
+    if (ms) setTimeout(() => { shiftPet(joinPx()); then(); }, ms - 40); else then();
+  };
+  // 걷기를 마치고 앉기 → then. 앉은 모습으로 돌아갈 상태일 때만
+  const sitDown = (then) => {
+    const ok = blobs.sit && rigReady && calmOf(room.dataset.state);
+    if (ok) shiftPet(-joinPx());
+    const ms = ok ? playLink('sit') : 0;
+    if (ms) setTimeout(then, ms); else then();
   };
 
   // 걷기: 클립 속 발이 땅을 미는 속도(meta speed) × 화면 속 클립 높이 = 실제로 옮길 속도. 거리에 따라 시간이 정해져 발이 미끄러지지 않는다
@@ -239,16 +317,26 @@ export function mountRoom({ type, stage, state, onStroke, canPet, wear = [] }) {
   rest(state);
   const calm = state === 'sleep' || state === 'sick';
   // 돌아다니기: 깨어 있고 아프지 않을 때 8초마다 MIN_STEP 이상 떨어진 다른 자리로
+  // 일어나기 → 걷기 → 앉기: 연결 영상이 있으면 앉은 모습에서 끊김 없이 일어나 걷고, 도착하면 다시 앉는다
+  let moving = false;
+  const busy = () => room.classList.contains('busy');
   if (!calm) {
     wanderTimer = setInterval(() => {
-      if (room.classList.contains('busy') || room.classList.contains('stroking')) return;
+      if (moving || busy() || room.classList.contains('stroking')) return;
       const cands = SPOTS.filter((x) => Math.abs(x - lastX) >= MIN_STEP);
       const nx = cands[Math.floor(Math.random() * cands.length)];
       if (nx === undefined) return;
+      moving = true;
       pet.classList.toggle('face-left', nx < lastX);
-      const walking = showAnim('walk', cat ? '.9s' : '.6s');
-      const ms = moveTo(nx);
-      if (walking) setTimeout(() => { if (!room.classList.contains('busy')) rest(room.dataset.state); }, ms);
+      getUp(() => {
+        if (busy()) { moving = false; return; }
+        const walking = showAnim('walk', cat ? '.9s' : '.6s');
+        const ms = moveTo(nx);
+        setTimeout(() => {
+          if (busy() || !walking) { moving = false; return; }
+          sitDown(() => { moving = false; if (!busy()) rest(room.dataset.state); });
+        }, walking ? ms : 0);
+      });
     }, 8000);
   }
   // 쓰다듬기 — 마우스는 올려서 문지르기, 손가락은 대고 문지르기
@@ -361,6 +449,20 @@ export function mountRoom({ type, stage, state, onStroke, canPet, wear = [] }) {
         const petW = boxH * (ratio || 1);
         x = ratio ? ((br.right - rr.left) - petW / 2) / rr.width * 100 : BOWL_X - 8;
       }
+      // 앉은 채 먹는 연결 영상이 있으면: 일어나 → 그릇 바로 뒤로 걸어가 → 앉아(방 그릇이 앞에 보인다) → 앞을 보고 먹고 → 같은 자세로
+      if (blobs.eatf && linkable('stand')) {
+        const bx = (br.left + br.width / 2 - rr.left) / rr.width * 100;
+        pet.classList.toggle('face-left', bx < lastX);
+        return new Promise((res) => getUp(() => {
+          showAnim('walk', cat ? '.9s' : '.6s');
+          setTimeout(() => sitDown(() => {
+            const ms = playLink('eatf');
+            bowlBtn.classList.add('eating');   // 영상 속에 그릇이 있다
+            say('냠냠, 오도독…');
+            end(ms, () => { bowlBtn.classList.remove('eating'); if (bowlImg) bowlImg.src = 'art/prop/bowl_empty.webp'; setState('happy'); }).then(res);
+          }), moveTo(bx));
+        }));
+      }
       pet.classList.toggle('face-left', x < lastX);
       showAnim('walk', cat ? '.9s' : '.6s');
       const ms = moveTo(x);
@@ -375,15 +477,20 @@ export function mountRoom({ type, stage, state, onStroke, canPet, wear = [] }) {
     if (kind === 'litter') { const p = room.querySelector('.prop-litter img'); say('모래를 싹싹'); return end(1500, () => { if (p) p.src = 'art/prop/litter_clean.webp'; setState('happy'); }); }
     if (kind === 'walk') {
       // 현관까지 걸어가(멀어질수록 작아짐) 문밖으로 → 잠시 뒤 돌아온다. 걷는 시간은 거리와 걷기 속도로 정한다
-      pet.classList.add('face-left'); showAnim('walk', '.6s');
-      const goMs = moveTo(DOOR.x, { y: DOOR.y, s: DOOR.s });
+      pet.classList.add('face-left');
       say(stage === 'baby' ? '바깥 구경 다녀올게요' : '산책 다녀올게요');
-      return new Promise((res) => setTimeout(() => { pet.classList.add('out'); setTimeout(() => {
-        say('🐾 다녀왔어요!'); pet.classList.remove('out', 'face-left'); showAnim('walk', '.6s');
-        const backMs = moveTo(SPOTS[0], { y: 8, s: 1 });
-        setTimeout(() => setState('happy'), backMs);
-        end(backMs).then(res);
-      }, 1800); }, goMs));
+      // 일어나 현관으로 → 문밖 → 돌아와 앉기(연결 영상이 있으면)
+      return new Promise((res) => getUp(() => {
+        showAnim('walk', '.6s');
+        const goMs = moveTo(DOOR.x, { y: DOOR.y, s: DOOR.s });
+        setTimeout(() => { pet.classList.add('out'); setTimeout(() => {
+          say('🐾 다녀왔어요!'); pet.classList.remove('out', 'face-left'); showAnim('walk', '.6s');
+          const backMs = moveTo(SPOTS[0], { y: 8, s: 1 });
+          const sitMs = blobs.sit && rigReady ? LINK[`${name}_sit`].ms : 0;
+          setTimeout(() => { room.dataset.state = 'happy'; sitDown(() => setState('happy')); }, backMs);
+          end(backMs + sitMs).then(res);
+        }, 1800); }, goMs);
+      }));
     }
     const sparkle = () => { const sp = document.createElement('span'); sp.className = 'sparkle'; sp.textContent = '✦ ✧ ✦'; pet.appendChild(sp); setTimeout(() => sp.remove(), 1900); };
     if (kind === 'play') {

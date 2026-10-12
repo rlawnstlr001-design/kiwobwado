@@ -2,7 +2,7 @@
 // 아이가 숨 쉬고 돌아다니고, 방 안 물건(밥그릇·패드·현관)을 누르면 돌봄을 하고, 그림자 손으로 쓰다듬을 수 있다
 // 그림: art/room/room_wide.webp(방), art/sprite/<성향>_<단계>_<상태>.webp(배경 없는 아이), art/prop/*.webp(밥그릇·패드·화장실·장난감)
 
-import { mountRig, RIG } from './rig.js?v=202610120857';
+import { mountRig, RIG } from './rig.js?v=202610120955';
 
 const HAND = `<svg viewBox="0 0 120 120" aria-hidden="true"><path d="M33 112c-9-10-17-26-21-40-2-7 6-11 11-5l9 13V30c0-6 9-6 9 0v30h3V18c0-6 9-6 9 0v40h3V22c0-6 9-6 9 0v38h3V32c0-6 9-6 9 0v44c0 14-4 26-12 36z"/></svg>`;
 
@@ -15,6 +15,21 @@ const SPOTS = [54, 46, 63, 50, 70]; // 바닥에서 돌아다니는 가로 위�
 const DOOR = { x: 35.8, y: 41, s: 0.5 }; // 현관 앞(멀리 있으니 작게)
 const BOWL_X = 41; // 밥그릇 가운데(%)
 let lastX = SPOTS[0]; // 다시 그려도 아이가 있던 자리에서 이어지게
+
+// 움직임 다듬기 값(art/meta.json과 함께 쓴다 — tools/fix_art.py가 만든다)
+const SIZE = { walk: 1.15, eat: 1.25 }; // 클립 속 아이의 화면 넓이 ÷ 앉은 그림 넓이(먹기는 그릇 포함이라 조금 크게)
+const WALK_DEF = 0.8;   // 걷기 클립에 속도 값이 없을 때: 1초에 클립 높이의 몇 배를 가나
+const MIN_STEP = 8;     // 돌아다닐 때 한 번에 최소 이동(%) — 너무 짧으면 한두 발짝에 멈춰 어색하다
+const FADE = 220;       // 모습이 바뀔 때 겹쳐 사라지는 시간(ms)
+const REDUCE = typeof matchMedia === 'function' && matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+// 시간대별 아이 색(방 조명과 같은 색을 곱한다). 낮에도 방이 따뜻한 색이라 기본으로 조금 따뜻하게(빨강↑ 파랑↓)
+const WARM = [1.04, 1, 0.88];
+const TINT = { morning: [1, 0.99, 0.97], day: [1, 1, 1], evening: [0.96, 0.87, 0.82], night: [0.55, 0.58, 0.68] };
+// grade-*: 아이(따뜻하게 + 시간대), tint-*: 밥그릇·화장실 같은 물건(시간대만 — 물건은 원래 방과 같은 색감)
+const mul = (id, [r, g, b]) => `<filter id="${id}" color-interpolation-filters="sRGB"><feColorMatrix type="matrix" values="${r.toFixed(3)} 0 0 0 0 0 ${g.toFixed(3)} 0 0 0 0 0 ${b.toFixed(3)} 0 0 0 0 0 1 0"/></filter>`;
+const GRADE = `<svg class="grade-defs" aria-hidden="true" focusable="false">${Object.entries(TINT).map(([k, t]) =>
+  mul(`grade-${k}`, t.map((v, i) => v * WARM[i])) + mul(`tint-${k}`, t)).join('')}</svg>`;
 
 export function timeOfDay(min) {
   if (min < 300 || min >= 1260) return 'night';
@@ -38,6 +53,7 @@ export function roomHTML({ type, stage, state, tod, need, prop, spots = {}, cloc
   const out = stage === 'baby' ? '바깥 구경' : '산책 가기';
   const door = cat ? '' : `<button class="spot spot-door${spotCls(spots.walk)}" data-act="walk" aria-label="${out}">${tagOf(out, spots.walk)}</button>`;
   return `<div class="room" id="room" data-tod="${tod}" data-state="${state}">
+    ${GRADE}
     <img class="room-bg" src="art/room/room_wide.webp" alt="">
     <div class="room-light"></div>
     ${door}${pad}${litter}${water}${bowl}
@@ -61,10 +77,14 @@ export function roomHTML({ type, stage, state, tod, need, prop, spots = {}, cloc
 // 영상 클립 목록(art/clip/index.json): 같은 이름 → 있으면 4장 프레임 대신 영상으로 만든 움직이는 WebP를 쓴다
 let ANIM = {};
 let CLIP = {};
-let CSCALE = {}; // 클립 높이 배율(art/clip/scale.json, tools/clip_scale.py) — 옆모습 영상이 평소 그림과 같은 몸집으로 보이게
+// 그림 메타(art/meta.json): sprite/clip/anim[이름] = { foot: 발 아래 빈 여백, body: 몸 높이, area: 넓이 } (모두 프레임 높이 대비)
+// clip 걷기엔 speed(1초에 프레임 높이의 몇 배를 가야 발이 안 미끄러지나), 먹기엔 bowl(그릇 가운데 가로 위치)
+let META = { sprite: {}, clip: {}, anim: {} };
 export async function loadAnim() {
   const get = (u) => fetch(u).then((r) => (r.ok ? r.json() : {})).catch(() => ({}));
-  [ANIM, CLIP, CSCALE] = await Promise.all([get('art/anim/index.json?v=202610120857'), get('art/clip/index.json?v=202610120857'), get('art/clip/scale.json?v=202610120857')]);
+  let meta;
+  [ANIM, CLIP, meta] = await Promise.all([get('art/anim/index.json?v=202610120955'), get('art/clip/index.json?v=202610120955'), get('art/meta.json?v=202610120955')]);
+  META = { sprite: {}, clip: {}, anim: {}, ...meta };
 }
 
 // 미니게임 등에서 쓰는 움직이는 그림(없으면 null)
@@ -98,28 +118,79 @@ export function mountRoom({ type, stage, state, onStroke, canPet, wear = [] }) {
     cv.addEventListener('rigready', () => {
       cv.style.height = `${rig.scale() * 100}%`;
       cv.style.aspectRatio = String(rig.aspect());
+      // 캔버스는 위쪽 여백만큼 커서, 발 아래 여백도 캔버스 높이 기준으로 바꿔 내린다
+      cv.style.setProperty('--drop', `${((META.sprite[`${name}_idle`]?.foot ?? 0) / rig.scale() * 100).toFixed(2)}%`);
       rigReady = true;
-      if (!room.classList.contains('busy') && clip.hidden && anim.hidden) rest(room.dataset.state);
+      // 그림이 오기 전에 잠깐 보인 꼬리 흔들기 프레임(wag)도 부위별 움직임으로 바꾼다(걷기·먹기 중엔 그대로)
+      if (!room.classList.contains('busy') && clip.hidden && (anim.hidden || anim.dataset.k === 'wag')) rest(room.dataset.state);
     }, { once: true });
   }
   const rigOn = (on) => { if (!rig) return; cv.hidden = !on; img.style.visibility = on ? 'hidden' : ''; };
+  const foot = (m) => `${((m?.foot ?? 0) * 100).toFixed(2)}%`;   // 발 아래 빈 여백만큼 내려 바닥에 붙인다
+  const dropImg = (s) => img.style.setProperty('--drop', foot(META.sprite[`${name}_${s}`]));
+  // 클립 크기: 앉은 그림과 화면 넓이가 SIZE 배가 되게(자세가 달라도 같은 아이로 보이게). 메타가 없으면 예전처럼 상자 높이 그대로
+  const clipK = (k) => {
+    const a = META.sprite[`${name}_idle`]?.area, b = META.clip[`${name}_${k}`]?.area;
+    return a && b ? Math.sqrt(SIZE[k] * a / b) : 1;
+  };
+  dropImg(state);
+
+  // 모습이 바뀔 때: 나가는 모습을 그대로 복사해 FADE 동안 겹쳐 두고 사라지게 → 갑자기 바뀌는 '툭' 끊김을 줄인다
+  let shownFlip = 1;
+  const flipNow = () => (pet.classList.contains('face-left') ? -1 : 1);
+  const visible = () => (rig && !cv.hidden ? cv : !clip.hidden ? clip : !anim.hidden ? anim : img);
+  const ghost = (next) => {
+    if (REDUCE) return;
+    const el = visible();
+    if (!el || el === next) return;
+    const pr = pet.getBoundingClientRect(), r = el.getBoundingClientRect();
+    if (!r.width || !r.height) return;
+    let g;
+    if (el === anim) {
+      // 프레임 스트립: 지금 보이는 칸(배경 위치)을 그대로 복사
+      const cs = getComputedStyle(anim);
+      g = document.createElement('div');
+      Object.assign(g.style, { backgroundImage: cs.backgroundImage, backgroundSize: cs.backgroundSize, backgroundPosition: cs.backgroundPosition, backgroundRepeat: 'no-repeat' });
+    } else {
+      const dpr = Math.min(2, devicePixelRatio || 1);
+      g = document.createElement('canvas');
+      g.width = Math.round(r.width * dpr); g.height = Math.round(r.height * dpr);
+      try { g.getContext('2d').drawImage(el, 0, 0, g.width, g.height); } catch { return; }
+    }
+    g.className = 'pet-ghost';
+    Object.assign(g.style, { left: `${r.left - pr.left}px`, top: `${r.top - pr.top}px`, width: `${r.width}px`, height: `${r.height}px`, transform: `scaleX(${shownFlip})`, animationDuration: `${FADE}ms` });
+    pet.appendChild(g);
+    setTimeout(() => g.remove(), FADE + 60);
+    if (next) {
+      next.classList.remove('fade-in'); void next.offsetWidth; next.classList.add('fade-in');
+      clearTimeout(next._fade); next._fade = setTimeout(() => next.classList.remove('fade-in'), FADE);
+    }
+  };
+
   // 큰 동작 재생: 영상 클립이 있으면 클립, 없으면 프레임 스트립(4칸, steps). 둘 다 없으면 false → 정지 그림 유지
   const showAnim = (k, dur) => {
-    rigOn(false);
     if (CLIP[`${name}_${k}`]) {
       const src = `art/clip/${name}_${k}.webp`;
+      const same = !clip.hidden && clip.src.endsWith(src);
+      if (!same) ghost(clip);
+      rigOn(false);
       if (!clip.src.endsWith(src)) clip.src = src;
-      clip.style.height = `${(CSCALE[`${name}_${k}`] ?? 1) * 100}%`;
+      clip.style.setProperty('--k', clipK(k).toFixed(3));
+      clip.style.setProperty('--drop', foot(META.clip[`${name}_${k}`]));
       clip.hidden = false; anim.hidden = true; img.hidden = true;
+      shownFlip = flipNow();
       return true;
     }
     const ratio = has(k);
-    if (!ratio) return false;
+    if (!ratio) { rigOn(false); return false; }
+    ghost(anim); rigOn(false);
     anim.style.backgroundImage = `url(art/anim/${name}_${k}.webp)`;
     anim.style.aspectRatio = String(ratio);
     anim.style.setProperty('--dur', dur);
+    anim.style.setProperty('--drop', foot(META.anim[`${name}_${k}`]));
     anim.dataset.k = k;
     clip.hidden = true; anim.hidden = false; img.hidden = true;
+    shownFlip = flipNow();
     return true;
   };
   const hideAnim = () => { anim.hidden = true; clip.hidden = true; img.hidden = false; };
@@ -127,27 +198,50 @@ export function mountRoom({ type, stage, state, onStroke, canPet, wear = [] }) {
   const rest = (s) => {
     // 배고픔 그림엔 그릇이 그려져 있어 방 그릇과 겹친다 → 평소 모습 + 말풍선. 옷·액세서리를 입었으면 말썽 상태도 움직이는 모습으로(입은 게 보이게)
     const calmish = s === 'idle' || s === 'happy' || s === 'hungry' || (s === 'oops' && wear.length > 0);
-    if (calmish && rigReady) { hideAnim(); rigOn(true); rig.mood(s === 'happy'); return; }
+    if (calmish && rigReady) { if (cv.hidden) ghost(cv); hideAnim(); rigOn(true); rig.mood(s === 'happy'); shownFlip = flipNow(); return; }
+    if (calmish && has('wag') && !CLIP[`${name}_wag`] && showAnim('wag', cat ? '1.6s' : s === 'happy' ? '.45s' : '.7s')) return;
+    if (img.hidden || (rig && !cv.hidden)) ghost(img);   // 클립·스트립·움직임 캔버스 → 정지 그림
     rigOn(false);
-    if (calmish && showAnim('wag', cat ? '1.6s' : s === 'happy' ? '.45s' : '.7s')) return;
     hideAnim();
+    shownFlip = flipNow();
   };
+
+  // 걷기: 클립 속 발이 땅을 미는 속도(meta speed) × 화면 속 클립 높이 = 실제로 옮길 속도. 거리에 따라 시간이 정해져 발이 미끄러지지 않는다
+  const walkMs = (dx, dy = 0, s = 1) => {
+    const rr = room.getBoundingClientRect();
+    const boxH = rr.height * (parseFloat(pet.style.getPropertyValue('--h')) / 100) * s;
+    const v = (META.clip[`${name}_walk`]?.speed ?? WALK_DEF) * boxH * (CLIP[`${name}_walk`] ? clipK('walk') : 1);
+    const dist = Math.hypot(dx / 100 * rr.width, dy / 100 * rr.height);
+    return Math.round(Math.min(7000, Math.max(450, dist / Math.max(v, 1) * 1000)));
+  };
+  const moveTo = (x, { y, s } = {}) => {
+    const sNow = parseFloat(pet.style.getPropertyValue('--s')) || 1;
+    const yNow = parseFloat(pet.style.getPropertyValue('--y')) || 8;
+    const ms = walkMs(x - lastX, y === undefined ? 0 : y - yNow, s === undefined ? sNow : (sNow + s) / 2);
+    pet.style.setProperty('--walk', `${ms}ms`);
+    pet.style.setProperty('--x', `${x}%`);
+    if (y !== undefined) pet.style.setProperty('--y', `${y}%`);
+    if (s !== undefined) pet.style.setProperty('--s', s);
+    lastX = x;
+    return ms;
+  };
+
   // 클립 미리 받아 두기(처음 걸을 때 빈 칸이 보이지 않게)
   for (const k of ['walk', 'eat']) if (CLIP[`${name}_${k}`]) new Image().src = `art/clip/${name}_${k}.webp`;
-  const setState = (s) => { img.src = `${base}${s}.webp`; room.dataset.state = s; rest(s); };
+  const setState = (s) => { img.src = `${base}${s}.webp`; dropImg(s); room.dataset.state = s; rest(s); };
   rest(state);
   const calm = state === 'sleep' || state === 'sick';
-  let spot = 0;
-  // 돌아다니기: 깨어 있고 아프지 않을 때 7~10초마다 다른 자리로
+  // 돌아다니기: 깨어 있고 아프지 않을 때 8초마다 MIN_STEP 이상 떨어진 다른 자리로
   if (!calm) {
     wanderTimer = setInterval(() => {
       if (room.classList.contains('busy') || room.classList.contains('stroking')) return;
-      const next = (spot + 1 + Math.floor(Math.random() * (SPOTS.length - 1))) % SPOTS.length;
-      pet.classList.toggle('face-left', SPOTS[next] < SPOTS[spot]);
+      const cands = SPOTS.filter((x) => Math.abs(x - lastX) >= MIN_STEP);
+      const nx = cands[Math.floor(Math.random() * cands.length)];
+      if (nx === undefined) return;
+      pet.classList.toggle('face-left', nx < lastX);
       const walking = showAnim('walk', cat ? '.9s' : '.6s');
-      pet.style.setProperty('--x', `${SPOTS[next]}%`); lastX = SPOTS[next];
-      spot = next;
-      if (walking) setTimeout(() => { if (!room.classList.contains('busy')) rest(room.dataset.state); }, 2600);
+      const ms = moveTo(nx);
+      if (walking) setTimeout(() => { if (!room.classList.contains('busy')) rest(room.dataset.state); }, ms);
     }, 8000);
   }
   // 쓰다듬기 — 마우스는 올려서 문지르기, 손가락은 대고 문지르기
@@ -217,36 +311,47 @@ export function mountRoom({ type, stage, state, onStroke, canPet, wear = [] }) {
     const end = (ms, after) => new Promise((res) => setTimeout(() => { banner.hidden = true; room.classList.remove('busy', `do-${kind}`); after?.(); res(); }, ms));
     room.classList.add(`do-${kind}`);
     if (kind === 'feed') {
-      // 그릇에 사료를 붓고 → 아이가 그릇 앞으로 걸어와 먹는다(먹는 영상엔 그릇이 함께 있어 방 그릇은 잠시 숨김) → 빈 그릇
+      // 그릇에 사료를 붓고 → 아이가 그릇 오른쪽으로 걸어와 왼쪽을 보고 먹는다(몸이 빈 바닥 쪽으로 뻗어 왼쪽 화장실·패드와 겹치지 않게)
+      // 먹는 영상엔 그릇이 함께 있어, 영상 속 그릇 가운데(meta bowl)를 방 그릇 가운데에 맞추고 방 그릇은 잠시 숨긴다 → 빈 그릇
       const bowlBtn = room.querySelector('.prop-bowl'), bowlImg = document.getElementById('bowl-img');
       if (bowlImg) bowlImg.src = 'art/prop/bowl_full.webp';
       say('사료를 담았어요');
       const rr = room.getBoundingClientRect(), br = bowlBtn.getBoundingClientRect();
       const ratio = CLIP[`${name}_eat`] || has('eat');
-      const petW = rr.height * (parseFloat(pet.style.getPropertyValue('--h')) / 100) * (ratio || 1) * (CSCALE[`${name}_eat`] ?? 1);
-      const x = ratio ? ((br.right - rr.left) - petW / 2) / rr.width * 100 : BOWL_X - 8;
-      pet.classList.toggle('face-left', x < parseFloat(pet.style.getPropertyValue('--x')));
+      const em = META.clip[`${name}_eat`];
+      const boxH = rr.height * (parseFloat(pet.style.getPropertyValue('--h')) / 100);
+      let x, left = false;
+      if (CLIP[`${name}_eat`] && em?.bowl) {
+        const w = boxH * clipK('eat') * ratio;
+        x = ((br.left + br.width / 2 - rr.left) + (em.bowl - 0.5) * w) / rr.width * 100;
+        left = true;
+      } else {
+        const petW = boxH * (ratio || 1);
+        x = ratio ? ((br.right - rr.left) - petW / 2) / rr.width * 100 : BOWL_X - 8;
+      }
+      pet.classList.toggle('face-left', x < lastX);
       showAnim('walk', cat ? '.9s' : '.6s');
-      pet.style.setProperty('--x', `${x}%`); lastX = x;
+      const ms = moveTo(x);
       return new Promise((res) => setTimeout(() => {
-        pet.classList.remove('face-left');
+        pet.classList.toggle('face-left', left);
         if (showAnim('eat', '.8s')) bowlBtn.classList.add('eating'); else setState('hungry');
         say('냠냠, 오도독…');
         end(2800, () => { bowlBtn.classList.remove('eating'); if (bowlImg) bowlImg.src = 'art/prop/bowl_empty.webp'; setState('happy'); }).then(res);
-      }, 2600));
+      }, ms));
     }
     if (kind === 'potty') { const p = room.querySelector('.prop-pad img'); say('새 패드로 쓱싹'); return end(1500, () => { if (p) p.src = 'art/prop/pad_clean.webp'; setState('happy'); }); }
     if (kind === 'litter') { const p = room.querySelector('.prop-litter img'); say('모래를 싹싹'); return end(1500, () => { if (p) p.src = 'art/prop/litter_clean.webp'; setState('happy'); }); }
     if (kind === 'walk') {
-      // 현관까지 걸어가(멀어질수록 작아짐) 문밖으로 → 잠시 뒤 돌아온다
-      const go = (x, y, sc) => { pet.style.setProperty('--x', `${x}%`); pet.style.setProperty('--y', `${y}%`); pet.style.setProperty('--s', sc); };
-      pet.classList.add('face-left'); showAnim('walk', '.6s'); go(DOOR.x, DOOR.y, DOOR.s);
+      // 현관까지 걸어가(멀어질수록 작아짐) 문밖으로 → 잠시 뒤 돌아온다. 걷는 시간은 거리와 걷기 속도로 정한다
+      pet.classList.add('face-left'); showAnim('walk', '.6s');
+      const goMs = moveTo(DOOR.x, { y: DOOR.y, s: DOOR.s });
       say(stage === 'baby' ? '바깥 구경 다녀올게요' : '산책 다녀올게요');
       return new Promise((res) => setTimeout(() => { pet.classList.add('out'); setTimeout(() => {
-        say('🐾 다녀왔어요!'); pet.classList.remove('out', 'face-left'); showAnim('walk', '.6s'); go(SPOTS[0], 8, 1); lastX = SPOTS[0];
-        setTimeout(() => setState('happy'), 2600);
-        end(2600).then(res);
-      }, 1800); }, 2600));
+        say('🐾 다녀왔어요!'); pet.classList.remove('out', 'face-left'); showAnim('walk', '.6s');
+        const backMs = moveTo(SPOTS[0], { y: 8, s: 1 });
+        setTimeout(() => setState('happy'), backMs);
+        end(backMs).then(res);
+      }, 1800); }, goMs));
     }
     const sparkle = () => { const sp = document.createElement('span'); sp.className = 'sparkle'; sp.textContent = '✦ ✧ ✦'; pet.appendChild(sp); setTimeout(() => sp.remove(), 1900); };
     if (kind === 'play') {

@@ -1,7 +1,7 @@
 {
-  "_note": "사건. when: fixed(day=체험 n일째) | random(from~to일, w=가중치) | trigger(조건). cost: costs.json 경로 목록('.W'는 체중 구간 5/10/20으로 바뀜). score: 지식 점수(+1 좋은 판단, 0 무난, -1 위험). fx: 건강·마음(유대)·습관 변화. {name:이/가}처럼 조사 자동. vet:true면 '진단이 아님' 고지.",
+  "_note": "사건. when: fixed(day=체험 n일째) | random(from~to일, w=가중치) | trigger(조건). cost: costs.json 경로 목록('.W'는 체중 구간 5/10/20으로 바뀜). score: 지식 점수(+1 좋은 판단, 0 무난, -1 위험). fx: 건강·마음(유대)·습관 변화. {name:이/가}처럼 조사 자동. vet:true면 '진단이 아님' 고지. 1년 코스: when.yearDay(그 나이가 되는 날, 하루 ≈ 1.8주), courses=[month|year]면 그 코스에서만.",
   "items": [
-    { "id": "vax1", "species": "both", "kind": "vet", "vet": true, "when": { "type": "fixed", "day": 2 },
+    { "id": "vax1", "species": "both", "kind": "vet", "vet": true, "when": { "type": "fixed", "day": 2, "yearDay": 2 },
       "title": "첫 병원 — 건강검진과 1차 접종", "text": "{name:이/가} 온 지 이틀째. 첫 접종은 생후 6~8주에 시작해요. 병원에 데려갈까요?",
       "choices": [
         { "label": "오늘 병원에 간다", "score": 1, "cost": ["vet.first_visit.W", "vet.vax_combo"], "fx": { "health": 8, "bond": 0, "habit": 0 }, "reply": "초진 진찰료와 종합백신 1차 — 전국 평균 진료비로 장부에 적었어요. 다음 접종은 2~4주 뒤예요." },
@@ -13,19 +13,19 @@
         { "label": "간다", "score": 1, "cost": ["vet.first_visit.W", "vet.vax_combo"], "fx": { "health": 8, "bond": 0, "habit": 0 }, "reply": "늦었지만 시작했어요. 일정은 병원과 다시 맞추면 돼요." },
         { "label": "또 미룬다", "score": -1, "cost": [], "fx": { "health": -8, "bond": 0, "habit": 0 }, "reply": "접종 전 아기는 전염병에 약해요. 리포트의 '지식' 점수에 반영됐어요." }
       ], "lesson": "vaccine_two", "src": ["daejeon_vax"] },
-    { "id": "vax2", "species": "both", "kind": "vet", "vet": true, "when": { "type": "fixed", "day": 23 },
+    { "id": "vax2", "species": "both", "kind": "vet", "vet": true, "when": { "type": "fixed", "day": 23, "yearDay": 4 },
       "title": "2차 접종 날", "text": "1차 접종 3주 뒤예요. 병원에서 '코로나 장염 백신도 같이 할까요?'라고 물어요(강아지).",
       "choices": [
         { "label": "종합백신만 맞히고, 추가 백신은 기준을 물어본다", "score": 1, "cost": ["vet.revisit.W", "vet.vax_combo"], "fx": { "health": 6, "bond": 0, "habit": 0 }, "reply": "국제 가이드라인(WSAVA)은 개 코로나 장염 백신을 근거 부족으로 권하지 않아요. 국내 관행과 달라 상의가 필요해요." },
         { "label": "권하는 건 다 맞힌다", "score": 0, "cost": ["vet.revisit.W", "vet.vax_combo", "vet.vax_corona"], "fx": { "health": 5, "bond": 0, "habit": 0 }, "reply": "국내 안내에는 들어 있는 백신이에요. 다만 국제 기준과 다르다는 건 알아 두세요." }
       ], "lesson": "vaccine_two", "src": ["daejeon_vax", "wsava2024", "vetfee2025"] },
-    { "id": "heartworm", "species": "both", "kind": "vet", "vet": true, "when": { "type": "fixed", "day": 4 },
+    { "id": "heartworm", "species": "both", "kind": "vet", "vet": true, "when": { "type": "fixed", "day": 4, "yearDay": 3 },
       "title": "심장사상충 예방 시작", "text": "늦어도 생후 8주부터, 1년 내내 매달 해야 하는 예방약이에요.",
       "choices": [
         { "label": "이번 달부터 시작", "score": 1, "cost": ["vet.heartworm_5kg"], "fx": { "health": 5, "bond": 0, "habit": 0 }, "reply": "1회 평균 16,542원. 매달이니 1년이면 약 20만원이에요." },
         { "label": "모기 나오는 여름에만", "score": -1, "cost": [], "fx": { "health": -5, "bond": 0, "habit": 0 }, "reply": "심장사상충학회는 '1년 12개월 내내'를 권해요." }
       ], "lesson": "heartworm", "src": ["ahs", "vetfee2025"] },
-    { "id": "register", "species": "dog", "kind": "law", "when": { "type": "fixed", "day": 6 },
+    { "id": "register", "species": "dog", "kind": "law", "when": { "type": "fixed", "day": 6, "yearDay": 3 },
       "title": "동물등록 하셨나요?", "text": "생후 2개월이 넘은 개는 30일 안에 등록해야 해요.",
       "choices": [
         { "label": "이번 주에 등록(내장형)", "score": 1, "cost": ["register.chip_in"], "fx": { "health": 0, "bond": 0, "habit": 2 }, "reply": "수수료 1만원(식별장치 값은 병원마다 별도). 잃어버렸을 때 집으로 돌아올 길이 생겼어요." },
@@ -37,7 +37,7 @@
         { "label": "지금 등록한다", "score": 0, "cost": ["register.chip_in"], "fx": { "health": 0, "bond": 0, "habit": 2 }, "reply": "아슬아슬하게 기한 안에 했어요." },
         { "label": "그냥 둔다", "score": -1, "cost": ["fines.register.0"], "fx": { "health": 0, "bond": 0, "habit": -3 }, "reply": "체험에서는 과태료 20만원을 장부에 적었어요(실제 부과는 단속 시)." }
       ], "lesson": "register", "src": ["law_register"] },
-    { "id": "monthly2", "species": "both", "kind": "life", "when": { "type": "fixed", "day": 31 },
+    { "id": "monthly2", "species": "both", "kind": "life", "courses": ["month"], "when": { "type": "fixed", "day": 31 },
       "title": "두 번째 달 장보기", "text": "사료·간식·패드(모래)가 다 떨어졌어요.",
       "choices": [ { "label": "장부에 적기", "score": 0, "cost": ["monthly.SPECIES"], "fx": { "health": 0, "bond": 0, "habit": 0 }, "reply": "한 달 평균 양육비(병원비 제외)를 적었어요." } ], "src": ["kb2025"] },
 
@@ -257,7 +257,7 @@
         { "label": "꼭 필요한 것만 남긴다", "score": 1, "cost": [], "fx": { "health": 0, "bond": 0, "habit": 0 }, "reply": "한 달 양육비 평균에 이미 간식·용품이 들어 있어요(병원비 제외 월 14만~16만원)." },
         { "label": "다 산다", "score": 0, "cost": [{ "amount": 50000, "label": "충동 구매(체험 설정값, 통계 아님)" }], "fx": { "health": 0, "bond": 1, "habit": 0 }, "reply": "5만원을 더 썼어요. 귀여운 지출은 생각보다 빨리 쌓여요." }
       ], "src": ["kb2025"] },
-    { "id": "neuter", "species": "both", "kind": "vet", "vet": true, "when": { "type": "random", "from": 15, "to": 30, "w": 1 },
+    { "id": "neuter", "species": "both", "kind": "vet", "vet": true, "courses": ["month"], "when": { "type": "random", "from": 15, "to": 30, "w": 1 },
       "title": "중성화, 언제 해요?", "text": "접종하러 간 병원에서 중성화 이야기가 나왔어요.",
       "choices": [
         { "label": "시기·비용을 상담받는다", "score": 1, "cost": ["vet.consult"], "fx": { "health": 0, "bond": 0, "habit": 0 }, "reply": "수술비 지역 평균 약 15만~18만원(2022, 최신 공식 통계는 없어요). 시기는 수의사와 정해요." },
@@ -274,6 +274,53 @@
       "choices": [
         { "label": "빗질을 루틴에 넣는다", "score": 1, "cost": [], "fx": { "health": 2, "bond": 2, "habit": 2 }, "reply": "장모·곱슬 털은 거의 매일 빗질이 필요해요. 빗질은 몸 상태를 살피는 시간이기도 해요." },
         { "label": "미용실에서 한 번에", "score": 0, "cost": [], "fx": { "health": 0, "bond": 0, "habit": 0 }, "reply": "미용비는 한 달 양육비의 큰 몫이에요(전체 8.7%)." }
-      ], "src": ["kennelclub", "kb2025"] }
+      ], "src": ["kennelclub", "kb2025"] },
+    { "id": "rabies", "species": "both", "kind": "vet", "vet": true, "courses": ["year"], "when": { "type": "fixed", "yearDay": 5 },
+      "title": "생후 3개월 — 광견병 예방접종", "text": "구청 소식지에 \"생후 3개월 이상 개·고양이 광견병 예방접종 지원\" 안내가 실렸어요.",
+      "choices": [
+        { "label": "지원 기간에 지정 동물병원에서 맞힌다", "score": 1, "cost": [{ "amount": 10000, "label": "광견병 접종 시술료(지자체 지원 기간)", "src": ["seoul_rabies"] }], "fx": { "health": 5, "bond": 0, "habit": 0 }, "reply": "지원 기간엔 백신은 무료, 시술료만 내요(서울시 2022년 1만원 — 지역·연도마다 달라요). 매년 1회 맞는 게 좋아요. 강아지는 동물등록이 돼 있어야 지원받는 곳이 많아요." },
+        { "label": "기다리지 않고 지금 병원에서 맞힌다", "score": 1, "cost": ["vet.vax_rabies"], "fx": { "health": 5, "bond": 0, "habit": 0 }, "reply": "지원 기간이 아니면 접종비 전액을 내요(진료비 게시제 전국 평균)." },
+        { "label": "집에만 있으니 안 맞혀도 된다", "score": -1, "cost": [], "fx": { "health": -3, "bond": 0, "habit": 0 }, "reply": "광견병은 사람에게도 옮는 병이라 지자체가 매년 접종을 지원해요. 바깥에 나가지 않아도 매년 1회가 권장이에요." }
+      ], "src": ["seoul_rabies", "vetfee2025"] },
+    { "id": "vax3", "species": "both", "kind": "vet", "vet": true, "courses": ["year"], "when": { "type": "fixed", "yearDay": 6 },
+      "title": "생후 16주 — 마지막 기초 접종", "text": "두 번 맞았는데 병원에서 \"16주가 넘었으니 한 번 더\"라고 해요.",
+      "choices": [
+        { "label": "마지막 접종까지 맞힌다", "score": 1, "cost": ["vet.revisit.W", "vet.vax_combo"], "fx": { "health": 6, "bond": 0, "habit": 0 }, "reply": "엄마에게 받은 항체가 남아 있으면 이른 접종이 듣지 않을 수 있어서, 국제 지침(WSAVA)은 2~4주 간격으로 맞히고 마지막을 16주 이후에 맞히라고 해요." },
+        { "label": "두 번이면 충분하다", "score": -1, "cost": [], "fx": { "health": -5, "bond": 0, "habit": 0 }, "reply": "16주 전 접종만으로는 면역이 안 생긴 아이가 있을 수 있어요. 마지막 기초 접종은 16주 이후가 기준이에요." }
+      ], "lesson": "vaccine_two", "src": ["wsava2024", "vetfee2025"] },
+    { "id": "teething", "species": "dog", "kind": "behavior", "courses": ["year"], "when": { "type": "fixed", "yearDay": 7 },
+      "title": "이가 근질근질 — 다 물어뜯어요", "text": "{name:이/가} 의자 다리와 신발을 갉아 놨어요. 바닥에 작은 이빨이 하나 떨어져 있어요.",
+      "choices": [
+        { "label": "얼린 장난감·말랑한 씹을거리로 바꿔 주고 칭찬한다", "score": 1, "cost": [], "fx": { "health": 0, "bond": 2, "habit": 3 }, "reply": "영구치는 생후 3개월부터 나기 시작해 어금니는 4~7개월에 나요. 씹어도 되는 것으로 돌려 주고, 얼린 장난감은 잇몸을 달래 줘요. 빠진 이를 삼켜도 대개 괜찮아요." },
+        { "label": "단단한 뼈·사슴뿔을 준다", "score": -1, "cost": [], "fx": { "health": -3, "bond": 1, "habit": 0 }, "reply": "나일론·뼈·뿔처럼 아주 단단한 건 이가 부러질 수 있어요. 손톱으로 눌러 자국이 날 정도의 장난감이 좋아요." },
+        { "label": "손으로 놀아 주며 물게 둔다", "score": -1, "cost": [], "fx": { "health": 0, "bond": 1, "habit": -3 }, "reply": "손·발을 무는 놀이는 무는 습관이 돼요. 손 대신 장난감을 물게 하세요." }
+      ], "src": ["vca_teething", "aspca_nip"] },
+    { "id": "neuter_y", "species": "both", "kind": "vet", "vet": true, "courses": ["year"], "when": { "type": "fixed", "yearDay": 9 },
+      "title": "생후 5개월 — 중성화 상담", "text": "접종하러 간 병원에서 \"이제 중성화 시기를 정할 때예요\"라고 해요.",
+      "choices": [
+        { "label": "상담받고 시기를 정한다", "score": 1, "cost": ["vet.consult"], "fx": { "health": 0, "bond": 0, "habit": 0 }, "reply": "고양이는 생후 5개월 무렵까지 하라는 수의사회 입장이 있어요(4~5개월이면 이미 번식이 가능해요). 강아지는 다 자라 20kg(45파운드) 아래일 아이는 6개월 무렵, 그보다 큰 아이는 성장이 끝나는 9~15개월에 하라는 지침이 있어요. 결국 수의사와 정해요." },
+        { "label": "바로 수술한다", "score": 1, "cost": [{ "amount": 154023, "label": "중성화 수술(서울 평균, 2022)", "src": ["neuter2022"] }], "fx": { "health": -2, "bond": -1, "habit": 1 }, "reply": "수술비 지역 평균 서울 약 15만원·경기 약 18만원(2022, 최신 공식 통계는 없어요). 큰 강아지는 성장이 끝난 뒤를 권하는 지침도 있으니 수의사와 시기를 맞춰요." },
+        { "label": "안 한다", "score": 0, "cost": [], "fx": { "health": 0, "bond": 0, "habit": -1 }, "reply": "많은 입양 기관이 중성화 동의를 입양 조건으로 둬요. 안 하면 발정기 행동·원치 않는 임신을 함께 관리해야 해요." }
+      ], "src": ["aafp_peds2020", "aaha_canine2019", "neuter2022", "kara_adopt"] },
+    { "id": "booster26", "species": "both", "kind": "vet", "vet": true, "courses": ["year"], "when": { "type": "fixed", "yearDay": 12 },
+      "title": "생후 6개월 — 한 번 더 맞는 접종", "text": "기초 접종이 끝났는데 병원에서 \"6개월에 한 번 더\"를 권해요.",
+      "choices": [
+        { "label": "권하는 대로 맞힌다", "score": 1, "cost": ["vet.revisit.W", "vet.vax_combo"], "fx": { "health": 5, "bond": 0, "habit": 0 }, "reply": "국제 지침(WSAVA 2024)은 예전처럼 12~16개월까지 기다리지 말고 26주 이후에 한 번 더 맞히라고 해요 — 16주 접종 때 엄마 항체가 남아 있던 소수의 아이까지 지키려고요." },
+        { "label": "1년 뒤에 한꺼번에", "score": 0, "cost": [], "fx": { "health": -2, "bond": 0, "habit": 0 }, "reply": "예전 기준(12~16개월)도 쓰여요. 다만 그 사이에 면역이 없는 아이가 있을 수 있어 최신 지침은 26주 이후를 권해요." }
+      ], "lesson": "vaccine_two", "src": ["wsava2024", "vetfee2025"] },
+    { "id": "teen_dog", "species": "dog", "kind": "behavior", "courses": ["year"], "when": { "type": "fixed", "yearDay": 16 },
+      "title": "생후 8개월 — '앉아'를 못 들은 척해요", "text": "잘하던 {name:이/가} 요즘 내 말만 안 들어요. 다른 사람이 시키면 잘 앉는데요.",
+      "choices": [
+        { "label": "혼내지 않고 짧은 훈련·보상을 다시 시작한다", "score": 1, "cost": [], "fx": { "health": 0, "bond": 3, "habit": 3 }, "reply": "사춘기(생후 8개월 무렵) 강아지는 보호자 말에만 늦게 반응한다는 연구가 있어요. 지나가는 시기예요. 벌을 주거나 거리를 두면 더 나빠진대요." },
+        { "label": "크게 혼낸다", "score": -1, "cost": [], "fx": { "health": 0, "bond": -4, "habit": -1 }, "reply": "연구진은 이 시기에 벌을 주거나 마음을 거두면 문제 행동이 더 나빠진다고 해요. 보상 중심 훈련이 기본이에요." },
+        { "label": "감당이 안 돼 파양을 알아본다", "score": -1, "cost": [], "fx": { "health": 0, "bond": -6, "habit": 0 }, "reply": "이 나이에 보호소로 가는 강아지가 많대요. 대부분 지나가는 시기라는 걸 미리 알아 두면 견딜 수 있어요." }
+      ], "src": ["ncl_teen2020", "avsab_training"] },
+    { "id": "adultfood", "species": "both", "kind": "food", "courses": ["year"], "when": { "type": "fixed", "yearDay": 26 },
+      "title": "첫 생일 — 어른 사료로 바꿀 때", "text": "{name:이/가} 1살이 됐어요. 사료 봉투에 \"성장기용\"이라고 쓰여 있어요.",
+      "choices": [
+        { "label": "7~14일에 걸쳐 조금씩 섞어 바꾼다", "score": 1, "cost": [], "fx": { "health": 3, "bond": 0, "habit": 0 }, "reply": "수의영양학자들은 1살 또는 다 자랐을 때 중 늦은 쪽에 바꾸라고 해요. 큰 강아지는 성장이 18~24개월까지 가기도 해서 더 늦게 바꿔요. 첫날은 어른 사료 10%부터 섞어요." },
+        { "label": "오늘부터 한 번에 바꾼다", "score": 0, "cost": [], "fx": { "health": -3, "bond": 0, "habit": 0 }, "reply": "갑자기 바꾸면 설사·구토가 날 수 있어요. 7~14일에 걸쳐 섞어 바꾸고, 하루가 지나도 나아지지 않으면 병원에 물어보세요." },
+        { "label": "계속 성장기 사료를 준다", "score": 0, "cost": [], "fx": { "health": -1, "bond": 0, "habit": 0 }, "reply": "성장기 사료는 자라는 몸에 맞춘 사료예요. 다 자란 뒤엔 생애 단계에 맞는 사료로 바꾸는 게 기본이에요." }
+      ], "src": ["vca_adultfood", "merck_food"] }
   ]
 }

@@ -44,7 +44,19 @@ export const TYPES = {
   short: { species: 'cat', label: '단모 고양이', play: 3, kg: 5, brushDaily: false, adultKg: '약 4.5kg', exercise: '사냥 놀이 하루 2~3번' },
   long: { species: 'cat', label: '장모 고양이', play: 3, kg: 5, brushDaily: true, adultKg: '약 5kg', exercise: '사냥 놀이 하루 2~3번' },
 };
-export const ageWeeks = (day) => START_WEEKS + (day - 1) / 7;
+// 코스: month = 아기 시절 30일(현실 하루 = 하루), year = 첫 1년을 30일에 압축(하루 ≈ 1.8주 — 8주에 와서 30일째 60주)
+export const COURSES = {
+  month: { label: '아기 시절 30일', wpd: 1 / 7 },
+  year: { label: '첫 1년을 30일에', wpd: 52 / 29 },
+};
+export const courseOf = (profile) => (profile?.course === 'year' ? 'year' : 'month');
+export const ageWeeks = (day, course = 'month') => START_WEEKS + (day - 1) * COURSES[course].wpd;
+// 화면에 보이는 나이: 16주 전엔 주, 그 뒤엔 개월
+export const ageLabel = (weeks) => (weeks < 16 ? `생후 ${Math.floor(weeks)}주` : `생후 ${Math.floor(weeks / 4.345)}개월`);
+// 데려온 뒤 몇 번째 달인지(1부터) — 1년 코스에서 달이 바뀔 때마다 양육비를 장부에 적는다
+export const monthNo = (day, course = 'month') => Math.floor((ageWeeks(day, course) - START_WEEKS) / 4.345) + 1;
+// 사건 '며칠 뒤'(after)를 코스에 맞게: 1년 코스는 하루가 1.8주라 실제 같은 시간이 흐르게 줄인다
+export const afterDays = (after, course = 'month') => (course === 'year' ? Math.max(1, Math.round(after / 7 / COURSES.year.wpd)) : after);
 export function stageOf(weeks) { return weeks < 16 ? 'baby' : weeks < 40 ? 'teen' : 'adult'; }
 // 체중 구간(진료비 표 5/10/20kg): 아기 땐 5kg
 export function weightClass(type, weeks) {
@@ -92,7 +104,7 @@ export function aloneLimit(species, weeks) {
 // 오늘의 돌봄 요청 목록
 export function dayPlan(profile, key) {
   const day = dayNo(profile.startKey, key);
-  const weeks = ageWeeks(day);
+  const weeks = ageWeeks(day, courseOf(profile));
   const T = TYPES[profile.type];
   const L = profile.life;
   const weekend = isWeekend(key);
@@ -170,7 +182,7 @@ export function closeDay(profile, key, plan, results, alone) {
     for (const [k, v] of Object.entries(FX[t.kind]?.[s] ?? {})) fx[k] += v;
   }
   const day = dayNo(profile.startKey, key);
-  const limit = aloneLimit(TYPES[profile.type].species, ageWeeks(day));
+  const limit = aloneLimit(TYPES[profile.type].species, ageWeeks(day, courseOf(profile)));
   const over = limit ? Math.max(0, alone - limit) : 0;
   if (over > 0) { fx.habit -= Math.min(6, Math.ceil(over / 60)); fx.bond -= Math.min(4, Math.ceil(over / 90)); }
   const triggers = [];
@@ -189,11 +201,13 @@ export const startStats = () => ({ ...START });
 
 // ---------- 사건 고르기 ----------
 // seen: 이미 나온 사건 id 집합, chains: [{id, day}], triggers: 어제 마감에서 나온 조건 목록
+// 코스: e.courses가 있으면 그 코스에서만. 정해진 날 사건은 1년 코스에선 when.yearDay(그 나이가 되는 날)
 export function pickEvents(profile, day, { events, seen, chains = [], triggers = [], lateToday = false }) {
   const sp = TYPES[profile.type].species;
-  const fits = (e) => (e.species === 'both' || e.species === sp) && !seen.has(e.id);
+  const course = courseOf(profile);
+  const fits = (e) => (e.species === 'both' || e.species === sp) && !seen.has(e.id) && (!e.courses || e.courses.includes(course));
   const out = [];
-  for (const e of events) if (fits(e) && e.when.type === 'fixed' && e.when.day === day) out.push(e);
+  for (const e of events) if (fits(e) && e.when.type === 'fixed' && (course === 'year' ? e.when.yearDay : e.when.day) === day) out.push(e);
   for (const c of chains) if (c.day === day) { const e = events.find((x) => x.id === c.id); if (e && fits(e)) out.push(e); }
   const r = rng(`${profile.seed}:ev:${day}`);
   // 조건 사건: 하루 1개까지, 60% 확률 (생활 조건은 정해진 날)
@@ -260,7 +274,7 @@ export function buildReport({ profile, days, answers, costs, quiz = { right: 0, 
   const consistency = total ? clamp(((c.done + c.late * 0.5) / total) * 100) : 0;
   if (consistency < 70) tips.push({ axis: 'consistency', text: `돌봄 요청의 ${100 - consistency}%를 놓치거나 늦었어요. 실제 동물은 기다려 주지 않아요 — 놓친 시간대를 보고 알림·루틴을 다시 짜 보세요.` });
   // 시간: 혼자 두는 시간 한도 초과 + 바쁜 시간대 돌봄
-  const limit = aloneLimit(sp, START_WEEKS + 4);
+  const limit = aloneLimit(sp, courseOf(profile) === 'year' ? 52 : START_WEEKS + 4);
   const weekdayAlone = days.filter((d) => d.alone > 0).map((d) => d.alone);
   const avgAlone = weekdayAlone.length ? weekdayAlone.reduce((a, b) => a + b, 0) / weekdayAlone.length : 0;
   const overDays = days.filter((d) => d.over > 0).length;

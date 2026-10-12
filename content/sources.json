@@ -468,5 +468,40 @@
   "year": "2026",
   "grade": "C",
   "url": "https://search.danawa.com/dsearch.php?query=%EA%B0%95%EC%95%84%EC%A7%80%20%EC%9D%B8%EC%8B%9D%ED%91%9C"
+ },
+ "seoul_rabies": {
+  "title": "가을철 반려동물 광견병 예방접종 — 생후 3개월 이상 개·고양이, 매년 1회, 지원 기간 시술료 1만원",
+  "org": "서울특별시",
+  "year": "2022",
+  "grade": "A",
+  "url": "https://news.seoul.go.kr/env/?p=520968"
+ },
+ "vca_teething": {
+  "title": "Puppy Teething and Chewing — 영구치는 생후 3개월부터, 어금니는 4~7개월",
+  "org": "VCA Animal Hospitals",
+  "year": "",
+  "grade": "A",
+  "url": "https://vcahospitals.com/pediatric/puppy/prep-supplies/puppy-teething-toys"
+ },
+ "vca_adultfood": {
+  "title": "Switching your pet to adult food — 1살 또는 다 자랐을 때 중 늦은 쪽, 7~14일에 걸쳐 섞어 바꾸기",
+  "org": "VCA Animal Hospitals",
+  "year": "",
+  "grade": "A",
+  "url": "https://vcahospitals.com/resources/adult/everything-you-need-to-know-about-switching-your-pet-to-adult-wellness-food"
+ },
+ "aafp_peds2020": {
+  "title": "Pediatric Sterilization in Cats — 번식 계획이 없으면 생후 5개월 무렵까지 중성화 지지",
+  "org": "미국고양이수의사회(AAFP)",
+  "year": "2020",
+  "grade": "A",
+  "url": "https://catvets.com/guidelines/position-statements/pediatric-sterilization-position-statement"
+ },
+ "ncl_teen2020": {
+  "title": "사춘기(생후 8개월) 강아지는 보호자 말에만 늦게 반응한다 — Asher 외, Biology Letters",
+  "org": "영국 뉴캐슬대학교",
+  "year": "2020",
+  "grade": "B",
+  "url": "https://www.ncl.ac.uk/press/articles/archive/2020/05/teenagedogs/"
  }
 }

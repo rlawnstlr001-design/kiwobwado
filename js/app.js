@@ -1,14 +1,15 @@
 // 키워봐도될까 — 내 생활 그대로 30일 키워 보고 반려 준비도를 확인하는 입양 전 체험
-import * as db from './db.js?v=202610121339';
-import * as E from './engine.js?v=202610121339';
-import { C, loadContent, eventById, lessonById, foodById } from './content.js?v=202610121339';
-import { track } from './track.js?v=202610121339';
-import { roomHTML, mountRoom, timeOfDay, loadAnim, clipInfo } from './room.js?v=202610121339';
-import { openGames, GAMES, titleOf } from './games.js?v=202610121339';
-import * as K from './care.js?v=202610121339';
-import { openShop, openVet, openTreats } from './shop.js?v=202610121339';
-import { isApp, initNative, scheduleCare, exactAlarm } from './native.js?v=202610121339';
-import { runGuide } from './guide.js?v=202610121339';
+import * as db from './db.js?v=202610121351';
+import * as E from './engine.js?v=202610121351';
+import { C, loadContent, eventById, lessonById, foodById } from './content.js?v=202610121351';
+import { track } from './track.js?v=202610121351';
+import { roomHTML, mountRoom, timeOfDay, loadAnim, clipInfo } from './room.js?v=202610121351';
+import { openGames, GAMES, titleOf } from './games.js?v=202610121351';
+import * as K from './care.js?v=202610121351';
+import { openShop, openVet, openTreats } from './shop.js?v=202610121351';
+import { isApp, initNative, scheduleCare, exactAlarm } from './native.js?v=202610121351';
+import { runGuide } from './guide.js?v=202610121351';
+import { sfx, ambient, stopAmbient, soundOn, setSound } from './sound.js?v=202610121351';
 
 const $ = (s, el = document) => el.querySelector(s);
 const view = $('#view');
@@ -204,6 +205,7 @@ function visibleEvents() {
 // ---------- 라우팅 ----------
 function setTab(name) {
   document.body.dataset.route = name;
+  if (name !== 'today') stopAmbient();   // 배경음은 방 화면에서만
   document.querySelectorAll('.tabbar a').forEach((a) => a.classList.toggle('on', a.dataset.tab === name));
   const b = $('#day-badge');
   if (P()) { const d = dayNow(); b.hidden = false; b.textContent = d > COURSE_DAYS ? '체험 완료' : `${d}일째 / ${COURSE_DAYS}`; }
@@ -396,6 +398,8 @@ function today() {
   const openKinds = acts.filter((a) => a.cls === 'now').map((a) => a.kind);
   const NEED = { feed: '배고파요!', potty: '쉬 마려워요', walk: '나가고 싶어요!', play: '놀아 주세요!', litter: '화장실이 지저분해요', train: '뭐 배울까요?', brush: '털이 엉켰어요' };
   const need = !sleepNow && openKinds.length ? NEED[openKinds[0]] : roomState === 'sick' ? '몸이 안 좋아요…' : !sleepNow && S.skin?.state !== 'ok' ? '긁적긁적…' : '';
+  // 배고프면 '낑낑'/'야옹' — 5분에 한 번까지(1분마다 다시 그려도 계속 울지 않게)
+  if (need === NEED.feed && Date.now() - lastCall > 300000) { lastCall = Date.now(); setTimeout(() => sfx.call(species()), 1200); }
   const dirty = (kind) => plan.some((t) => t.kind === kind && E.taskPhase(t, nm) !== 'early' && !statusFor(t, key, d));
   const prop = species() === 'dog' ? { pad: dirty('potty') ? 'used' : 'clean' } : { litter: dirty('litter') ? 'used' : 'clean' };
   // 방 안 물건이 맡는 일(밥그릇·패드·화장실·현관)은 물건을 누르고, 나머지는 오른쪽 아래 도구로
@@ -449,6 +453,7 @@ function today() {
   });
   track('day_open');
   careAlarms(false);
+  ambient(sleepNow ? 'night' : timeOfDay(nm));
   // 처음 한 번: 첫날 길잡이(자랐어요 카드보다 먼저)
   if (!S.guided) { setTimeout(() => startGuide(), 700); return; }
   // 1년 코스: 단계가 바뀐 첫날 한 번 '자랐어요' 카드
@@ -493,6 +498,7 @@ const GROW = {
 function growCard(was, stage, weeks) {
   const g = GROW[stage];
   if (!g) return;
+  sfx.fanfare();
   const rows = g[species()].map(([t, src]) => [t.replace('{ex}', T().exercise ?? '').replace('{life}', String(Math.round(LIFESPAN[P().type] * 10) / 10)), src]);
   const fig = (st, cap, rot) => `<figure class="photo" style="transform:rotate(${rot}deg)"><img src="${photoOf(st, 'happy')}" alt=""><figcaption>${cap}</figcaption></figure>`;
   const { sheet } = openSheet(`<div class="grow-pics">${fig(was, was === 'baby' ? '아기 때' : '청소년 때', -3)}<span aria-hidden="true">→</span>${fig(stage, '지금', 2)}</div>
@@ -513,6 +519,7 @@ function confirmYear() {
 }
 let ROOM = null;
 let BUSY = false;
+let lastCall = 0;
 const ICON = {
   bowl: '<svg viewBox="0 0 32 32"><path d="M4 15h24c0 7-5 11-12 11S4 22 4 15z"/><path d="M10 12c1-2 3-3 6-3s5 1 6 3"/></svg>',
   pad: '<svg viewBox="0 0 32 32"><rect x="5" y="7" width="22" height="18" rx="2"/><path d="M9 11h14M9 16h14M9 21h9"/></svg>',
@@ -697,7 +704,7 @@ function openMiniGames() {
       S.coins += given;
       S.earned[k] = earned + given;
       S.best[game] = Math.max(S.best[game] || 0, score);
-      if (given) S.coinLog.push({ day: dayNow(), game, score, coins: given });
+      if (given) { S.coinLog.push({ day: dayNow(), game, score, coins: given }); sfx.coin(); }
       save();
       track('game_end');
       return { given, earned: S.earned[k], coins: S.coins };
@@ -773,6 +780,7 @@ function openEvent(id) {
   const p = S.pending.find((x) => x.id === id);
   const e = eventById(id);
   if (!p || !e) return;
+  sfx.ding();
   const n = p.day;
   const ctx = { w: E.weightClass(P().type, ageW(n)), species: species() };
   const evState = { vet: 'sick', food: 'hungry', behavior: 'oops', life: 'idle', law: 'idle' }[e.kind];
@@ -988,6 +996,12 @@ function confirmReset() {
   $('#do-reset', sheet).addEventListener('click', async () => { S = fresh(); await save(); close(); location.hash = '#/'; route(); });
 }
 $('#btn-settings').addEventListener('click', () => openSettings());
+// 버튼 누르는 소리(작게). 방 물건·도구(자기 소리가 있다)와 미니게임 판은 뺀다
+document.addEventListener('click', (e) => {
+  const b = e.target.closest('button, a.btn, .tabbar a');
+  if (!b || b.disabled || b.closest('.mg-body') || b.dataset.act) return;
+  sfx.tap();
+}, true);
 function openSettings() {
   if (!P()) return;
   const { sheet } = openSheet(`<h2>설정</h2>
@@ -995,11 +1009,14 @@ function openSettings() {
     <p class="sub" style="margin:4px 0 0">기상 ${P().life.wake} · ${P().life.remote ? '재택' : `출근 ${P().life.leave} · 귀가 ${P().life.back}`} · 취침 ${P().life.sleep} · 예산 ${won(P().budget)}</p></div>
     <p class="sub">모든 기록은 이 기기에만 저장돼요. 펫 이름·생활 시간·예산은 서버로 보내지 않아요.</p>
     <p class="disclaimer">비용은 공식 통계·진료비 게시제 평균이며 지역·병원마다 달라요. 건강 정보는 일반 정보이며 진료를 대신하지 않아요.</p>
+    <div class="card"><h2>소리</h2><p class="sub" style="margin:0">효과음(밥 먹는 소리·골골·버튼)과 배경음(방 공기·창밖 새소리)을 따로 켜고 꺼요. 이 기기에만 저장돼요.</p>
+      <div class="chips" style="margin-top:8px"><button class="chip${soundOn('sfx') ? ' on' : ''}" id="s-sfx">효과음 ${soundOn('sfx') ? '켜짐' : '꺼짐'}</button><button class="chip${soundOn('amb') ? ' on' : ''}" id="s-amb">배경음 ${soundOn('amb') ? '켜짐' : '꺼짐'}</button></div></div>
     <div class="card"><h2>빠른 체험 ${DEV ? '켜짐' : '꺼짐'}</h2><p class="sub" style="margin:0">30일을 기다리지 않고 시간을 앞으로 돌려 볼 수 있어요(체험해 보는 분용). 방 화면 위쪽에 시간 이동 버튼이 생겨요.</p><button class="btn btn-soft btn-wide" id="s-fast">${DEV ? '빠른 체험 끄기' : '빠른 체험 켜기'}</button></div>
     ${isApp ? '<div class="card"><h2>돌봄 알림</h2><p class="sub" style="margin:0">밥·배변·산책 시간마다 알림이 와요. 갤럭시는 <b>알람 및 리마인더</b>를 허용해야 제시각에 와요(안 하면 몇 분 늦을 수 있어요).</p><button class="btn btn-soft btn-wide" id="s-exact">알람 및 리마인더 설정 열기</button></div>' : ''}
     <button class="btn btn-wide" id="s-reset">처음부터 다시</button><button class="btn btn-wide" data-close>닫기</button>`);
   $('#s-reset', sheet).addEventListener('click', confirmReset);
   $('#s-exact', sheet)?.addEventListener('click', async () => { const ok = await exactAlarm(true); toast(ok ? '정확한 알림이 켜져 있어요' : '설정에서 허용해 주세요'); });
+  for (const k of ['sfx', 'amb']) $(`#s-${k}`, sheet).addEventListener('click', (e) => { const v = !soundOn(k); setSound(k, v); e.currentTarget.classList.toggle('on', v); e.currentTarget.textContent = `${k === 'sfx' ? '효과음' : '배경음'} ${v ? '켜짐' : '꺼짐'}`; if (v && k === 'sfx') sfx.tap(); });
   $('#s-fast', sheet).addEventListener('click', () => { DEV = !DEV; lsSet('kiwo:fast', DEV ? '1' : null); track(DEV ? 'fast_on' : 'fast_off'); location.reload(); });
 }
 

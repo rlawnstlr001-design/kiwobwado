@@ -1,0 +1,894 @@
+{
+ "sprite": {
+  "large_adult_idle": {
+   "foot": 0.0213,
+   "body": 0.9764,
+   "area": 0.3519
+  },
+  "large_adult_happy": {
+   "foot": 0.0024,
+   "body": 0.9953,
+   "area": 0.4556
+  },
+  "large_adult_hungry": {
+   "foot": 0.0142,
+   "body": 0.9835,
+   "area": 0.3841
+  },
+  "large_adult_oops": {
+   "foot": 0.0034,
+   "body": 0.9932,
+   "area": 0.6806
+  },
+  "large_adult_sick": {
+   "foot": 0.0316,
+   "body": 0.9632,
+   "area": 1.239
+  },
+  "large_adult_sleep": {
+   "foot": 0.0838,
+   "body": 0.911,
+   "area": 1.6645
+  },
+  "large_baby_idle": {
+   "foot": 0.0494,
+   "body": 0.9481,
+   "area": 0.4285
+  },
+  "large_baby_happy": {
+   "foot": 0.0071,
+   "body": 0.9906,
+   "area": 0.4498
+  },
+  "large_baby_hungry": {
+   "foot": 0.0138,
+   "body": 0.9828,
+   "area": 0.5031
+  },
+  "large_baby_oops": {
+   "foot": 0.0222,
+   "body": 0.9746,
+   "area": 0.6026
+  },
+  "large_baby_sick": {
+   "foot": 0.0303,
+   "body": 0.9636,
+   "area": 1.4883
+  },
+  "large_baby_sleep": {
+   "foot": 0.0515,
+   "body": 0.9442,
+   "area": 1.2643
+  },
+  "large_teen_idle": {
+   "foot": 0.0371,
+   "body": 0.9606,
+   "area": 0.3324
+  },
+  "large_teen_happy": {
+   "foot": 0.007,
+   "body": 0.9907,
+   "area": 0.4127
+  },
+  "large_teen_hungry": {
+   "foot": 0.0189,
+   "body": 0.9788,
+   "area": 0.345
+  },
+  "large_teen_oops": {
+   "foot": 0.0028,
+   "body": 0.9944,
+   "area": 0.5644
+  },
+  "large_teen_sick": {
+   "foot": 0.0442,
+   "body": 0.9503,
+   "area": 1.5015
+  },
+  "large_teen_sleep": {
+   "foot": 0.0251,
+   "body": 0.9698,
+   "area": 1.4818
+  },
+  "long_adult_idle": {
+   "foot": 0.0284,
+   "body": 0.9693,
+   "area": 0.4481
+  },
+  "long_adult_happy": {
+   "foot": 0.004,
+   "body": 0.9919,
+   "area": 1.1498
+  },
+  "long_adult_hungry": {
+   "foot": 0.0164,
+   "body": 0.9813,
+   "area": 0.4781
+  },
+  "long_adult_oops": {
+   "foot": 0.0508,
+   "body": 0.9458,
+   "area": 0.6329
+  },
+  "long_adult_sick": {
+   "foot": 0.0442,
+   "body": 0.9524,
+   "area": 0.9659
+  },
+  "long_adult_sleep": {
+   "foot": 0.0867,
+   "body": 0.91,
+   "area": 0.9866
+  },
+  "long_baby_idle": {
+   "foot": 0.0447,
+   "body": 0.9529,
+   "area": 0.4629
+  },
+  "long_baby_happy": {
+   "foot": 0.007,
+   "body": 0.9894,
+   "area": 0.8716
+  },
+  "long_baby_hungry": {
+   "foot": 0.0165,
+   "body": 0.9811,
+   "area": 0.4702
+  },
+  "long_baby_oops": {
+   "foot": 0.0295,
+   "body": 0.9668,
+   "area": 0.5027
+  },
+  "long_baby_sick": {
+   "foot": 0.1014,
+   "body": 0.8937,
+   "area": 0.8213
+  },
+  "long_baby_sleep": {
+   "foot": 0.0767,
+   "body": 0.9201,
+   "area": 0.8957
+  },
+  "long_teen_idle": {
+   "foot": 0.0449,
+   "body": 0.9527,
+   "area": 0.3683
+  },
+  "long_teen_happy": {
+   "foot": 0.0164,
+   "body": 0.9795,
+   "area": 1.0332
+  },
+  "long_teen_hungry": {
+   "foot": 0.0213,
+   "body": 0.9763,
+   "area": 0.4412
+  },
+  "long_teen_oops": {
+   "foot": 0.0588,
+   "body": 0.9384,
+   "area": 0.6054
+  },
+  "long_teen_sick": {
+   "foot": 0.0949,
+   "body": 0.9017,
+   "area": 0.9067
+  },
+  "long_teen_sleep": {
+   "foot": 0.0427,
+   "body": 0.9537,
+   "area": 1.0691
+  },
+  "medium_adult_idle": {
+   "foot": 0.0117,
+   "body": 0.9859,
+   "area": 0.3178
+  },
+  "medium_adult_happy": {
+   "foot": 0.0918,
+   "body": 0.9057,
+   "area": 0.4996
+  },
+  "medium_adult_hungry": {
+   "foot": 0.0143,
+   "body": 0.9834,
+   "area": 0.408
+  },
+  "medium_adult_oops": {
+   "foot": 0.0295,
+   "body": 0.9676,
+   "area": 0.6832
+  },
+  "medium_adult_sick": {
+   "foot": 0.0272,
+   "body": 0.966,
+   "area": 1.5544
+  },
+  "medium_adult_sleep": {
+   "foot": 0.0634,
+   "body": 0.9317,
+   "area": 1.3089
+  },
+  "medium_baby_idle": {
+   "foot": 0.0377,
+   "body": 0.9599,
+   "area": 0.4621
+  },
+  "medium_baby_happy": {
+   "foot": 0.1229,
+   "body": 0.8747,
+   "area": 0.4258
+  },
+  "medium_baby_hungry": {
+   "foot": 0.013,
+   "body": 0.9844,
+   "area": 0.471
+  },
+  "medium_baby_oops": {
+   "foot": 0.0061,
+   "body": 0.9909,
+   "area": 0.6184
+  },
+  "medium_baby_sick": {
+   "foot": 0.0486,
+   "body": 0.9459,
+   "area": 1.4628
+  },
+  "medium_baby_sleep": {
+   "foot": 0.0811,
+   "body": 0.9144,
+   "area": 1.3197
+  },
+  "medium_teen_idle": {
+   "foot": 0.0209,
+   "body": 0.9767,
+   "area": 0.3083
+  },
+  "medium_teen_happy": {
+   "foot": 0.0943,
+   "body": 0.9033,
+   "area": 0.3544
+  },
+  "medium_teen_hungry": {
+   "foot": 0.0094,
+   "body": 0.9883,
+   "area": 0.381
+  },
+  "medium_teen_oops": {
+   "foot": 0.0024,
+   "body": 0.9953,
+   "area": 0.4816
+  },
+  "medium_teen_sick": {
+   "foot": 0.0311,
+   "body": 0.9627,
+   "area": 1.5016
+  },
+  "medium_teen_sleep": {
+   "foot": 0.0696,
+   "body": 0.9261,
+   "area": 1.1215
+  },
+  "short_adult_idle": {
+   "foot": 0.0355,
+   "body": 0.9622,
+   "area": 0.37
+  },
+  "short_adult_happy": {
+   "foot": 0.0426,
+   "body": 0.9539,
+   "area": 0.297
+  },
+  "short_adult_hungry": {
+   "foot": 0.0141,
+   "body": 0.9835,
+   "area": 0.4054
+  },
+  "short_adult_oops": {
+   "foot": 0.0037,
+   "body": 0.9927,
+   "area": 0.5899
+  },
+  "short_adult_sick": {
+   "foot": 0.0922,
+   "body": 0.9044,
+   "area": 0.9391
+  },
+  "short_adult_sleep": {
+   "foot": 0.0688,
+   "body": 0.9275,
+   "area": 1.0654
+  },
+  "short_baby_idle": {
+   "foot": 0.0401,
+   "body": 0.9575,
+   "area": 0.3817
+  },
+  "short_baby_happy": {
+   "foot": 0.1008,
+   "body": 0.8965,
+   "area": 0.3054
+  },
+  "short_baby_hungry": {
+   "foot": 0.0118,
+   "body": 0.9858,
+   "area": 0.4169
+  },
+  "short_baby_oops": {
+   "foot": 0.0034,
+   "body": 0.9932,
+   "area": 0.5101
+  },
+  "short_baby_sick": {
+   "foot": 0.0848,
+   "body": 0.9107,
+   "area": 0.9687
+  },
+  "short_baby_sleep": {
+   "foot": 0.0669,
+   "body": 0.9298,
+   "area": 0.9561
+  },
+  "short_teen_idle": {
+   "foot": 0.021,
+   "body": 0.9766,
+   "area": 0.3412
+  },
+  "short_teen_happy": {
+   "foot": 0.0848,
+   "body": 0.9126,
+   "area": 0.3041
+  },
+  "short_teen_hungry": {
+   "foot": 0.0165,
+   "body": 0.9811,
+   "area": 0.3766
+  },
+  "short_teen_oops": {
+   "foot": 0.0034,
+   "body": 0.9932,
+   "area": 0.5302
+  },
+  "short_teen_sick": {
+   "foot": 0.1,
+   "body": 0.8957,
+   "area": 0.9382
+  },
+  "short_teen_sleep": {
+   "foot": 0.0679,
+   "body": 0.9286,
+   "area": 1.0673
+  },
+  "small_adult_idle": {
+   "foot": 0.019,
+   "body": 0.9787,
+   "area": 0.4013
+  },
+  "small_adult_happy": {
+   "foot": 0.0056,
+   "body": 0.9916,
+   "area": 0.5108
+  },
+  "small_adult_hungry": {
+   "foot": 0.0141,
+   "body": 0.9836,
+   "area": 0.4253
+  },
+  "small_adult_oops": {
+   "foot": 0.0071,
+   "body": 0.9906,
+   "area": 0.4777
+  },
+  "small_adult_sick": {
+   "foot": 0.0671,
+   "body": 0.9262,
+   "area": 1.3079
+  },
+  "small_adult_sleep": {
+   "foot": 0.0795,
+   "body": 0.9172,
+   "area": 0.9649
+  },
+  "small_baby_idle": {
+   "foot": 0.026,
+   "body": 0.9716,
+   "area": 0.458
+  },
+  "small_baby_happy": {
+   "foot": 0.0193,
+   "body": 0.9783,
+   "area": 0.578
+  },
+  "small_baby_hungry": {
+   "foot": 0.0216,
+   "body": 0.976,
+   "area": 0.4857
+  },
+  "small_baby_oops": {
+   "foot": 0.0078,
+   "body": 0.9896,
+   "area": 0.6791
+  },
+  "small_baby_sick": {
+   "foot": 0.0359,
+   "body": 0.959,
+   "area": 1.2728
+  },
+  "small_baby_sleep": {
+   "foot": 0.078,
+   "body": 0.9184,
+   "area": 1.0387
+  },
+  "small_teen_idle": {
+   "foot": 0.0165,
+   "body": 0.9812,
+   "area": 0.3997
+  },
+  "small_teen_happy": {
+   "foot": 0.0094,
+   "body": 0.9882,
+   "area": 0.5311
+  },
+  "small_teen_hungry": {
+   "foot": 0.0139,
+   "body": 0.9826,
+   "area": 0.4753
+  },
+  "small_teen_oops": {
+   "foot": 0.0025,
+   "body": 0.995,
+   "area": 0.6871
+  },
+  "small_teen_sick": {
+   "foot": 0.0195,
+   "body": 0.9756,
+   "area": 1.1617
+  },
+  "small_teen_sleep": {
+   "foot": 0.0821,
+   "body": 0.9142,
+   "area": 1.0838
+  }
+ },
+ "clip": {
+  "large_adult_walk": {
+   "foot": 0.0067,
+   "body": 0.98,
+   "area": 0.5981,
+   "cycle": 3818,
+   "speed": 0.7733
+  },
+  "large_adult_eat": {
+   "foot": 0.0067,
+   "body": 0.9767,
+   "area": 0.9937,
+   "cycle": 2988,
+   "bowl": 0.7939
+  },
+  "large_baby_walk": {
+   "foot": 0.0067,
+   "body": 0.98,
+   "area": 0.5808,
+   "cycle": 2241,
+   "speed": 0.83
+  },
+  "large_baby_eat": {
+   "foot": 0.0133,
+   "body": 0.97,
+   "area": 1.0789,
+   "cycle": 2407,
+   "bowl": 0.8303
+  },
+  "large_teen_walk": {
+   "foot": 0.0067,
+   "body": 0.9767,
+   "area": 0.6005,
+   "cycle": 3320,
+   "speed": 0.8554
+  },
+  "large_teen_eat": {
+   "foot": 0.0067,
+   "body": 0.98,
+   "area": 0.7898,
+   "cycle": 3652,
+   "bowl": 0.8487
+  },
+  "long_adult_walk": {
+   "foot": 0.0067,
+   "body": 0.98,
+   "area": 0.9617,
+   "cycle": 2324,
+   "speed": 0.8459
+  },
+  "long_adult_eat": {
+   "foot": 0.01,
+   "body": 0.9733,
+   "area": 1.2372,
+   "cycle": 2656,
+   "bowl": 0.8901
+  },
+  "long_baby_walk": {
+   "foot": 0.0067,
+   "body": 0.9767,
+   "area": 0.7868,
+   "cycle": 1992,
+   "speed": 0.8575
+  },
+  "long_baby_eat": {
+   "foot": 0.01,
+   "body": 0.9767,
+   "area": 1.1887,
+   "cycle": 3154,
+   "bowl": 0.8561
+  },
+  "long_teen_walk": {
+   "foot": 0.0067,
+   "body": 0.9767,
+   "area": 0.4908,
+   "cycle": 3154,
+   "speed": 0.8844
+  },
+  "long_teen_eat": {
+   "foot": 0.0067,
+   "body": 0.9767,
+   "area": 1.215,
+   "cycle": 1992,
+   "bowl": 0.7843
+  },
+  "medium_adult_walk": {
+   "foot": 0.01,
+   "body": 0.9767,
+   "area": 0.5142,
+   "cycle": 2822,
+   "speed": 0.835
+  },
+  "medium_adult_eat": {
+   "foot": 0.01,
+   "body": 0.9767,
+   "area": 0.6237,
+   "cycle": 3320,
+   "bowl": 0.7723
+  },
+  "medium_baby_walk": {
+   "foot": 0.0067,
+   "body": 0.98,
+   "area": 0.6472,
+   "cycle": 3320,
+   "speed": 0.919
+  },
+  "medium_baby_eat": {
+   "foot": 0.0133,
+   "body": 0.9667,
+   "area": 0.9054,
+   "cycle": 2075,
+   "bowl": 0.8366
+  },
+  "medium_teen_walk": {
+   "foot": 0.0067,
+   "body": 0.98,
+   "area": 0.5284,
+   "cycle": 3154,
+   "speed": 0.8254
+  },
+  "medium_teen_eat": {
+   "foot": 0.0067,
+   "body": 0.9767,
+   "area": 0.8812,
+   "cycle": 3154,
+   "bowl": 0.8627
+  },
+  "short_adult_walk": {
+   "foot": 0.0067,
+   "body": 0.98,
+   "area": 0.7852,
+   "cycle": 3818,
+   "speed": 0.8791
+  },
+  "short_adult_eat": {
+   "foot": 0.0067,
+   "body": 0.9767,
+   "area": 1.3316,
+   "cycle": 3403,
+   "bowl": 0.8755
+  },
+  "short_baby_walk": {
+   "foot": 0.0067,
+   "body": 0.98,
+   "area": 0.4713,
+   "cycle": 1992,
+   "speed": 0.7488
+  },
+  "short_baby_eat": {
+   "foot": 0.0067,
+   "body": 0.9767,
+   "area": 1.2851,
+   "cycle": 2241,
+   "bowl": 0.7939
+  },
+  "short_teen_walk": {
+   "foot": 0.01,
+   "body": 0.9767,
+   "area": 0.4352,
+   "cycle": 2241,
+   "speed": 0.6416
+  },
+  "short_teen_eat": {
+   "foot": 0.01,
+   "body": 0.9733,
+   "area": 1.1341,
+   "cycle": 2241,
+   "bowl": 0.8805
+  },
+  "small_adult_walk": {
+   "foot": 0.0067,
+   "body": 0.9767,
+   "area": 0.6393,
+   "cycle": 1992,
+   "speed": 0.9676
+  },
+  "small_adult_eat": {
+   "foot": 0.01,
+   "body": 0.9767,
+   "area": 1.0593,
+   "cycle": 2988,
+   "bowl": 0.8416
+  },
+  "small_baby_walk": {
+   "foot": 0.0067,
+   "body": 0.98,
+   "area": 0.6139,
+   "cycle": 2988,
+   "speed": 0.9809
+  },
+  "small_baby_eat": {
+   "foot": 0.01,
+   "body": 0.9767,
+   "area": 0.7845,
+   "cycle": 3569,
+   "bowl": 0.7896
+  },
+  "small_teen_walk": {
+   "foot": 0.0067,
+   "body": 0.98,
+   "area": 0.6163,
+   "cycle": 2988,
+   "speed": 0.7698
+  },
+  "small_teen_eat": {
+   "foot": 0.0067,
+   "body": 0.98,
+   "area": 0.9409,
+   "cycle": 3071,
+   "bowl": 0.8601
+  }
+ },
+ "anim": {
+  "large_adult_walk": {
+   "foot": 0.0118,
+   "body": 0.7471,
+   "area": 0.4011
+  },
+  "large_adult_eat": {
+   "foot": 0.0176,
+   "body": 0.7088,
+   "area": 0.4294
+  },
+  "large_adult_wag": {
+   "foot": 0.0118,
+   "body": 0.9147,
+   "area": 0.4097
+  },
+  "large_baby_walk": {
+   "foot": 0.0353,
+   "body": 0.8029,
+   "area": 0.4922
+  },
+  "large_baby_eat": {
+   "foot": 0.0176,
+   "body": 0.7853,
+   "area": 0.5711
+  },
+  "large_baby_wag": {
+   "foot": 0.0206,
+   "body": 0.9059,
+   "area": 0.5092
+  },
+  "large_teen_walk": {
+   "foot": 0.0118,
+   "body": 0.7529,
+   "area": 0.3864
+  },
+  "large_teen_eat": {
+   "foot": 0.0176,
+   "body": 0.6647,
+   "area": 0.4186
+  },
+  "large_teen_wag": {
+   "foot": 0.0118,
+   "body": 0.9206,
+   "area": 0.3575
+  },
+  "long_adult_walk": {
+   "foot": 0.0294,
+   "body": 0.6412,
+   "area": 0.4568
+  },
+  "long_adult_eat": {
+   "foot": 0.0294,
+   "body": 0.5824,
+   "area": 0.4754
+  },
+  "long_adult_wag": {
+   "foot": 0.0353,
+   "body": 0.8941,
+   "area": 0.4979
+  },
+  "long_baby_walk": {
+   "foot": 0.0324,
+   "body": 0.7618,
+   "area": 0.569
+  },
+  "long_baby_eat": {
+   "foot": 0.0324,
+   "body": 0.7912,
+   "area": 0.5694
+  },
+  "long_baby_wag": {
+   "foot": 0.0235,
+   "body": 0.9029,
+   "area": 0.4849
+  },
+  "long_teen_walk": {
+   "foot": 0.0412,
+   "body": 0.85,
+   "area": 0.4254
+  },
+  "long_teen_eat": {
+   "foot": 0.0382,
+   "body": 0.6912,
+   "area": 0.4513
+  },
+  "long_teen_wag": {
+   "foot": 0.0412,
+   "body": 0.8853,
+   "area": 0.437
+  },
+  "medium_adult_walk": {
+   "foot": 0.0118,
+   "body": 0.7882,
+   "area": 0.4125
+  },
+  "medium_adult_eat": {
+   "foot": 0.0176,
+   "body": 0.8147,
+   "area": 0.4723
+  },
+  "medium_adult_wag": {
+   "foot": 0.0118,
+   "body": 0.9147,
+   "area": 0.3832
+  },
+  "medium_baby_walk": {
+   "foot": 0.0559,
+   "body": 0.8,
+   "area": 0.5042
+  },
+  "medium_baby_eat": {
+   "foot": 0.0206,
+   "body": 0.8559,
+   "area": 0.5468
+  },
+  "medium_baby_wag": {
+   "foot": 0.0206,
+   "body": 0.9265,
+   "area": 0.5045
+  },
+  "medium_teen_walk": {
+   "foot": 0.0118,
+   "body": 0.8824,
+   "area": 0.5253
+  },
+  "medium_teen_eat": {
+   "foot": 0.0176,
+   "body": 0.7706,
+   "area": 0.5428
+  },
+  "medium_teen_wag": {
+   "foot": 0.0235,
+   "body": 0.9059,
+   "area": 0.5082
+  },
+  "short_adult_walk": {
+   "foot": 0.0324,
+   "body": 0.6735,
+   "area": 0.4137
+  },
+  "short_adult_eat": {
+   "foot": 0.0324,
+   "body": 0.5765,
+   "area": 0.4116
+  },
+  "short_adult_wag": {
+   "foot": 0.0147,
+   "body": 0.9324,
+   "area": 0.3702
+  },
+  "short_baby_walk": {
+   "foot": 0.0118,
+   "body": 0.9176,
+   "area": 0.5223
+  },
+  "short_baby_eat": {
+   "foot": 0.0176,
+   "body": 0.6912,
+   "area": 0.5278
+  },
+  "short_baby_wag": {
+   "foot": 0.0118,
+   "body": 0.8941,
+   "area": 0.4593
+  },
+  "short_teen_walk": {
+   "foot": 0.0265,
+   "body": 0.8265,
+   "area": 0.4028
+  },
+  "short_teen_eat": {
+   "foot": 0.0353,
+   "body": 0.6059,
+   "area": 0.4248
+  },
+  "short_teen_wag": {
+   "foot": 0.0265,
+   "body": 0.9,
+   "area": 0.3371
+  },
+  "small_adult_walk": {
+   "foot": 0.0441,
+   "body": 0.8176,
+   "area": 0.5485
+  },
+  "small_adult_eat": {
+   "foot": 0.0265,
+   "body": 0.7853,
+   "area": 0.556
+  },
+  "small_adult_wag": {
+   "foot": 0.0147,
+   "body": 0.9118,
+   "area": 0.5408
+  },
+  "small_baby_walk": {
+   "foot": 0.0265,
+   "body": 0.85,
+   "area": 0.5586
+  },
+  "small_baby_eat": {
+   "foot": 0.0235,
+   "body": 0.8412,
+   "area": 0.6409
+  },
+  "small_baby_wag": {
+   "foot": 0.0118,
+   "body": 0.9147,
+   "area": 0.5497
+  },
+  "small_teen_walk": {
+   "foot": 0.0118,
+   "body": 0.7824,
+   "area": 0.4887
+  },
+  "small_teen_eat": {
+   "foot": 0.0176,
+   "body": 0.6794,
+   "area": 0.5268
+  },
+  "small_teen_wag": {
+   "foot": 0.0118,
+   "body": 0.9147,
+   "area": 0.4713
+  }
+ },
+ "version": 1
+}

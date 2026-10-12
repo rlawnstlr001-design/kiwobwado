@@ -1,9 +1,7 @@
 /* 방 화면 (오늘) — 가로로 넓은 방(그림 1600×893), 숨 쉬고 돌아다니는 아이, 누를 수 있는 물건, 그림자 손 */
 .room { position: relative; width: 100%; aspect-ratio: 1600 / 893; border-radius: 20px; overflow: hidden; background: #EFE4CF; box-shadow: var(--shadow); touch-action: pan-y; user-select: none; -webkit-user-select: none; }
 .room-bg { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; pointer-events: none; }
-/* 방 조명은 아이·물건 위에 덮는다 — 아침·저녁·밤빛이 아이에게도 같이 들어야 방과 한 장면처럼 보인다 */
-.room-light { position: absolute; inset: 0; pointer-events: none; transition: background 1s; mix-blend-mode: multiply; z-index: 4; }
-.room[data-tod="day"] .room-light { background: linear-gradient(100deg, rgba(255, 236, 205, .18), rgba(255, 246, 232, .06) 55%, rgba(240, 214, 180, .14)); }
+.room-light { position: absolute; inset: 0; pointer-events: none; transition: background 1s; mix-blend-mode: multiply; z-index: 1; }
 .room[data-tod="morning"] .room-light { background: linear-gradient(120deg, rgba(255, 214, 170, .25), rgba(255, 255, 255, 0) 60%); }
 .room[data-tod="evening"] .room-light { background: linear-gradient(180deg, rgba(240, 150, 90, .32), rgba(200, 120, 80, .22)); }
 .room[data-tod="night"] .room-light { background: radial-gradient(circle at 78% 62%, rgba(255, 200, 120, .12), rgba(30, 40, 80, .58) 55%); }
@@ -28,19 +26,22 @@
 .prop-pad .spot-tag, .prop-litter .spot-tag { bottom: 70%; }
 .room.busy .prop-btn, .room.busy .spot { pointer-events: none; }
 
-.pet { position: absolute; bottom: var(--y, 8%); left: var(--x); height: calc(var(--h) * var(--s, 1)); transform: translateX(-50%); transition: left 2.6s ease-in-out, bottom 2.6s ease-in-out, height 2.6s ease-in-out, opacity .5s; z-index: 2; cursor: grab; touch-action: none; }
-.pet-img { height: 100%; width: auto; display: block; transform-origin: 50% 100%; animation: breathe 3.2s ease-in-out infinite; pointer-events: none; }
+.pet { position: absolute; bottom: var(--y, 8%); left: var(--x); height: calc(var(--h) * var(--s, 1)); transform: translateX(-50%); display: flex; align-items: flex-end; justify-content: center;
+  /* 옮기는 시간(--walk)은 room.js가 거리 ÷ 걷기 속도로 정한다. 일정한 속도(linear)여야 걷는 클립의 발과 바닥이 맞는다 */
+  transition: left var(--walk, 2.6s) linear, bottom var(--walk, 2.6s) linear, height var(--walk, 2.6s) linear, opacity .5s; z-index: 2; cursor: grab; touch-action: none; }
+/* --drop: 그림 속 발 아래 빈 여백(art/meta.json)만큼 내려 바닥에 붙인다 */
+.pet-img { flex: none; height: 100%; width: auto; display: block; transform-origin: 50% 100%; transform: translateY(var(--drop, 0%)) scaleX(var(--flip, 1)); animation: breathe 3.2s ease-in-out infinite; pointer-events: none; }
 .pet.face-left { --flip: -1; }
-.pet-shadow { position: absolute; left: 12%; right: 12%; bottom: -3%; height: 9%; border-radius: 50%; background: radial-gradient(rgba(60, 40, 20, .28), transparent 70%); }
+.pet-shadow { position: absolute; left: 14%; right: 14%; bottom: -2.5%; height: 8%; border-radius: 50%; background: radial-gradient(rgba(60, 38, 18, .34), rgba(60, 38, 18, .12) 45%, transparent 70%); }
 .pet.out { opacity: 0; }
-@keyframes breathe { 0%, 100% { transform: scaleX(var(--flip, 1)) scale(1, 1); } 50% { transform: scaleX(var(--flip, 1)) scale(1.012, 1.03); } }
+@keyframes breathe { 0%, 100% { transform: translateY(var(--drop, 0%)) scaleX(var(--flip, 1)) scale(1, 1); } 50% { transform: translateY(var(--drop, 0%)) scaleX(var(--flip, 1)) scale(1.012, 1.03); } }
 .room[data-state="sleep"] .pet-img, .room[data-state="sick"] .pet-img { animation-duration: 5s; }
 .room[data-state="happy"] .pet-img { animation: hop .9s ease-in-out infinite; }
-@keyframes hop { 0%, 100% { transform: scaleX(var(--flip, 1)) translateY(0); } 40% { transform: scaleX(var(--flip, 1)) translateY(-7%); } }
+@keyframes hop { 0%, 100% { transform: translateY(var(--drop, 0%)) scaleX(var(--flip, 1)); } 40% { transform: translateY(calc(var(--drop, 0%) - 7%)) scaleX(var(--flip, 1)); } }
 .room[data-state="oops"] .pet-img { animation: wiggle 1.4s ease-in-out infinite; }
-@keyframes wiggle { 0%, 100% { transform: scaleX(var(--flip, 1)) rotate(0); } 25% { transform: scaleX(var(--flip, 1)) rotate(-2deg); } 75% { transform: scaleX(var(--flip, 1)) rotate(2deg); } }
+@keyframes wiggle { 0%, 100% { transform: translateY(var(--drop, 0%)) scaleX(var(--flip, 1)) rotate(0); } 25% { transform: translateY(var(--drop, 0%)) scaleX(var(--flip, 1)) rotate(-2deg); } 75% { transform: translateY(var(--drop, 0%)) scaleX(var(--flip, 1)) rotate(2deg); } }
 .room.tilt .pet-img { animation: tilt .5s ease-in-out 2; }
-@keyframes tilt { 50% { transform: scaleX(var(--flip, 1)) rotate(-6deg); } }
+@keyframes tilt { 50% { transform: translateY(var(--drop, 0%)) scaleX(var(--flip, 1)) rotate(-6deg); } }
 
 .zzz { position: absolute; left: 60%; bottom: 30%; display: none; font-weight: 900; color: #6F7FA8; pointer-events: none; z-index: 3; }
 .room[data-state="sleep"] .zzz { display: block; }
@@ -106,17 +107,36 @@ details.plan-all[open] summary::after { content: "접기"; }
 @media (prefers-reduced-motion: reduce) { .pet-img, .need, .zzz i { animation: none !important; } }
 
 /* 프레임 애니메이션(걷기·꼬리·먹기): 4칸 스트립을 steps(4)로 넘긴다 */
-.pet-anim { height: 100%; background-repeat: no-repeat; background-size: 400% 100%; background-position: 0 0; animation: frames var(--dur, .7s) steps(4) infinite; transform: scaleX(var(--flip, 1)); pointer-events: none; }
+.pet-anim { flex: none; height: 100%; background-repeat: no-repeat; background-size: 400% 100%; background-position: 0 0; animation: frames var(--dur, .7s) steps(4) infinite; transform: translateY(var(--drop, 0%)) scaleX(var(--flip, 1)); pointer-events: none; }
 .pet-anim[hidden] { display: none; }
 .pet:has(.pet-anim:not([hidden])) .pet-img { display: none; }
 @keyframes frames { from { background-position: 0 0; } to { background-position: 133.333% 0; } }
 .room[data-state="happy"] .pet-anim { animation-duration: .45s; }
 
 /* 평소 모습(부위별 움직임 캔버스)·영상 클립 — 캔버스는 위·옆 여백만큼 커서 바닥에 맞춰 가운데 정렬 */
-.pet-rig { position: absolute; left: 50%; bottom: 0; transform: translateX(-50%) scaleX(var(--flip, 1)); pointer-events: none; display: block; }
+.pet-rig { position: absolute; left: 50%; bottom: 0; transform: translateX(-50%) translateY(var(--drop, 0%)) scaleX(var(--flip, 1)); pointer-events: none; display: block; }
 .pet-rig[hidden], .pet-clip[hidden] { display: none; }
-.pet-clip { position: absolute; bottom: 0; left: 50%; height: 100%; width: auto; display: block; transform: translateX(-50%) scaleX(var(--flip, 1)); pointer-events: none; } /* 배율로 키가 줄어도 바닥에 붙게 */
+/* --k: 클립 속 아이가 앉은 그림과 같은 크기로 보이게 하는 배율(room.js clipK) */
+.pet-clip { flex: none; height: calc(var(--k, 1) * 100%); width: auto; display: block; transform: translateY(var(--drop, 0%)) scaleX(var(--flip, 1)); pointer-events: none; }
 .pet:has(.pet-clip:not([hidden])) .pet-img { display: none; }
+
+/* 방과 색 맞추기: 시간대 조명 색을 아이에게도 곱한다(필터는 room.js GRADE). 말풍선·하트는 그대로 */
+.grade-defs { position: absolute; width: 0; height: 0; overflow: hidden; }
+.room[data-tod="morning"] :is(.pet-img, .pet-rig, .pet-clip, .pet-anim, .pet-ghost) { filter: url(#grade-morning); }
+.room[data-tod="day"] :is(.pet-img, .pet-rig, .pet-clip, .pet-anim, .pet-ghost) { filter: url(#grade-day); }
+.room[data-tod="evening"] :is(.pet-img, .pet-rig, .pet-clip, .pet-anim, .pet-ghost) { filter: url(#grade-evening); }
+.room[data-tod="night"] :is(.pet-img, .pet-rig, .pet-clip, .pet-anim, .pet-ghost) { filter: url(#grade-night); }
+/* 물건도 저녁·밤 조명을 받게(지금 할 일로 반짝이는 물건은 눈에 띄도록 그대로) */
+.room[data-tod="morning"] :is(.prop, .prop-btn:not(.now) img, .toy) { filter: url(#tint-morning); }
+.room[data-tod="evening"] :is(.prop, .prop-btn:not(.now) img, .toy) { filter: url(#tint-evening); }
+.room[data-tod="night"] :is(.prop, .prop-btn:not(.now) img, .toy) { filter: url(#tint-night); }
+
+/* 모습이 바뀔 때 겹쳐 사라지기(나가는 모습 복사본) + 들어오는 모습 서서히 */
+.pet-ghost { position: absolute; pointer-events: none; animation: ghost-out 220ms ease-out forwards; }
+@keyframes ghost-out { to { opacity: 0; } }
+.pet .fade-in { animation: fade-in 220ms ease-out; }   /* room.js가 220ms 뒤 클래스를 뗀다(원래 움직임으로 복귀) */
+@keyframes fade-in { from { opacity: 0; } }
+@media (prefers-reduced-motion: reduce) { .pet { transition-duration: .01s !important; } .pet-ghost { display: none; } }
 
 /* ---------- 게임 화면(오늘) — 가로 한 화면에 방 + 위·아래 구석 버튼(10/9 사용자 스케치) ----------
    방은 화면 폭을 꽉 채우고 바닥에 붙인다. 휴대폰 가로(19.5:9)면 천장만 조금 잘리고, 세로·태블릿이면 위에 빈 띠가 생겨 버튼 자리가 된다 */
@@ -274,8 +294,3 @@ body.playing { overflow: hidden; }
 .vo-price { flex: none; font-weight: 900; }
 .treat-list { display: grid; gap: 6px; }
 .si-art { width: 44px; height: 44px; object-fit: contain; flex: none; }
-
-/* 아이 그림을 방 그림의 따뜻한 수채 톤에 맞춘다(살짝 세피아·채도 낮춤), 큰 동작으로 바뀔 때 툭 끊기지 않게 짧게 겹쳐 보인다 */
-.pet-rig, .pet-img, .pet-clip, .pet-anim { filter: sepia(.08) saturate(.94); }
-.pet-clip:not([hidden]), .pet-rig:not([hidden]) { animation: petfade .22s ease-out; }
-@keyframes petfade { from { opacity: .35; } }

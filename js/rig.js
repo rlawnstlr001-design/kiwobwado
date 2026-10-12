@@ -9,7 +9,8 @@ const rot = (x, y, cx, cy, a) => { const c = Math.cos(a), s = Math.sin(a); const
 const NX = 72, NY = 100;
 
 export function mountRig(canvas, src, cfg, { cat = false } = {}) {
-  const gl = canvas.getContext('webgl', { premultipliedAlpha: true, alpha: true, antialias: true });
+  // preserveDrawingBuffer: 모습이 바뀔 때 room.js가 지금 그림을 복사해 겹쳐 사라지게(크로스페이드) 하려면 그려 둔 화면이 남아 있어야 한다
+  const gl = canvas.getContext('webgl', { premultipliedAlpha: true, alpha: true, antialias: true, preserveDrawingBuffer: true });
   if (!gl) return null;
   const st = { headA: 0, breath: 0, look: 0, pet: 0, petTarget: 0, blink: 0, nextBlink: 1.5, blinkT: -1, flick: [0, 0], nextFlick: 3, tilt: 0, tiltTarget: 0, nextTilt: 4, wag: 0, happy: 0, force: null };
   let W = 0, H = 0, rest, pos, draw, idx, buf, prog, loc, alive = true, ready = false, bodyTex, bodyUV, ul, geo = null;

@@ -1,13 +1,13 @@
 // 키워봐도될까 — 내 생활 그대로 30일 키워 보고 반려 준비도를 확인하는 입양 전 체험
-import * as db from './db.js?v=202610121305';
-import * as E from './engine.js?v=202610121305';
-import { C, loadContent, eventById, lessonById, foodById } from './content.js?v=202610121305';
-import { track } from './track.js?v=202610121305';
-import { roomHTML, mountRoom, timeOfDay, loadAnim, clipInfo } from './room.js?v=202610121305';
-import { openGames, GAMES, titleOf } from './games.js?v=202610121305';
-import * as K from './care.js?v=202610121305';
-import { openShop, openVet, openTreats } from './shop.js?v=202610121305';
-import { isApp, initNative, scheduleCare, exactAlarm } from './native.js?v=202610121305';
+import * as db from './db.js?v=202610121322';
+import * as E from './engine.js?v=202610121322';
+import { C, loadContent, eventById, lessonById, foodById } from './content.js?v=202610121322';
+import { track } from './track.js?v=202610121322';
+import { roomHTML, mountRoom, timeOfDay, loadAnim, clipInfo } from './room.js?v=202610121322';
+import { openGames, GAMES, titleOf } from './games.js?v=202610121322';
+import * as K from './care.js?v=202610121322';
+import { openShop, openVet, openTreats } from './shop.js?v=202610121322';
+import { isApp, initNative, scheduleCare, exactAlarm } from './native.js?v=202610121322';
 
 const $ = (s, el = document) => el.querySelector(s);
 const view = $('#view');
@@ -40,6 +40,11 @@ const petName = () => P()?.name || '아이';
 const fill = (t) => E.fill(t, petName());
 const dayNow = () => E.dayNo(P().startKey, todayKey());
 const keyOf = (n) => E.addDays(P().startKey, n - 1);
+// 코스: month = 아기 시절 30일, year = 첫 1년을 30일에(하루 ≈ 1.8주 — 아기·청소년·어른을 다 겪는다)
+const course = () => E.courseOf(P());
+const isYear = () => course() === 'year';
+const ageW = (n) => E.ageWeeks(n, course());
+const courseDone = () => (isYear() ? '첫 1년' : '30일');
 const imgOf = (type, stage) => `art/pet/${type}_${stage}.webp`;
 const word = { dog: '강아지', cat: '고양이' };
 
@@ -54,7 +59,7 @@ function initCare() {
 }
 const careApi = {
   S: () => S, save: () => save(), shop: () => C.shop, costs: () => C.costs, species: () => species(), type: () => P().type,
-  day: () => dayNow(), key: () => todayKey(), weeks: () => E.ageWeeks(dayNow()), weight: () => E.weightClass(P().type, E.ageWeeks(dayNow())),
+  day: () => dayNow(), key: () => todayKey(), weeks: () => ageW(dayNow()), weight: () => E.weightClass(P().type, ageW(dayNow())),
   toast: (m) => toast(m), openSheet: (h, o) => openSheet(h, o), showSources: (k) => showSources(k), track: (n) => track(n), won: (n) => won(n),
   fx: (st, f) => E.applyFx(st, f), room: () => ROOM, rerender: () => route(),
 };
@@ -167,7 +172,20 @@ function sync() {
   let changed = false;
   for (let n = S.lastClosed + 1; n <= last; n++) { ensureEvents(n); closeDayN(n); changed = true; }
   if (d <= COURSE_DAYS && !S.dayEvents[keyOf(d)]) { ensureEvents(d); changed = true; }
+  if (billMonths(Math.min(d, COURSE_DAYS))) changed = true;
   if (changed) save();
+}
+// 1년 코스: 데려온 지 한 달이 지날 때마다 그달 양육비(평균)를 장부에 적는다 — 30일 동안 1년 치 돈이 쌓이는 걸 본다
+function billMonths(d) {
+  if (!isYear()) return false;
+  const m = C.costs.monthly[species()];
+  let added = false;
+  S.billed = S.billed ?? 1;                       // 첫 달은 시작할 때 적었다
+  for (let n = 2; n <= d; n++) {
+    const mo = E.monthNo(n, 'year');
+    if (mo > S.billed) { S.billed = mo; S.ledger.push({ day: n, label: `${mo}번째 달 양육비(사료·간식·용품 평균, 병원비 제외)`, amount: m.amount, src: m.src }); added = true; }
+  }
+  return added;
 }
 // 사건이 보이는 시각: 평일 = 퇴근 30분 뒤, 주말·재택 = 오전 11시 (야근 사건은 오후 3시)
 function eventShowMin(e, n) {
@@ -209,7 +227,7 @@ function onboarding() {
     life: { wake: '07:00', leave: '08:20', back: '19:00', sleep: '23:30', late: 1, weekendOut: false, remote: false },
     home: { kind: 'apt', rent: false, petOK: 'yes' },
     people: { live: 'alone', agree: 'na', helper: false },
-    allergy: 'none', budget: 200000,
+    allergy: 'none', budget: 200000, course: 'month',
   };
   let step = 0;
   const N = 9;
@@ -263,6 +281,7 @@ function onboarding() {
       <input class="ob-input" id="f-name" maxlength="8" placeholder="예: 보리" value="${esc(dr.name)}" autocomplete="off">
       <div class="chips" style="justify-content:center;margin-top:10px">${['보리', '콩이', '두부', '호두', '나비'].map((x) => `<button class="chip" data-nm="${x}">${x}</button>`).join('')}</div>
       <div class="ob-note">오늘부터 30일, 내 하루에 맞춰 돌봄 요청이 와요. 응답 창은 요청 시각부터 ${E.WINDOW}분이에요. 가상이라도 <b>진짜처럼</b> 대해 주세요 — 그래야 결과가 정확해요.</div>
+      <div class="q"><p>체험 코스</p><div class="chips">${chip('data-course', 'month', dr.course, '아기 시절 30일')}${chip('data-course', 'year', dr.course, '첫 1년을 30일에')}</div><p class="fine" style="margin:6px 0 0">${dr.course === 'year' ? '30일 동안 1년이 흘러요(하루 ≈ 2주). 아기 → 청소년 → 어른으로 자라며 접종·이갈이·중성화·사춘기·사료 바꾸기를 겪고, 달마다 양육비가 장부에 쌓여요.' : '생후 8주부터 12주까지, 아기 시절 한 달을 하루하루 그대로 겪어요.'}</p></div>
       <div class="q"><p>체험 방식</p><div class="chips">${chip('data-fast', 'no', dr.fast ? 'yes' : 'no', '실제 30일')}${chip('data-fast', 'yes', dr.fast ? 'yes' : 'no', '빠른 체험(시간 앞당기기)')}</div><p class="fine" style="margin:6px 0 0">빠른 체험은 버튼으로 시간을 넘기며 며칠을 금방 겪어 보는 방식이에요. 설정에서 언제든 바꿀 수 있어요.</p></div>`,
   ];
   const ok = () => (step === 8 ? !!dr.name.trim() : true);
@@ -301,6 +320,7 @@ function onboarding() {
     if (d.allergy) dr.allergy = d.allergy;
     if (d.nm) dr.name = d.nm;
     if (d.fast) dr.fast = d.fast === 'yes';
+    if (d.course) dr.course = d.course;
     draw();
   };
   view.oninput = (e) => {
@@ -349,13 +369,14 @@ function today() {
   setTab('today');
   const d = dayNow();
   if (d > COURSE_DAYS) {
-    view.innerHTML = `<section class="card done-day"><span class="stamp">30일 완료</span><h2 style="margin-top:14px">${esc(petName())}${E.josa(petName(), '과/와').slice(-1)} 30일을 함께했어요</h2><p class="sub">이제 반려 준비도 리포트를 확인해 보세요.</p><a class="btn btn-main btn-wide" href="#/report">리포트 보기</a></section>`;
+    view.innerHTML = `<section class="card done-day"><span class="stamp">${courseDone()} 완료</span><h2 style="margin-top:14px">${esc(petName())}${E.josa(petName(), '과/와').slice(-1)} ${courseDone()}을 함께했어요</h2><p class="sub">이제 반려 준비도 리포트를 확인해 보세요.</p><a class="btn btn-main btn-wide" href="#/report">리포트 보기</a>${yearOffer()}</section>`;
+    view.onclick = (e) => { if (e.target.closest('[data-year]')) confirmYear(); };
     return;
   }
   const key = todayKey();
   const plan = E.dayPlan(P(), key);
   const nm = nowMin();
-  const weeks = E.ageWeeks(d);
+  const weeks = ageW(d);
   const stage = E.stageOf(weeks);
   const spans = E.awaySpans(P(), key);
   const awayTasks = plan.filter((t) => t.away && statusFor(t, key, d)?.status !== 'skip');
@@ -392,7 +413,7 @@ function today() {
   view.innerHTML = `<section class="game" id="game">
     ${roomHTML({ type: P().type, stage, state: roomState, tod: timeOfDay(nm), need, prop: { ...prop, bowl: 'empty' }, spots })}
     <div class="hud hud-tl"><div class="hud-card">
-      <div class="hud-name"><b>${esc(petName())}</b><span>생후 ${Math.floor(weeks)}주 · ${d}일째/${COURSE_DAYS}</span><time>${toHM(nm)}</time></div>
+      <div class="hud-name"><b>${esc(petName())}</b><span>${E.ageLabel(weeks)} · ${d}일째/${COURSE_DAYS}</span><time>${toHM(nm)}</time></div>
       <div class="mini-g">${mg('health', '건강', 'var(--sky)')}${mg('bond', '마음', 'var(--apricot)')}${mg('habit', '습관', 'var(--forest)')}</div>
       <p class="hud-stock"><span${low(foodLeft)}>사료 ${foodLeft}일분</span><span${low(species() === 'dog' ? S.inv.pads : S.inv.litter)}>${species() === 'dog' ? '패드' : '모래'} ${species() === 'dog' ? S.inv.pads : S.inv.litter}일분</span></p>
       <p class="hud-mood">${esc(fill(`{name:은/는} ${sleepNow ? '새근새근 자고 있어요' : mood.text}`))}</p>
@@ -427,6 +448,42 @@ function today() {
   });
   track('day_open');
   careAlarms(false);
+  // 1년 코스: 단계가 바뀐 첫날 한 번 '자랐어요' 카드
+  if (isYear() && stage !== (S.grown ?? 'baby')) { const was = S.grown ?? 'baby'; S.grown = stage; save(); growCard(was, stage, weeks); }
+}
+// 자라면 달라지는 것(1년 코스) — 줄마다 출처
+const GROW = {
+  teen: {
+    title: '청소년이 됐어요',
+    dog: [['기초 접종 마무리 — 마지막 접종은 생후 16주 이후, 6개월 무렵 한 번 더', 'wsava2024'], ['바깥 구경 대신 진짜 산책 — 다 크면 운동 {ex}', 'kennelclub'], ['이갈이 시기(영구치 생후 3~7개월) — 씹어도 되는 것을 챙겨 주세요', 'vca_teething'], ['생후 6개월 무렵부터 밥은 하루 2번', 'vca_dog_feed'], ['중성화 상담 시기 — 몸집에 따라 6개월 무렵~15개월', 'aaha_canine2019']],
+    cat: [['기초 접종 마무리 — 마지막 접종은 생후 16주 이후, 6개월 무렵 한 번 더', 'wsava2024'], ['중성화 상담 시기 — 생후 5개월 무렵까지 권하는 수의사회가 있어요', 'aafp_peds2020'], ['생후 6개월 무렵부터 밥은 하루 2번 이상', 'vca_cat_feed']],
+  },
+  adult: {
+    title: '어른이 됐어요',
+    dog: [['혼자 두는 시간은 다 커도 4시간 이하가 권장', 'rspca_alone'], ['1살 또는 다 자랐을 때 중 늦은 쪽에 어른 사료로(큰 아이는 더 늦게)', 'vca_adultfood'], ['평균 수명 약 {life}년 — 긴 시간이 이제 시작이에요', 'banfield2023']],
+    cat: [['1살 무렵(다 자랐을 때) 어른 사료로', 'vca_adultfood'], ['평균 수명 약 {life}년 — 긴 시간이 이제 시작이에요', 'banfield2023']],
+  },
+};
+function growCard(was, stage, weeks) {
+  const g = GROW[stage];
+  if (!g) return;
+  const rows = g[species()].map(([t, src]) => [t.replace('{ex}', T().exercise ?? '').replace('{life}', String(Math.round(LIFESPAN[P().type] * 10) / 10)), src]);
+  const fig = (st, cap, rot) => `<figure class="photo" style="transform:rotate(${rot}deg)"><img src="${photoOf(st, 'happy')}" alt=""><figcaption>${cap}</figcaption></figure>`;
+  const { sheet } = openSheet(`<div class="grow-pics">${fig(was, was === 'baby' ? '아기 때' : '청소년 때', -3)}<span aria-hidden="true">→</span>${fig(stage, '지금', 2)}</div>
+    <span class="label">${E.ageLabel(weeks)}</span><h2>${esc(fill(`{name:이/가} ${g.title}`))}</h2>
+    <ul class="tips">${rows.map(([t]) => `<li>${esc(t)}</li>`).join('')}</ul>
+    <button class="src-btn" data-src="${[...new Set(rows.map((r) => r[1]))].join(',')}">출처</button><button class="btn btn-main btn-wide" data-close>계속 키우기</button>`);
+  sheet.addEventListener('click', (e) => { const b = e.target.closest('[data-src]'); if (b) showSources(b.dataset.src.split(',')); });
+}
+// 30일(아기 시절) 코스를 마친 사람에게: 같은 아이·같은 생활로 1년 코스
+const yearOffer = () => (isYear() ? '' : `<button class="btn btn-soft btn-wide" data-year style="margin-top:8px">같은 아이로 '첫 1년' 코스 해 보기</button><p class="fine" style="margin:6px 0 0">30일 동안 1년이 흘러요. 청소년·어른으로 자라며 이갈이·중성화·사춘기·사료 바꾸기를 겪고, 1년 양육비가 장부에 쌓여요.</p>`);
+function confirmYear() {
+  const { sheet, close } = openSheet(`<h2>첫 1년 코스를 시작할까요?</h2><p class="sub">${esc(petName())}, 생활 시간·집·예산은 그대로 두고 생후 8주부터 다시 시작해요. 지금 기록(리포트 포함)은 지워져요.</p><button class="btn btn-main btn-wide" id="do-year">1년 코스 시작</button><button class="btn btn-wide" data-close>취소</button>`);
+  $('#do-year', sheet).addEventListener('click', () => {
+    const p = P();
+    close();
+    start({ species: p.species, type: p.type, route: p.route, name: p.name, life: p.life, home: p.home, people: p.people, allergy: p.allergy, budget: p.budget, course: 'year', fast: DEV });
+  });
 }
 let ROOM = null;
 let BUSY = false;
@@ -469,7 +526,7 @@ async function doAct(kind) {
   if (BUSY || !ROOM) return;
   const key = todayKey(), d = dayNow(), nm = nowMin();
   const plan = E.dayPlan(P(), key);
-  const a = actsFor(plan, key, d, nm, E.stageOf(E.ageWeeks(d))).find((x) => x.kind === kind);
+  const a = actsFor(plan, key, d, nm, E.stageOf(ageW(d))).find((x) => x.kind === kind);
   if (kind === 'pet') return ROOM.nudge('아이 몸에 손을 대고 살살 문질러 보세요');
   if (kind === 'treat') return openTreats(careApi);
   if (kind === 'bath' || kind === 'meds') return careAct(kind);
@@ -602,7 +659,7 @@ function hudAction(k) {
   if (k === 'vet') return openVet(careApi);
 }
 function openMiniGames() {
-  const name = `${P().type}_${E.stageOf(E.ageWeeks(dayNow()))}`;
+  const name = `${P().type}_${E.stageOf(ageW(dayNow()))}`;
   const pet = clipInfo(name, 'walk') ?? { src: `art/sprite/${name}_idle.webp`, ratio: 1 };
   track('games_open');
   openGames({
@@ -663,7 +720,7 @@ function openAway() {
 function openPlan() {
   const key = todayKey(), d = dayNow(), nm = nowMin();
   const plan = E.dayPlan(P(), key);
-  const weeks = E.ageWeeks(d);
+  const weeks = ageW(d);
   const arr = arrangeOf(key);
   const stretch = aloneFor(key, d, !!arr && arr !== 'none');
   const limit = E.aloneLimit(species(), weeks);
@@ -690,9 +747,9 @@ function openEvent(id) {
   const e = eventById(id);
   if (!p || !e) return;
   const n = p.day;
-  const ctx = { w: E.weightClass(P().type, E.ageWeeks(n)), species: species() };
+  const ctx = { w: E.weightClass(P().type, ageW(n)), species: species() };
   const evState = { vet: 'sick', food: 'hungry', behavior: 'oops', life: 'idle', law: 'idle' }[e.kind];
-  const { sheet, close } = openSheet(`<figure class="photo ev-photo"><img src="${photoOf(E.stageOf(E.ageWeeks(n)), evState)}" alt=""></figure><span class="pill ${e.kind}">${{ vet: '병원', food: '음식', behavior: '행동', life: '생활', law: '법·의무' }[e.kind]}</span>
+  const { sheet, close } = openSheet(`<figure class="photo ev-photo"><img src="${photoOf(E.stageOf(ageW(n)), evState)}" alt=""></figure><span class="pill ${e.kind}">${{ vet: '병원', food: '음식', behavior: '행동', life: '생활', law: '법·의무' }[e.kind]}</span>
     <h2>${esc(fill(e.title))}</h2><p>${esc(fill(e.text))}</p>
     <div id="ev-choices">${e.choices.map((c, i) => `<button class="choice" data-ci="${i}">${esc(fill(c.label))}</button>`).join('')}</div>
     <div id="ev-after"></div>
@@ -710,7 +767,7 @@ function openEvent(id) {
     S.stats = E.applyFx(S.stats, c.fx);
     S.answers.push({ id: e.id, day: dayNow(), choice: Number(b.dataset.ci), score: c.score, kind: e.kind });
     S.pending = S.pending.filter((x) => x.id !== id);
-    if (c.next) S.chains.push({ id: c.next.id, day: Math.min(COURSE_DAYS, n + c.next.after) });
+    if (c.next) S.chains.push({ id: c.next.id, day: Math.min(COURSE_DAYS, n + E.afterDays(c.next.after, course())) });
     await save();
     track('event_answer');
     const sum = items.reduce((s, it) => s + it.amount, 0);
@@ -876,7 +933,7 @@ function report() {
   const life = LIFESPAN[P().type];
   const y = C.costs.yearly[species()];
   view.innerHTML = `
-    <section class="card verdict-box"><span class="label">${final ? '30일 최종 리포트' : `중간 점검 · ${S.closed.length}일 기준`}</span><br><span class="stamp ${V[1]}" style="margin-top:10px">${V[0]}</span><h2>${esc(petName())}${E.josa(petName(), '과/와').slice(-1)} ${S.closed.length}일</h2><p class="sub" style="margin:0">${V[2]}</p></section>
+    <section class="card verdict-box"><span class="label">${final ? `${courseDone()} 최종 리포트` : `중간 점검 · ${S.closed.length}일 기준`}</span><br><span class="stamp ${V[1]}" style="margin-top:10px">${V[0]}</span><h2>${esc(petName())}${E.josa(petName(), '과/와').slice(-1)} ${S.closed.length}일</h2><p class="sub" style="margin:0">${V[2]}</p></section>
     <section class="card"><h2>반려 준비도</h2><div class="axes">${Object.entries(rep.axes).map(([k, v]) => `<div class="axis"><span>${AX[k]}</span><span class="bar"><i class="${v >= 70 ? '' : v >= 50 ? 'mid' : 'low'}" style="width:${v}%"></i></span><span>${v}</span></div>`).join('')}</div>
       <p class="fine" style="margin:10px 0 0">제때 ${rep.counts.done} · 늦음 ${rep.counts.late} · 놓침 ${rep.counts.missed} · 사건 판단 ${S.answers.length}번 · 퀴즈 ${S.quiz.right}/${S.quiz.total}</p></section>
     ${rep.blockers.length ? `<section class="card"><h2>먼저 풀어야 할 것</h2><ul class="tips">${rep.blockers.map((b) => `<li style="border-left-color:var(--warn)">${esc(b)}</li>`).join('')}</ul></section>` : ''}
@@ -888,11 +945,12 @@ function report() {
       <a href="${C.sources.epis_course.url}" target="_blank" rel="noopener">동물사랑배움터 입양 전 교육<small>반려견·반려묘 각 90분, 무료 — 법정 교육</small></a>
       <a href="https://www.animal.go.kr" target="_blank" rel="noopener">국가동물보호정보시스템<small>지역 보호센터의 입양 기다리는 동물</small></a>
       <p class="fine">이 앱은 입양을 권하거나 말리는 앱이 아니라 판단을 돕는 도구예요.</p></section>
-    ${final ? '<button class="btn btn-wide" data-restart>다른 아이로 다시 체험하기</button>' : ''}`;
+    ${final ? `${yearOffer()}<button class="btn btn-wide" data-restart>다른 아이로 다시 체험하기</button>` : ''}`;
   view.onclick = (e) => {
     const b = e.target.closest('button');
     if (!b) return;
     if (b.dataset.src) return showSources(b.dataset.src.split(','));
+    if (b.dataset.year != null) return confirmYear();
     if (b.dataset.restart != null) return confirmReset();
   };
 }
@@ -906,7 +964,7 @@ $('#btn-settings').addEventListener('click', () => openSettings());
 function openSettings() {
   if (!P()) return;
   const { sheet } = openSheet(`<h2>설정</h2>
-    <div class="card" style="margin-top:0"><p style="margin:0"><b>${esc(petName())}</b> · ${T().label} · ${E.dayNo(P().startKey, todayKey()) > COURSE_DAYS ? '체험 완료' : `${dayNow()}일째`}</p>
+    <div class="card" style="margin-top:0"><p style="margin:0"><b>${esc(petName())}</b> · ${T().label} · ${E.COURSES[course()].label} · ${E.dayNo(P().startKey, todayKey()) > COURSE_DAYS ? '체험 완료' : `${dayNow()}일째`}</p>
     <p class="sub" style="margin:4px 0 0">기상 ${P().life.wake} · ${P().life.remote ? '재택' : `출근 ${P().life.leave} · 귀가 ${P().life.back}`} · 취침 ${P().life.sleep} · 예산 ${won(P().budget)}</p></div>
     <p class="sub">모든 기록은 이 기기에만 저장돼요. 펫 이름·생활 시간·예산은 서버로 보내지 않아요.</p>
     <p class="disclaimer">비용은 공식 통계·진료비 게시제 평균이며 지역·병원마다 달라요. 건강 정보는 일반 정보이며 진료를 대신하지 않아요.</p>

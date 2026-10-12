@@ -237,6 +237,10 @@ input[type=range] { width: 100%; accent-color: var(--forest); }
 .next-steps a { display: block; padding: 12px 14px; border: var(--line); border-radius: 12px; margin-top: 8px; background: var(--card); text-decoration: none; font-weight: 700; }
 .next-steps small { display: block; color: var(--ink-2); font-weight: 600; }
 .future { display: grid; grid-template-columns: 110px 1fr; gap: 14px; align-items: center; }
+/* 1년 코스 '자랐어요' 카드: 예전 모습 → 지금 */
+.grow-pics { display: flex; align-items: center; justify-content: center; gap: 12px; margin: 4px 0 12px; }
+.grow-pics .photo { width: min(130px, 34vw); margin: 0; }
+.grow-pics > span { font-size: 22px; font-weight: 800; color: var(--ink-2); }
 .locked { text-align: center; padding: 30px 16px; color: var(--ink-2); }
 
 #toast { position: fixed; left: 50%; bottom: calc(92px + env(safe-area-inset-bottom)); transform: translate(-50%, 20px); background: var(--ink); color: #fff; padding: 10px 16px; border-radius: 12px; font-weight: 700; font-size: 14px; opacity: 0; pointer-events: none; transition: .25s; z-index: 60; max-width: calc(100vw - 32px); }

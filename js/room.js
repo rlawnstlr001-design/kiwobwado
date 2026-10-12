@@ -2,9 +2,16 @@
 // 아이가 숨 쉬고 돌아다니고, 방 안 물건(밥그릇·패드·현관)을 누르면 돌봄을 하고, 그림자 손으로 쓰다듬을 수 있다
 // 그림: art/room/room_wide.webp(방), art/sprite/<성향>_<단계>_<상태>.webp(배경 없는 아이), art/prop/*.webp(밥그릇·패드·화장실·장난감)
 
-import { mountRig, RIG } from './rig.js?v=202610120955';
+import { mountRig, RIG } from './rig.js?v=202610121023';
 
-const HAND = `<svg viewBox="0 0 120 120" aria-hidden="true"><path d="M33 112c-9-10-17-26-21-40-2-7 6-11 11-5l9 13V30c0-6 9-6 9 0v30h3V18c0-6 9-6 9 0v40h3V22c0-6 9-6 9 0v38h3V32c0-6 9-6 9 0v44c0 14-4 26-12 36z"/></svg>`;
+// 그림자 손 — 만지는 자리에 따라 모양이 바뀐다(10/12 사용자 요청)
+// head: 위에서 손바닥을 얹어 머리를 쓰다듬기(손가락이 아래로) · chin: 아래에서 손가락을 구부려 턱 긁기 · body: 옆으로 눕힌 손으로 몸 쓸어 주기
+const OPEN = 'M33 112c-9-10-17-26-21-40-2-7 6-11 11-5l9 13V30c0-6 9-6 9 0v30h3V18c0-6 9-6 9 0v40h3V22c0-6 9-6 9 0v38h3V32c0-6 9-6 9 0v44c0 14-4 26-12 36z';
+const HANDS = {
+  head: `<svg viewBox="0 0 120 120" aria-hidden="true"><path transform="translate(0 120) scale(1 -1)" d="${OPEN}"/></svg>`,
+  chin: '<svg viewBox="0 0 120 120" aria-hidden="true"><path d="M30 118c-6-14-8-30-6-44 1-8 4-14 10-17l6-3c-3-6-3-13 2-15 4-2 8 1 9 6 0-7 3-12 8-12s8 5 8 12c1-6 5-9 9-8 5 1 6 7 4 13 4-3 9-2 10 3 2 6-2 12-6 17l-6 8c2 12 1 26-4 40z"/></svg>',
+  body: `<svg viewBox="0 0 120 120" aria-hidden="true"><path transform="rotate(90 60 60)" d="${OPEN}"/></svg>`,
+};
 
 // 아이 키(방 높이 대비 %) — 성향·단계별로 실제 크기 차이를 느끼게
 const HEIGHT = {
@@ -66,7 +73,7 @@ export function roomHTML({ type, stage, state, tod, need, prop, spots = {}, cloc
       ${need ? `<div class="need" id="need">${need}</div>` : ''}
     </div>
     <div class="zzz" aria-hidden="true"><i>z</i><i>z</i><i>Z</i></div>
-    <div class="hand" id="hand">${HAND}</div>
+    <div class="hand z-body" id="hand">${HANDS.body}</div>
     <div class="fx" id="fx" aria-hidden="true"></div>
     ${tag ? `<div class="room-top"><span class="room-tag">${tag}</span><span class="room-clock">${clock}</span></div>` : ''}
     <div class="room-banner" id="room-banner" hidden></div>
@@ -83,7 +90,7 @@ let META = { sprite: {}, clip: {}, anim: {} };
 export async function loadAnim() {
   const get = (u) => fetch(u).then((r) => (r.ok ? r.json() : {})).catch(() => ({}));
   let meta;
-  [ANIM, CLIP, meta] = await Promise.all([get('art/anim/index.json?v=202610120955'), get('art/clip/index.json?v=202610120955'), get('art/meta.json?v=202610120955')]);
+  [ANIM, CLIP, meta] = await Promise.all([get('art/anim/index.json?v=202610121023'), get('art/clip/index.json?v=202610121023'), get('art/meta.json?v=202610121023')]);
   META = { sprite: {}, clip: {}, anim: {}, ...meta };
 }
 
@@ -246,8 +253,33 @@ export function mountRoom({ type, stage, state, onStroke, canPet, wear = [] }) {
   }
   // 쓰다듬기 — 마우스는 올려서 문지르기, 손가락은 대고 문지르기
   let dist = 0, last = null, hearts = 0;
+  // 손이 닿은 자리: 그림 좌표로 바꿔 눈·목 높이(RIG)와 비교 → 머리 위 / 턱 / 몸. 손 크기는 두 눈 사이 거리에 맞춘다
+  let zone = 'body';
+  const zoneAt = (e) => {
+    const cfg = RIG[name];
+    const useRig = rig && !cv.hidden && cfg;
+    const el = useRig ? cv : img;
+    const r = el.getBoundingClientRect();
+    if (!cfg || !r.height || !img.naturalHeight) {   // 걷기·먹기 영상 중 등: 위에서부터 비율로
+      const f = (e.clientY - r.top) / r.height;
+      return { z: f < 0.28 ? 'head' : f < 0.42 ? 'chin' : 'body', size: r.height * 0.3 };
+    }
+    const H = img.naturalHeight, W = img.naturalWidth, pad = cfg.pad ?? 70;
+    const sh = useRig ? H + pad : H, sw = useRig ? W + pad * 2 : W;
+    const sy = (e.clientY - r.top) / r.height * sh - (useRig ? pad : 0);
+    const sx = (e.clientX - r.left) / r.width * sw - (useRig ? pad : 0);
+    const [a, b] = cfg.eyes, eyeY = (a[1] + b[1]) / 2, ed = Math.abs(b[0] - a[0]), cx = (a[0] + b[0]) / 2;
+    const px = r.height / sh;                         // 그림 1px → 화면 px
+    const size = ed * 1.7 * px;
+    if (sy < eyeY + ed * 0.2) return { z: 'head', size };
+    if (sy < cfg.neck[1] + ed * 0.35 && Math.abs(sx - cx) < ed * 1.1) return { z: 'chin', size };
+    return { z: 'body', size: size * 1.15 };
+  };
   const showHand = (e) => {
     const r = room.getBoundingClientRect();
+    const { z, size } = zoneAt(e);
+    if (z !== zone) { zone = z; hand.className = `hand z-${z}`; hand.innerHTML = HANDS[z]; }
+    hand.style.width = `${Math.round(size)}px`;
     hand.style.left = `${e.clientX - r.left}px`;
     hand.style.top = `${e.clientY - r.top}px`;
   };

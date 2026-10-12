@@ -503,5 +503,19 @@
   "year": "2020",
   "grade": "B",
   "url": "https://www.ncl.ac.uk/press/articles/archive/2020/05/teenagedogs/"
+ },
+ "ellis2015_cat": {
+  "title": "고양이 쓰다듬기 — 꼬리 뿌리 쪽에서 싫은 반응이 가장 많았다(Ellis 외, Applied Animal Behaviour Science 173:60-67)",
+  "org": "영국 링컨대학교 외",
+  "year": "2015",
+  "grade": "B",
+  "url": "https://agris.fao.org/search/fr/records/65debad20f3e94b9e5d0b2ca"
+ },
+ "kuhne2014_dog": {
+  "title": "개 28마리 — 가슴을 쓰다듬을 때 미주신경 활동이 늘었다(Kuhne·Hößler·Struwe, 사람과 개의 접촉에 대한 행동·심장 반응)",
+  "org": "독일 기센대학교",
+  "year": "2014",
+  "grade": "B",
+  "url": "https://agris.fao.org/search/ar/records/65dfd5dc63b8185d9caf5e92"
  }
 }

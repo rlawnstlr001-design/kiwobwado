@@ -2,14 +2,15 @@
 // 아이가 숨 쉬고 돌아다니고, 방 안 물건(밥그릇·패드·현관)을 누르면 돌봄을 하고, 그림자 손으로 쓰다듬을 수 있다
 // 그림: art/room/room_wide.webp(방), art/sprite/<성향>_<단계>_<상태>.webp(배경 없는 아이), art/prop/*.webp(밥그릇·패드·화장실·장난감)
 
-import { mountRig, RIG } from './rig.js?v=202610121351';
-import { sfx, petLoop } from './sound.js?v=202610121351';
+import { mountRig, RIG } from './rig.js?v=202610121402';
+import { sfx, petLoop } from './sound.js?v=202610121402';
 
 // 그림자 손 — 만지는 자리에 따라 모양이 바뀐다(10/12 사용자 요청)
 // head: 위에서 손바닥을 얹어 머리를 쓰다듬기(손가락이 아래로) · chin: 아래에서 손가락을 구부려 턱 긁기 · body: 옆으로 눕힌 손으로 몸 쓸어 주기
 const OPEN = 'M33 112c-9-10-17-26-21-40-2-7 6-11 11-5l9 13V30c0-6 9-6 9 0v30h3V18c0-6 9-6 9 0v40h3V22c0-6 9-6 9 0v38h3V32c0-6 9-6 9 0v44c0 14-4 26-12 36z';
 const HANDS = {
   head: `<svg viewBox="0 0 120 120" aria-hidden="true"><path transform="translate(0 120) scale(1 -1)" d="${OPEN}"/></svg>`,
+  tail: `<svg viewBox="0 0 120 120" aria-hidden="true"><path transform="rotate(90 60 60)" d="${OPEN}"/></svg>`,
   chin: '<svg viewBox="0 0 120 120" aria-hidden="true"><path d="M30 118c-6-14-8-30-6-44 1-8 4-14 10-17l6-3c-3-6-3-13 2-15 4-2 8 1 9 6 0-7 3-12 8-12s8 5 8 12c1-6 5-9 9-8 5 1 6 7 4 13 4-3 9-2 10 3 2 6-2 12-6 17l-6 8c2 12 1 26-4 40z"/></svg>',
   body: `<svg viewBox="0 0 120 120" aria-hidden="true"><path transform="rotate(90 60 60)" d="${OPEN}"/></svg>`,
 };
@@ -96,7 +97,7 @@ let META = { sprite: {}, clip: {}, anim: {} };
 export async function loadAnim() {
   const get = (u) => fetch(u).then((r) => (r.ok ? r.json() : {})).catch(() => ({}));
   let meta;
-  [ANIM, CLIP, meta, LINK] = await Promise.all([get('art/anim/index.json?v=202610121351'), get('art/clip/index.json?v=202610121351'), get('art/meta.json?v=202610121351'), get('art/link/index.json?v=202610121351')]);
+  [ANIM, CLIP, meta, LINK] = await Promise.all([get('art/anim/index.json?v=202610121402'), get('art/clip/index.json?v=202610121402'), get('art/meta.json?v=202610121402'), get('art/link/index.json?v=202610121402')]);
   META = { sprite: {}, clip: {}, anim: {}, ...meta };
 }
 
@@ -104,12 +105,15 @@ export async function loadAnim() {
 export function clipInfo(name, k) { const r = CLIP[`${name}_${k}`]; return r ? { src: `art/clip/${name}_${k}.webp`, ratio: r } : null; }
 
 let wanderTimer = null;
+let liveRig = null;   // 방을 다시 그릴 때 예전 움직임 캔버스(WebGL)를 닫는다 — 안 닫으면 1분마다 쌓여 브라우저가 경고한다
 let revertTimer = null;
 
 // 방을 살린다: 돌아다니기 + 쓰다듬기. onStroke(누적 쓰다듬은 정도)로 앱이 마음 점수를 올린다
-export function mountRoom({ type, stage, state, onStroke, canPet, wear = [] }) {
+export function mountRoom({ type, stage, state, onStroke, canPet, onTip, wear = [] }) {
   clearInterval(wanderTimer);
   clearTimeout(revertTimer);
+  liveRig?.destroy?.();
+  liveRig = null;
   const room = document.getElementById('room');
   const pet = document.getElementById('pet');
   const img = document.getElementById('pet-img');
@@ -127,6 +131,7 @@ export function mountRoom({ type, stage, state, onStroke, canPet, wear = [] }) {
   let rig = null, rigReady = false;
   if (RIG[name] && cv) {
     rig = mountRig(cv, `${base}idle.webp`, RIG[name], { cat });
+    liveRig = rig;
     rig?.wear(wear);
     cv.addEventListener('rigready', () => {
       cv.style.height = `${rig.scale() * 100}%`;
@@ -228,7 +233,7 @@ export function mountRoom({ type, stage, state, onStroke, canPet, wear = [] }) {
   // 연결 영상: 미리 받아 두고(Blob), 틀 때마다 새 주소를 만들어 첫 장면부터 다시 재생한다(같은 주소면 이어서 돈다)
   const blobs = {};
   if (LINK[name] && !REDUCE) for (const k of ['stand', 'sit', 'eatf']) {
-    if (LINK[`${name}_${k}`]) fetch(`art/link/${name}_${k}.webp?v=202610121351`).then((r) => (r.ok ? r.blob() : null)).then((b) => { if (b) blobs[k] = b; }).catch(() => {});
+    if (LINK[`${name}_${k}`]) fetch(`art/link/${name}_${k}.webp?v=202610121402`).then((r) => (r.ok ? r.blob() : null)).then((b) => { if (b) blobs[k] = b; }).catch(() => {});
   }
   // 앉은 모습(움직임 캔버스)이 보이고 있을 때만 이어 붙인다 — 다른 자세(아픔·말썽 그림)에서 시작하면 끊겨 보인다
   const linkable = (k) => blobs[k] && rigReady && rig && !cv.hidden;
@@ -361,6 +366,9 @@ export function mountRoom({ type, stage, state, onStroke, canPet, wear = [] }) {
     const [a, b] = cfg.eyes, eyeY = (a[1] + b[1]) / 2, ed = Math.abs(b[0] - a[0]), cx = (a[0] + b[0]) / 2;
     const px = r.height / sh;                         // 그림 1px → 화면 px
     const size = ed * 1.7 * px;
+    // 고양이 꼬리 쪽(꼬리 상자 + 여유): 싫어하는 자리(Ellis 외 2015 — 꼬리 뿌리에서 싫은 반응이 가장 많았다)
+    const tb = cfg.tail?.box, m = ed * 0.5;
+    if (cat && tb && sx > tb[0] - m && sx < tb[2] + m && sy > tb[1] - m && sy < tb[3] + m) return { z: 'tail', size: size * 1.15 };
     if (sy < eyeY + ed * 0.2) return { z: 'head', size };
     if (sy < cfg.neck[1] + ed * 0.35 && Math.abs(sx - cx) < ed * 1.1) return { z: 'chin', size };
     return { z: 'body', size: size * 1.15 };
@@ -373,17 +381,32 @@ export function mountRoom({ type, stage, state, onStroke, canPet, wear = [] }) {
     hand.style.left = `${e.clientX - r.left}px`;
     hand.style.top = `${e.clientY - r.top}px`;
   };
+  // 자리마다 하트가 차는 빠르기: 고양이는 턱·머리, 강아지는 가슴·몸을 더 좋아한다(작은 연구들 — 앱 안 팁에 출처)
+  const LIKE = cat ? { chin: 0.8, head: 1, body: 1.25 } : { body: 0.85, chin: 0.9, head: 1 };
+  let tailDist = 0, tipped = false;
   const move = (e) => {
     if (e.pointerType !== 'mouse' && e.buttons === 0) return;
     showHand(e);
     room.classList.add('stroking');
     rig?.pet(true);
-    if (canPet()) petLoop(cat ? 'cat' : 'dog', true);   // 골골 / 헥헥
+    rig?.zone(zone);
+    const hate = zone === 'tail';
+    rig?.annoy(hate && canPet());
+    if (canPet() && !hate) petLoop(cat ? 'cat' : 'dog', true);   // 골골 / 헥헥
+    else petLoop(null, false);
     if (last) {
       const dx = e.clientX - last.x, dy = e.clientY - last.y;
       const d = Math.hypot(dx, dy);
-      dist += d;
       hand.style.setProperty('--tilt', `${Math.max(-18, Math.min(18, dx * 1.5))}deg`);
+      if (hate) {
+        // 꼬리 쪽: 하트 대신 '…', 계속 만지면 한 번 알려 준다
+        tailDist += d;
+        if (tailDist > 140 && !tipped && canPet()) { tipped = true; heart(e, true); onTip?.('cat_tail'); }
+        last = { x: e.clientX, y: e.clientY };
+        return;
+      }
+      dist += d / (LIKE[zone] ?? 1);
+      if (!cat && zone === 'body' && dist > 300 && !tipped && canPet()) { tipped = true; onTip?.('dog_chest'); }
       if (dist > 110 * (hearts + 1)) {
         hearts++;
         heart(e);
@@ -396,18 +419,20 @@ export function mountRoom({ type, stage, state, onStroke, canPet, wear = [] }) {
   const leave = () => {
     room.classList.remove('stroking');
     rig?.pet(false);
+    rig?.annoy(false);
     petLoop(null, false);
     last = null;
     clearTimeout(revertTimer);
     if (hearts >= 3) revertTimer = setTimeout(() => setState(room.dataset.base), 2500);
     dist = 0; hearts = 0;
   };
-  const heart = (e) => {
+  const heart = (e, dim = false) => {
     const r = room.getBoundingClientRect();
     const el = document.createElement('i');
-    el.className = canPet() ? 'heart' : 'heart dim';
-    if (canPet()) sfx.pop();
-    el.textContent = canPet() ? '♥' : '…';
+    const ok = canPet() && !dim;
+    el.className = ok ? 'heart' : 'heart dim';
+    if (ok) sfx.pop();
+    el.textContent = ok ? '♥' : '…';
     el.style.left = `${e.clientX - r.left + (Math.random() * 30 - 15)}px`;
     el.style.top = `${e.clientY - r.top - 10}px`;
     fx.appendChild(el);

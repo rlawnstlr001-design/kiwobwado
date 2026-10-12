@@ -1,15 +1,16 @@
 // 키워봐도될까 — 내 생활 그대로 30일 키워 보고 반려 준비도를 확인하는 입양 전 체험
-import * as db from './db.js?v=202610121351';
-import * as E from './engine.js?v=202610121351';
-import { C, loadContent, eventById, lessonById, foodById } from './content.js?v=202610121351';
-import { track } from './track.js?v=202610121351';
-import { roomHTML, mountRoom, timeOfDay, loadAnim, clipInfo } from './room.js?v=202610121351';
-import { openGames, GAMES, titleOf } from './games.js?v=202610121351';
-import * as K from './care.js?v=202610121351';
-import { openShop, openVet, openTreats } from './shop.js?v=202610121351';
-import { isApp, initNative, scheduleCare, exactAlarm } from './native.js?v=202610121351';
-import { runGuide } from './guide.js?v=202610121351';
-import { sfx, ambient, stopAmbient, soundOn, setSound } from './sound.js?v=202610121351';
+import * as db from './db.js?v=202610121402';
+import * as E from './engine.js?v=202610121402';
+import { C, loadContent, eventById, lessonById, foodById } from './content.js?v=202610121402';
+import { track } from './track.js?v=202610121402';
+import { roomHTML, mountRoom, timeOfDay, loadAnim, clipInfo } from './room.js?v=202610121402';
+import { openGames, GAMES, titleOf } from './games.js?v=202610121402';
+import * as K from './care.js?v=202610121402';
+import { openShop, openVet, openTreats } from './shop.js?v=202610121402';
+import { isApp, initNative, scheduleCare, exactAlarm, shareImage } from './native.js?v=202610121402';
+import { makeCard } from './card.js?v=202610121402';
+import { runGuide } from './guide.js?v=202610121402';
+import { sfx, ambient, stopAmbient, soundOn, setSound } from './sound.js?v=202610121402';
 
 const $ = (s, el = document) => el.querySelector(s);
 const view = $('#view');
@@ -164,9 +165,43 @@ function closeDayN(n) {
     for (const code of c.notes) S.careNotes.push({ day: n, code, read: false });
   }
   S.lastClosed = n;
+  (S.album ??= []).push(albumEntry(n, S.closed.at(-1)));
   // 마감 후 지난 날의 무작위 사건은 남기지 않는다(병원·법 같은 정해진 일만 이어서)
   S.pending = S.pending.filter((p) => p.day > n || ['fixed', 'chain'].includes(eventById(p.id)?.when.type) || p.day === n);
 }
+// ---------- 하루 사진 앨범 ----------
+// 하루를 마감할 때 한 장: 그날 모습(제때 챙김 → 기쁨, 많이 놓침 → 배고픔, 건강 낮음 → 아픔)과 한 줄(자란 날·그날 사건·쓰다듬기 순)
+const DAY_LINES = ['하루 종일 제때 챙겨 줬어요', '배부르게 먹고 일찍 잠들었어요', '오늘은 졸졸 따라다녔어요', '창가에서 한참 놀았어요', '이름을 부르니 고개를 돌렸어요', '낮잠을 길게 잤어요'];
+function albumEntry(n, c, past = false) {   // past: 예전 저장본 채우기 — 그날 건강은 모르니 응답 기록으로만
+  const st = E.stageOf(ageW(n)), prev = n > 1 ? E.stageOf(ageW(n - 1)) : st;
+  const tot = c.count.done + c.count.late + c.count.missed;
+  const ratio = tot ? (c.count.done + c.count.late * 0.5) / tot : 1;
+  const ev = S.answers.find((a) => a.day === n && eventById(a.id));
+  const petted = S.petted[keyOf(n)] || 0;
+  const state = !past && S.stats.health < 50 ? 'sick' : c.count.missed >= 3 ? 'hungry' : ratio >= 0.8 ? 'happy' : 'idle';
+  let cap;
+  if (st !== prev) cap = st === 'teen' ? '청소년이 된 날' : '어른이 된 날';
+  else if (ev) cap = fill(eventById(ev.id).title);
+  else if (ratio < 0.5) cap = '오늘은 많이 기다렸어요';
+  else if (petted >= 3) cap = '많이 쓰다듬어 준 날';
+  else if (ratio >= 0.8) cap = DAY_LINES[n % DAY_LINES.length];
+  else cap = '조용히 지나간 하루';
+  return { day: n, stage: st, state, cap };
+}
+const picSrc = (a) => `art/pet/${P().type}_${a.stage}_${a.state}.webp`;
+const tilt = (n) => `${(((n * 37) % 7) - 3) * 0.9}deg`;
+const picHTML = (a) => `<button class="album-item" data-pic="${a.day}"><figure class="photo" style="--r:${tilt(a.day)}"><img src="${picSrc(a)}" alt="" loading="lazy"><figcaption>${a.day}일째</figcaption></figure><small>${esc(a.cap)}</small></button>`;
+function openPic(day, fresh = false) {
+  const a = S.album?.find((x) => x.day === day);
+  if (!a) return;
+  const [y, m, d] = keyOf(day).split('-').map(Number);
+  const { sheet } = openSheet(`<span class="label">${fresh ? '어제의 한 장' : `${courseDone()} 앨범`}</span>
+    <div class="pic-big"><figure class="photo" style="--r:${tilt(day)}"><img src="${picSrc(a)}" alt=""><figcaption>${day}일째 · ${E.ageLabel(ageW(day))}</figcaption></figure></div>
+    <h2 class="center">${esc(a.cap)}</h2><p class="sub center" style="margin-top:0">${m}월 ${d}일</p>
+    ${fresh ? '<a class="btn btn-soft btn-wide" href="#/book" data-album data-close>앨범 전체 보기</a>' : ''}<button class="btn btn-wide" data-close>닫기</button>`);
+  sheet.addEventListener('click', (e) => { if (e.target.closest('[data-album]')) bookSeg = 'album'; });
+}
+
 function sync() {
   if (!P()) return;
   const d = dayNow();
@@ -442,6 +477,7 @@ function today() {
     type: P().type, stage, state: roomState,
     wear: Object.values(S.wearing).filter(Boolean).map((id) => C.shop.items.find((i) => i.id === id)).filter(Boolean).map((i) => ({ src: `art/wear/${i.art}.webp`, slot: i.slot, wf: i.wf, fb: i.fb })),
     canPet: () => !sleepNow,
+    onTip: (code) => strokeTip(code),
     onStroke: (n) => {
       if (sleepNow) { if (n === 1) ROOM?.nudge('자는 아이는 깨우지 말고 쉬게 둬요'); return; }
       if (n === 3) {
@@ -457,7 +493,10 @@ function today() {
   // 처음 한 번: 첫날 길잡이(자랐어요 카드보다 먼저)
   if (!S.guided) { setTimeout(() => startGuide(), 700); return; }
   // 1년 코스: 단계가 바뀐 첫날 한 번 '자랐어요' 카드
-  if (isYear() && stage !== (S.grown ?? 'baby')) { const was = S.grown ?? 'baby'; S.grown = stage; save(); growCard(was, stage, weeks); }
+  if (isYear() && stage !== (S.grown ?? 'baby')) { const was = S.grown ?? 'baby'; S.grown = stage; save(); growCard(was, stage, weeks); return; }
+  // 새로 마감된 날이 있으면 '어제의 한 장'
+  const pic = S.album?.at(-1);
+  if (pic && pic.day > (S.albumSeen ?? 0)) { S.albumSeen = pic.day; save(); setTimeout(() => { if (!$('#sheet-root').classList.contains('on') && !document.body.classList.contains('guiding')) openPic(pic.day, true); }, 600); }
 }
 // 첫날 길잡이: 방의 물건·버튼을 하나씩 밝혀 짚어 준다. 세로 화면 안내가 떠 있으면 사라진 뒤에, 창이 열려 있으면 닫힌 뒤에
 function startGuide(force = false) {
@@ -481,6 +520,22 @@ function startGuide(force = false) {
     { sel: '.hud-tr', title: '샵·병원·미니게임', text: `사료·패드가 떨어지면 샵에서 사고, 아프면 병원에 가요. 미니게임으로 코인을 모아요(하루 ${COIN_CAP}개까지). 톱니바퀴엔 수첩·리포트가 있어요.` },
     { title: '진짜처럼 대해 주세요', text: `가상이라도 제때 챙겨야 결과가 정확해요.${isApp ? ' 요청 시각마다 알림이 와요.' : ''} 이 길잡이는 메뉴에서 다시 볼 수 있어요.` },
   ], { onDone: () => { S.guided = true; save(); } });
+}
+// 쓰다듬는 자리 팁(코스마다 한 번): 고양이 꼬리 쪽 / 강아지 가슴 쪽 — 작은 연구라 단정하지 않게
+const TIPS = {
+  cat_tail: ['꼬리 쪽은 싫어해요', '고양이를 쓰다듬는 연구에서 꼬리 뿌리 쪽을 만질 때 싫은 반응(꼬리를 탁탁 치기·귀 눕히기·피하기)이 가장 많았어요. 연구진은 꼬리 쪽은 피하라고 권해요. 머리 쪽부터 쓰다듬어 보세요.', ['ellis2015_cat']],
+  dog_chest: ['가슴 쪽을 쓰다듬었어요', '개 28마리를 살펴본 작은 연구에서 가슴을 쓰다듬을 때 몸이 차분해지는 신호(미주신경 활동 증가)가 나왔대요. 다만 아이마다 좋아하는 자리가 달라요 — 몸을 기대 오는지 피하는지 살펴 주세요.', ['kuhne2014_dog']],
+};
+function strokeTip(code) {
+  S.tips = S.tips ?? {};
+  if (S.tips[code] || !TIPS[code]) return;
+  S.tips[code] = true; save();
+  const [title, text, src] = TIPS[code];
+  setTimeout(() => {
+    if ($('#sheet-root').classList.contains('on')) return;
+    const { sheet } = openSheet(`<span class="label">쓰다듬기</span><h2>${esc(title)}</h2><p>${esc(text)}</p><button class="src-btn" data-src="${src.join(',')}">출처</button><button class="btn btn-wide" data-close>알겠어요</button>`);
+    sheet.addEventListener('click', (e) => { const b = e.target.closest('[data-src]'); if (b) showSources(b.dataset.src.split(',')); });
+  }, 900);
 }
 // 자라면 달라지는 것(1년 코스) — 줄마다 출처
 const GROW = {
@@ -823,9 +878,13 @@ function book() {
   const total = S.ledger.reduce((s, l) => s + l.amount, 0);
   const proj = E.monthlyProjection(P(), C.costs, { sitterPerMonth: sitterMonthly() });
   const y = C.costs.yearly[species()];
-  const segs = { money: '가계부', health: '건강 기록', time: '시간 장부' };
+  const segs = { money: '가계부', album: '앨범', health: '건강', time: '시간' };
   let body = '';
-  if (bookSeg === 'money') {
+  if (bookSeg === 'album') {
+    const al = [...(S.album ?? [])].reverse();
+    body = `<section class="card"><h2>${courseDone()} 앨범</h2><p class="fine" style="margin:0">하루가 끝날 때마다 한 장씩 담겨요.</p>
+      ${al.length ? `<div class="album">${al.map(picHTML).join('')}</div>` : '<p class="sub">첫 하루가 지나면 사진이 생겨요.</p>'}</section>`;
+  } else if (bookSeg === 'money') {
     body = `<section class="card"><span class="label">지금까지 쓴 돈</span><p class="big-num" style="margin:2px 0">${won(total)}</p>
         <div class="cmp"><div><span class="fine">한 달 예상</span><b>${won(proj.total)}</b><span class="fine">양육비 ${won(proj.living)} + 병원비 월 환산 ${won(proj.vet)}${proj.care ? ` + 낮 돌봄 ${won(proj.care)}` : ''}</span></div>
         <div><span class="fine">내 예산</span><b style="color:${P().budget >= proj.total ? 'var(--forest)' : 'var(--warn)'}">${won(P().budget)}</b><span class="fine">${P().budget >= proj.total ? '감당 가능' : `한 달 ${won(proj.total - P().budget)} 부족`}</span></div></div>
@@ -857,6 +916,7 @@ function book() {
     if (!b) return;
     if (b.dataset.seg) { bookSeg = b.dataset.seg; return book(); }
     if (b.dataset.src) return showSources(b.dataset.src.split(','));
+    if (b.dataset.pic) return openPic(Number(b.dataset.pic));
   };
 }
 function sitterMonthly() {
@@ -968,9 +1028,11 @@ function report() {
   const life = LIFESPAN[P().type];
   const y = C.costs.yearly[species()];
   view.innerHTML = `
-    <section class="card verdict-box"><span class="label">${final ? `${courseDone()} 최종 리포트` : `중간 점검 · ${S.closed.length}일 기준`}</span><br><span class="stamp ${V[1]}" style="margin-top:10px">${V[0]}</span><h2>${esc(petName())}${E.josa(petName(), '과/와').slice(-1)} ${S.closed.length}일</h2><p class="sub" style="margin:0">${V[2]}</p></section>
+    <section class="card verdict-box"><span class="label">${final ? `${courseDone()} 최종 리포트` : `중간 점검 · ${S.closed.length}일 기준`}</span><br><span class="stamp ${V[1]}" style="margin-top:10px">${V[0]}</span><h2>${esc(petName())}${E.josa(petName(), '과/와').slice(-1)} ${S.closed.length}일</h2><p class="sub" style="margin:0">${V[2]}</p>
+      <button class="btn btn-main btn-wide" data-card style="margin-top:12px">결과 카드 만들기 · 공유</button></section>
     <section class="card"><h2>반려 준비도</h2><div class="axes">${Object.entries(rep.axes).map(([k, v]) => `<div class="axis"><span>${AX[k]}</span><span class="bar"><i class="${v >= 70 ? '' : v >= 50 ? 'mid' : 'low'}" style="width:${v}%"></i></span><span>${v}</span></div>`).join('')}</div>
       <p class="fine" style="margin:10px 0 0">제때 ${rep.counts.done} · 늦음 ${rep.counts.late} · 놓침 ${rep.counts.missed} · 사건 판단 ${S.answers.length}번 · 퀴즈 ${S.quiz.right}/${S.quiz.total}</p></section>
+    ${S.album?.length ? `<section class="card"><h2>${courseDone()} 앨범</h2><div class="album-strip">${S.album.map(picHTML).join('')}</div><a class="btn btn-soft btn-wide" href="#/book" data-album>앨범 전체 보기</a></section>` : ''}
     ${rep.blockers.length ? `<section class="card"><h2>먼저 풀어야 할 것</h2><ul class="tips">${rep.blockers.map((b) => `<li style="border-left-color:var(--warn)">${esc(b)}</li>`).join('')}</ul></section>` : ''}
     ${rep.tips.length ? `<section class="card"><h2>이렇게 준비해 보세요</h2><ul class="tips">${rep.tips.map((t) => `<li>${esc(t.text)}</li>`).join('')}</ul></section>` : ''}
     <section class="card"><h2>앞으로의 시간</h2><div class="future"><figure class="photo" style="transform:rotate(2deg)"><img src="${photoOf('adult', 'happy')}" alt="다 자란 모습"><figcaption>다 자라면</figcaption></figure>
@@ -982,12 +1044,33 @@ function report() {
       <p class="fine">이 앱은 입양을 권하거나 말리는 앱이 아니라 판단을 돕는 도구예요.</p></section>
     ${final ? `${yearOffer()}<button class="btn btn-wide" data-restart>다른 아이로 다시 체험하기</button>` : ''}`;
   view.onclick = (e) => {
+    if (e.target.closest('[data-album]')) bookSeg = 'album';
     const b = e.target.closest('button');
     if (!b) return;
     if (b.dataset.src) return showSources(b.dataset.src.split(','));
     if (b.dataset.year != null) return confirmYear();
     if (b.dataset.restart != null) return confirmReset();
+    if (b.dataset.card != null) return openCard(rep, V[0], rep.verdict === 'ready', final);
+    if (b.dataset.pic) return openPic(Number(b.dataset.pic));
   };
+}
+
+// 결과 카드: 그림을 만들어 미리 보여 주고 공유(웹은 공유 시트 또는 내려받기, 앱은 안드로이드 공유 창)
+async function openCard(rep, verdict, good, final) {
+  const nm = petName(), wa = E.josa(nm, '과/와').slice(-1);
+  const stage = final ? (isYear() ? 'adult' : 'baby') : E.stageOf(ageW(Math.min(dayNow(), COURSE_DAYS)));
+  const title = final ? `${nm}${wa} 함께한 ${courseDone()}` : `${nm}${wa} 함께한 ${S.closed.length}일 · 중간 점검`;
+  const { sheet, close } = openSheet('<h2>결과 카드</h2><div class="card-prev"><span class="sub">그리는 중…</span></div><div id="card-btns"></div><p class="fine">예산·생활 시간·집 정보는 카드에 넣지 않아요.</p><button class="btn btn-wide" data-close>닫기</button>');
+  const blob = await makeCard({ name: nm, typeLabel: `${word[species()]} · ${T().label}`, title, verdict, good, axes: rep.axes, photo: photoOf(stage, 'happy'), url: 'rlawnstlr001-design.github.io/kiwobwado' });
+  if (!blob || !sheet.isConnected) return;
+  const u = URL.createObjectURL(blob);
+  $('.card-prev', sheet).innerHTML = `<img src="${u}" alt="결과 카드 미리 보기">`;
+  $('#card-btns', sheet).innerHTML = '<button class="btn btn-main btn-wide" id="card-share">공유하기 · 저장</button>';
+  $('#card-share', sheet).addEventListener('click', async () => {
+    const r = await shareImage(blob, `kiwobwado-${Date.now()}.png`, `${nm}${wa} 함께한 ${final ? courseDone() : `${S.closed.length}일`} — 반려 준비도 "${verdict}". 입양 전에 내 생활로 먼저 키워 보기 https://rlawnstlr001-design.github.io/kiwobwado/`);
+    if (r === 'shared') { toast('공유했어요'); close(); } else if (r === 'saved') toast('이미지를 저장했어요'); else if (r === 'fail') toast('공유하지 못했어요');
+  });
+  sheet.addEventListener('click', (e) => { if (e.target.closest('[data-close]')) URL.revokeObjectURL(u); });
 }
 
 // ---------- 설정 ----------
@@ -1044,6 +1127,7 @@ async function devAction(a) {
   const saved = await db.get('kv', 'state').catch(() => null);
   if (saved?.profile) S = { ...fresh(), ...saved };
   if (P() && !S.inv) { initCare(); save(); }
+  if (P() && !S.album) { S.album = S.closed.map((c) => albumEntry(c.day, c, true)); S.albumSeen = S.lastClosed; save(); }
   db.askPersist();
   initNative({
     // 뒤로 가기: 열린 창 → 미니게임·펫샵 → 다른 화면이면 방으로, 방이면 앱 종료

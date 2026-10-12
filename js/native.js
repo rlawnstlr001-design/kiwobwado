@@ -9,6 +9,30 @@ const App = plug('App');
 const Haptics = plug('Haptics');
 const StatusBar = plug('StatusBar');
 const Notify = plug('LocalNotifications');
+const Share = plug('Share');
+const Files = plug('Filesystem');
+
+// 그림 공유: 웹은 공유 시트(파일 공유가 되는 브라우저) 아니면 내려받기, 앱은 캐시에 저장한 뒤 안드로이드 공유 창
+// 반환: 'shared' | 'saved' | 'cancel' | 'fail'
+export async function shareImage(blob, name, text) {
+  if (!isApp) {
+    try {
+      const file = new File([blob], name, { type: blob.type });
+      if (navigator.canShare?.({ files: [file] })) { await navigator.share({ files: [file], text }); return 'shared'; }
+    } catch (e) { if (e?.name === 'AbortError') return 'cancel'; }
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob); a.download = name;
+    document.body.appendChild(a); a.click(); a.remove();
+    setTimeout(() => URL.revokeObjectURL(a.href), 5000);
+    return 'saved';
+  }
+  try {
+    const data = await new Promise((res, rej) => { const r = new FileReader(); r.onload = () => res(String(r.result).split(',')[1]); r.onerror = rej; r.readAsDataURL(blob); });
+    const w = await Files.writeFile({ path: name, data, directory: 'CACHE' });
+    await Share.share({ files: [w.uri], text, dialogTitle: '결과 카드 공유' });
+    return 'shared';
+  } catch (e) { return /cancel/i.test(String(e?.message)) ? 'cancel' : 'fail'; }
+}
 
 const CARE_BASE = 7000; // 돌봄 알림 id 7000~7099
 let lastKey = '';

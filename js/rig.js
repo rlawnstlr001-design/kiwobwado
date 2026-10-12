@@ -12,7 +12,7 @@ export function mountRig(canvas, src, cfg, { cat = false } = {}) {
   // preserveDrawingBuffer: 모습이 바뀔 때 room.js가 지금 그림을 복사해 겹쳐 사라지게(크로스페이드) 하려면 그려 둔 화면이 남아 있어야 한다
   const gl = canvas.getContext('webgl', { premultipliedAlpha: true, alpha: true, antialias: true, preserveDrawingBuffer: true });
   if (!gl) return null;
-  const st = { headA: 0, breath: 0, look: 0, pet: 0, petTarget: 0, blink: 0, nextBlink: 1.5, blinkT: -1, flick: [0, 0], nextFlick: 3, tilt: 0, tiltTarget: 0, nextTilt: 4, wag: 0, happy: 0, force: null };
+  const st = { headA: 0, breath: 0, look: 0, pet: 0, petTarget: 0, blink: 0, nextBlink: 1.5, blinkT: -1, flick: [0, 0], nextFlick: 3, tilt: 0, tiltTarget: 0, nextTilt: 4, wag: 0, happy: 0, force: null, zone: 'head', annoy: 0, annoyTarget: 0 };
   let W = 0, H = 0, rest, pos, draw, idx, buf, prog, loc, alive = true, ready = false, bodyTex, bodyUV, ul, geo = null;
   let wears = []; // { slot, wf, fb, aspect, tex, uv, pb, ok }
   const t0 = performance.now(); let last = t0;
@@ -108,7 +108,10 @@ export function mountRig(canvas, src, cfg, { cat = false } = {}) {
       if (b >= .3) { st.blinkT = -1; st.nextBlink = t + 2.5 + Math.random() * 3.5; }
     }
     st.pet += (st.petTarget - st.pet) * Math.min(1, dt * 5);
-    const close = f.close ?? Math.max(st.blink, st.pet * .82);
+    st.annoy += (st.annoyTarget - st.annoy) * Math.min(1, dt * 6);
+    // 만지는 자리마다: 턱 = 눈을 꼭 감고 고개를 들고, 머리 = 지그시, 몸 = 반쯤. 싫은 자리(고양이 꼬리 쪽)면 눈을 뜬다
+    const zc = st.zone === 'chin' ? 1 : st.zone === 'body' ? .55 : .82;
+    const close = f.close ?? Math.max(st.blink, st.pet * zc * (1 - st.annoy));
     // 귀 쫑긋: 가끔 한쪽씩
     if (t > st.nextFlick) { st.flick[Math.random() < .5 ? 0 : 1] = 1; st.nextFlick = t + 2 + Math.random() * 4; }
     st.flick = st.flick.map((v) => v * Math.exp(-dt * 6));
@@ -117,14 +120,15 @@ export function mountRig(canvas, src, cfg, { cat = false } = {}) {
     st.tilt += (st.tiltTarget - st.tilt) * Math.min(1, dt * 4);
 
     const breath = Math.sin(t * Math.PI * 2 / (cat ? 3.6 : 3.2));
-    const head = f.head ?? Math.sin(t * Math.PI * 2 / 5.5) * .03 + st.tilt + st.look * .09 - st.pet * .09;
+    const head = f.head ?? Math.sin(t * Math.PI * 2 / 5.5) * .03 + st.tilt + st.look * .09 - st.pet * (st.zone === 'chin' ? -.05 : .09) * (1 - st.annoy);
     st.headA = head; st.breath = breath;
     // 꼬리: 강아지는 빠르게 흔들고(기분 좋으면 더 빠르게), 고양이는 끝을 천천히 살랑
-    const period = cat ? 2.4 : st.happy ? .34 : .55;
-    st.wag += dt * Math.PI * 2 / period * (1 + st.pet * (cat ? .4 : 1.2));
-    const amp = cat ? .1 : .2 + st.pet * .06;
+    // 싫으면 고양이 꼬리를 탁탁 친다. 강아지는 몸(가슴)을 쓰다듬으면 더 신나게 흔든다
+    const period = cat ? 2.4 - st.annoy * 1.9 : st.happy ? .34 : .55;
+    st.wag += dt * Math.PI * 2 / period * (1 + st.pet * (cat ? .4 : st.zone === 'body' ? 1.7 : 1.2));
+    const amp = cat ? .1 + st.annoy * .14 : .2 + st.pet * .06;
     const tail = (f.tail ?? (cat ? .04 : .12) + Math.sin(st.wag) * amp) * (c.tail?.dir ?? 1);
-    const ears = [0, 1].map((i) => earOut[i] * (Math.sin(t * (1.1 + i * .2) + i) * .02 + st.flick[i] * (cat ? .2 : .15) - st.pet * .05));
+    const ears = [0, 1].map((i) => earOut[i] * (Math.sin(t * (1.1 + i * .2) + i) * .02 + st.flick[i] * (cat ? .2 : .15) - st.pet * .05 - st.annoy * .3));   // 싫으면 귀를 옆으로 눕힌다(쓰다듬을 때 귀가 눕는 쪽으로 더 크게)
 
     const [ncx, ncy] = c.neck, g = c.ground, tl = c.tail;
     for (let k = 0; k < rest.length; k += 2) {
@@ -206,6 +210,9 @@ export function mountRig(canvas, src, cfg, { cat = false } = {}) {
     scale: () => (ready ? (H + (cfg.pad ?? 70)) / H : 1),
     look(v) { st.look = Math.max(-1, Math.min(1, v)); },
     pet(on) { st.petTarget = on ? 1 : 0; },
+    // 만지는 자리('head'|'chin'|'body'|'tail')와 싫어하는지
+    zone(z) { st.zone = z; },
+    annoy(on) { st.annoyTarget = on ? 1 : 0; },
     mood(happy) { st.happy = happy ? 1 : 0; },
     debug(f) { st.force = f; },   // 시험용: {close, tail, head} 고정
     // 입힐 것 목록 [{ src, slot: 'neck'|'head', wf: 눈 사이 거리의 몇 배 너비, fb }] — 머리는 아래 목(목)부터 그린다

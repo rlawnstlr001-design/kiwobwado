@@ -2,7 +2,8 @@
 // 아이가 숨 쉬고 돌아다니고, 방 안 물건(밥그릇·패드·현관)을 누르면 돌봄을 하고, 그림자 손으로 쓰다듬을 수 있다
 // 그림: art/room/room_wide.webp(방), art/sprite/<성향>_<단계>_<상태>.webp(배경 없는 아이), art/prop/*.webp(밥그릇·패드·화장실·장난감)
 
-import { mountRig, RIG } from './rig.js?v=202610121339';
+import { mountRig, RIG } from './rig.js?v=202610121351';
+import { sfx, petLoop } from './sound.js?v=202610121351';
 
 // 그림자 손 — 만지는 자리에 따라 모양이 바뀐다(10/12 사용자 요청)
 // head: 위에서 손바닥을 얹어 머리를 쓰다듬기(손가락이 아래로) · chin: 아래에서 손가락을 구부려 턱 긁기 · body: 옆으로 눕힌 손으로 몸 쓸어 주기
@@ -95,7 +96,7 @@ let META = { sprite: {}, clip: {}, anim: {} };
 export async function loadAnim() {
   const get = (u) => fetch(u).then((r) => (r.ok ? r.json() : {})).catch(() => ({}));
   let meta;
-  [ANIM, CLIP, meta, LINK] = await Promise.all([get('art/anim/index.json?v=202610121339'), get('art/clip/index.json?v=202610121339'), get('art/meta.json?v=202610121339'), get('art/link/index.json?v=202610121339')]);
+  [ANIM, CLIP, meta, LINK] = await Promise.all([get('art/anim/index.json?v=202610121351'), get('art/clip/index.json?v=202610121351'), get('art/meta.json?v=202610121351'), get('art/link/index.json?v=202610121351')]);
   META = { sprite: {}, clip: {}, anim: {}, ...meta };
 }
 
@@ -227,7 +228,7 @@ export function mountRoom({ type, stage, state, onStroke, canPet, wear = [] }) {
   // 연결 영상: 미리 받아 두고(Blob), 틀 때마다 새 주소를 만들어 첫 장면부터 다시 재생한다(같은 주소면 이어서 돈다)
   const blobs = {};
   if (LINK[name] && !REDUCE) for (const k of ['stand', 'sit', 'eatf']) {
-    if (LINK[`${name}_${k}`]) fetch(`art/link/${name}_${k}.webp?v=202610121339`).then((r) => (r.ok ? r.blob() : null)).then((b) => { if (b) blobs[k] = b; }).catch(() => {});
+    if (LINK[`${name}_${k}`]) fetch(`art/link/${name}_${k}.webp?v=202610121351`).then((r) => (r.ok ? r.blob() : null)).then((b) => { if (b) blobs[k] = b; }).catch(() => {});
   }
   // 앉은 모습(움직임 캔버스)이 보이고 있을 때만 이어 붙인다 — 다른 자세(아픔·말썽 그림)에서 시작하면 끊겨 보인다
   const linkable = (k) => blobs[k] && rigReady && rig && !cv.hidden;
@@ -308,6 +309,7 @@ export function mountRoom({ type, stage, state, onStroke, canPet, wear = [] }) {
     if (y !== undefined) pet.style.setProperty('--y', `${y}%`);
     if (s !== undefined) pet.style.setProperty('--s', s);
     lastX = x;
+    if (!cat) sfx.steps(ms);   // 강아지 발톱 톡톡(고양이는 조용히 걷는다)
     return ms;
   };
 
@@ -376,6 +378,7 @@ export function mountRoom({ type, stage, state, onStroke, canPet, wear = [] }) {
     showHand(e);
     room.classList.add('stroking');
     rig?.pet(true);
+    if (canPet()) petLoop(cat ? 'cat' : 'dog', true);   // 골골 / 헥헥
     if (last) {
       const dx = e.clientX - last.x, dy = e.clientY - last.y;
       const d = Math.hypot(dx, dy);
@@ -393,6 +396,7 @@ export function mountRoom({ type, stage, state, onStroke, canPet, wear = [] }) {
   const leave = () => {
     room.classList.remove('stroking');
     rig?.pet(false);
+    petLoop(null, false);
     last = null;
     clearTimeout(revertTimer);
     if (hearts >= 3) revertTimer = setTimeout(() => setState(room.dataset.base), 2500);
@@ -402,6 +406,7 @@ export function mountRoom({ type, stage, state, onStroke, canPet, wear = [] }) {
     const r = room.getBoundingClientRect();
     const el = document.createElement('i');
     el.className = canPet() ? 'heart' : 'heart dim';
+    if (canPet()) sfx.pop();
     el.textContent = canPet() ? '♥' : '…';
     el.style.left = `${e.clientX - r.left + (Math.random() * 30 - 15)}px`;
     el.style.top = `${e.clientY - r.top - 10}px`;
@@ -435,6 +440,7 @@ export function mountRoom({ type, stage, state, onStroke, canPet, wear = [] }) {
       // 먹는 영상엔 그릇이 함께 있어, 영상 속 그릇 가운데(meta bowl)를 방 그릇 가운데에 맞추고 방 그릇은 잠시 숨긴다 → 빈 그릇
       const bowlBtn = room.querySelector('.prop-bowl'), bowlImg = document.getElementById('bowl-img');
       if (bowlImg) bowlImg.src = 'art/prop/bowl_full.webp';
+      sfx.pour();
       say('사료를 담았어요');
       const rr = room.getBoundingClientRect(), br = bowlBtn.getBoundingClientRect();
       const ratio = CLIP[`${name}_eat`] || has('eat');
@@ -457,6 +463,7 @@ export function mountRoom({ type, stage, state, onStroke, canPet, wear = [] }) {
           showAnim('walk', cat ? '.9s' : '.6s');
           setTimeout(() => sitDown(() => {
             const ms = playLink('eatf');
+            sfx.crunch(ms / 1000 * 0.8);
             bowlBtn.classList.add('eating');   // 영상 속에 그릇이 있다
             say('냠냠, 오도독…');
             end(ms, () => { bowlBtn.classList.remove('eating'); if (bowlImg) bowlImg.src = 'art/prop/bowl_empty.webp'; setState('happy'); }).then(res);
@@ -469,10 +476,14 @@ export function mountRoom({ type, stage, state, onStroke, canPet, wear = [] }) {
       return new Promise((res) => setTimeout(() => {
         pet.classList.toggle('face-left', left);
         if (showAnim('eat', '.8s')) bowlBtn.classList.add('eating'); else setState('hungry');
+        sfx.crunch(2.4);
         say('냠냠, 오도독…');
         end(2800, () => { bowlBtn.classList.remove('eating'); if (bowlImg) bowlImg.src = 'art/prop/bowl_empty.webp'; setState('happy'); }).then(res);
       }, ms));
     }
+    if (kind === 'potty' || kind === 'litter') sfx.rustle();
+    if (['play', 'train', 'treat', 'brush', 'meds'].includes(kind)) sfx.pop();
+    if (kind === 'bath') sfx.bubbles();
     if (kind === 'potty') { const p = room.querySelector('.prop-pad img'); say('새 패드로 쓱싹'); return end(1500, () => { if (p) p.src = 'art/prop/pad_clean.webp'; setState('happy'); }); }
     if (kind === 'litter') { const p = room.querySelector('.prop-litter img'); say('모래를 싹싹'); return end(1500, () => { if (p) p.src = 'art/prop/litter_clean.webp'; setState('happy'); }); }
     if (kind === 'walk') {
@@ -483,8 +494,8 @@ export function mountRoom({ type, stage, state, onStroke, canPet, wear = [] }) {
       return new Promise((res) => getUp(() => {
         showAnim('walk', '.6s');
         const goMs = moveTo(DOOR.x, { y: DOOR.y, s: DOOR.s });
-        setTimeout(() => { pet.classList.add('out'); setTimeout(() => {
-          say('🐾 다녀왔어요!'); pet.classList.remove('out', 'face-left'); showAnim('walk', '.6s');
+        setTimeout(() => { pet.classList.add('out'); sfx.door(); setTimeout(() => {
+          say('🐾 다녀왔어요!'); sfx.door(); pet.classList.remove('out', 'face-left'); showAnim('walk', '.6s');
           const backMs = moveTo(SPOTS[0], { y: 8, s: 1 });
           const sitMs = blobs.sit && rigReady ? LINK[`${name}_sit`].ms : 0;
           setTimeout(() => { room.dataset.state = 'happy'; sitDown(() => setState('happy')); }, backMs);

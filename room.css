@@ -70,7 +70,15 @@
 @keyframes toy { 0% { left: 15%; bottom: 42%; } 25% { bottom: 10%; } 50% { left: 70%; bottom: 30%; } 75% { bottom: 10%; } 100% { left: 58%; bottom: 11%; } }
 
 /* 그림자 손 */
-.hand { position: absolute; width: 30%; aspect-ratio: 1; left: 0; top: 0; transform: translate(-50%, -38%) rotate(var(--tilt, 0deg)); transform-origin: 50% 80%; pointer-events: none; z-index: 6; opacity: 0; transition: opacity .2s; filter: blur(.9px); }
+/* 손 크기는 room.js가 아이 눈 사이 거리에 맞춰 정한다. 자리별로 손끝이 커서에 오게 */
+.hand { position: absolute; width: 60px; aspect-ratio: 1; left: 0; top: 0; transform: translate(-50%, -50%) rotate(var(--tilt, 0deg)); transform-origin: 50% 50%; pointer-events: none; z-index: 6; opacity: 0; transition: opacity .2s, width .15s; filter: blur(.8px); }
+.hand.z-head { transform: translate(-50%, -88%) rotate(calc(var(--tilt, 0deg) * .6)); transform-origin: 50% 100%; }
+.hand.z-chin { transform: translate(-50%, -12%); transform-origin: 50% 0; }
+.hand.z-head svg { animation: pat .7s ease-in-out infinite; }
+.hand.z-chin svg { animation: scratch .14s linear infinite alternate; }
+@keyframes pat { 50% { transform: translateY(7%) scaleY(.96); } }
+@keyframes scratch { to { transform: translateY(-6%) rotate(-3deg); } }
+@media (prefers-reduced-motion: reduce) { .hand svg { animation: none !important; } }
 .hand svg { width: 100%; height: 100%; fill: rgba(35, 28, 22, .5); }
 .room.hovering .need { opacity: 0; }
 .room.hovering .hand { opacity: 1; }

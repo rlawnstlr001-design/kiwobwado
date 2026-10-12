@@ -123,17 +123,19 @@ details.plan-all[open] summary::after { content: "접기"; }
 
 /* 평소 모습(부위별 움직임 캔버스)·영상 클립 — 캔버스는 위·옆 여백만큼 커서 바닥에 맞춰 가운데 정렬 */
 .pet-rig { position: absolute; left: 50%; bottom: 0; transform: translateX(-50%) translateY(var(--drop, 0%)) scaleX(var(--flip, 1)); pointer-events: none; display: block; }
-.pet-rig[hidden], .pet-clip[hidden] { display: none; }
+.pet-rig[hidden], .pet-clip[hidden], .pet-link[hidden] { display: none; }
+/* 연결 영상: room.js가 평소 그림의 몸 상자에 맞춰 px로 놓는다(pet 안 절대 위치) */
+.pet-link { position: absolute; display: block; max-width: none; pointer-events: none; transform: scaleX(var(--flip, 1)); }
 /* --k: 클립 속 아이가 앉은 그림과 같은 크기로 보이게 하는 배율(room.js clipK) */
 .pet-clip { flex: none; height: calc(var(--k, 1) * 100%); width: auto; display: block; transform: translateY(var(--drop, 0%)) scaleX(var(--flip, 1)); pointer-events: none; }
 .pet:has(.pet-clip:not([hidden])) .pet-img { display: none; }
 
 /* 방과 색 맞추기: 시간대 조명 색을 아이에게도 곱한다(필터는 room.js GRADE). 말풍선·하트는 그대로 */
 .grade-defs { position: absolute; width: 0; height: 0; overflow: hidden; }
-.room[data-tod="morning"] :is(.pet-img, .pet-rig, .pet-clip, .pet-anim, .pet-ghost) { filter: url(#grade-morning); }
-.room[data-tod="day"] :is(.pet-img, .pet-rig, .pet-clip, .pet-anim, .pet-ghost) { filter: url(#grade-day); }
-.room[data-tod="evening"] :is(.pet-img, .pet-rig, .pet-clip, .pet-anim, .pet-ghost) { filter: url(#grade-evening); }
-.room[data-tod="night"] :is(.pet-img, .pet-rig, .pet-clip, .pet-anim, .pet-ghost) { filter: url(#grade-night); }
+.room[data-tod="morning"] :is(.pet-img, .pet-rig, .pet-clip, .pet-link, .pet-anim, .pet-ghost) { filter: url(#grade-morning); }
+.room[data-tod="day"] :is(.pet-img, .pet-rig, .pet-clip, .pet-link, .pet-anim, .pet-ghost) { filter: url(#grade-day); }
+.room[data-tod="evening"] :is(.pet-img, .pet-rig, .pet-clip, .pet-link, .pet-anim, .pet-ghost) { filter: url(#grade-evening); }
+.room[data-tod="night"] :is(.pet-img, .pet-rig, .pet-clip, .pet-link, .pet-anim, .pet-ghost) { filter: url(#grade-night); }
 /* 물건도 저녁·밤 조명을 받게(지금 할 일로 반짝이는 물건은 눈에 띄도록 그대로) */
 .room[data-tod="morning"] :is(.prop, .prop-btn:not(.now) img, .toy) { filter: url(#tint-morning); }
 .room[data-tod="evening"] :is(.prop, .prop-btn:not(.now) img, .toy) { filter: url(#tint-evening); }

@@ -24,5 +24,25 @@
  },
  "long_baby_stand": {
   "ms": 2241
+ },
+ "small_baby": {
+  "box": [
+   0.0167,
+   0.0,
+   1.0,
+   0.974
+  ],
+  "dEnd": -0.0306,
+  "walk": 1.356,
+  "wcx": 0.5394
+ },
+ "small_baby_eatf": {
+  "ms": 9960
+ },
+ "small_baby_sit": {
+  "ms": 2656
+ },
+ "small_baby_stand": {
+  "ms": 2656
  }
 }

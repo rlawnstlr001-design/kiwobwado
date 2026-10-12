@@ -455,9 +455,9 @@
   "large_adult_walk": {
    "foot": 0.0067,
    "body": 0.98,
-   "area": 0.5981,
-   "cycle": 3818,
-   "speed": 0.7733
+   "area": 0.597,
+   "cycle": 3486,
+   "speed": 0.8467
   },
   "large_adult_eat": {
    "foot": 0.0067,
@@ -467,23 +467,23 @@
    "bowl": 0.7939
   },
   "large_baby_walk": {
-   "foot": 0.0067,
-   "body": 0.98,
-   "area": 0.5808,
+   "foot": 0.0267,
+   "body": 0.96,
+   "area": 0.5615,
    "cycle": 2241,
-   "speed": 0.83
+   "speed": 0.7862
   },
   "large_baby_eat": {
-   "foot": 0.0133,
-   "body": 0.97,
-   "area": 1.0789,
+   "foot": 0.0367,
+   "body": 0.95,
+   "area": 1.0259,
    "cycle": 2407,
    "bowl": 0.8303
   },
   "large_teen_walk": {
    "foot": 0.0067,
    "body": 0.9767,
-   "area": 0.6005,
+   "area": 0.6006,
    "cycle": 3320,
    "speed": 0.8554
   },
@@ -495,53 +495,53 @@
    "bowl": 0.8487
   },
   "long_adult_walk": {
-   "foot": 0.0067,
-   "body": 0.98,
-   "area": 0.9617,
+   "foot": 0.0267,
+   "body": 0.96,
+   "area": 0.9801,
    "cycle": 2324,
-   "speed": 0.8459
+   "speed": 0.8385
   },
   "long_adult_eat": {
    "foot": 0.01,
    "body": 0.9733,
-   "area": 1.2372,
+   "area": 1.2302,
    "cycle": 2656,
-   "bowl": 0.8901
+   "bowl": 0.867
   },
   "long_baby_walk": {
-   "foot": 0.0067,
-   "body": 0.9767,
-   "area": 0.7868,
+   "foot": 0.0267,
+   "body": 0.9567,
+   "area": 0.7814,
    "cycle": 1992,
-   "speed": 0.8575
+   "speed": 0.8462
   },
   "long_baby_eat": {
-   "foot": 0.01,
-   "body": 0.9767,
-   "area": 1.1887,
+   "foot": 0.03,
+   "body": 0.9567,
+   "area": 1.1437,
    "cycle": 3154,
-   "bowl": 0.8561
+   "bowl": 0.8568
   },
   "long_teen_walk": {
-   "foot": 0.0067,
-   "body": 0.9767,
-   "area": 0.4908,
-   "cycle": 3154,
-   "speed": 0.8844
+   "foot": 0.0333,
+   "body": 0.95,
+   "area": 0.5192,
+   "cycle": 2075,
+   "speed": 0.8659
   },
   "long_teen_eat": {
-   "foot": 0.0067,
-   "body": 0.9767,
-   "area": 1.215,
-   "cycle": 1992,
-   "bowl": 0.7843
+   "foot": 0.04,
+   "body": 0.9433,
+   "area": 1.1326,
+   "cycle": 2075,
+   "bowl": 0.8698
   },
   "medium_adult_walk": {
    "foot": 0.01,
    "body": 0.9767,
-   "area": 0.5142,
+   "area": 0.5143,
    "cycle": 2822,
-   "speed": 0.835
+   "speed": 0.8351
   },
   "medium_adult_eat": {
    "foot": 0.01,
@@ -551,51 +551,51 @@
    "bowl": 0.7723
   },
   "medium_baby_walk": {
-   "foot": 0.0067,
-   "body": 0.98,
-   "area": 0.6472,
+   "foot": 0.0433,
+   "body": 0.9433,
+   "area": 0.5983,
    "cycle": 3320,
-   "speed": 0.919
+   "speed": 0.8815
   },
   "medium_baby_eat": {
    "foot": 0.0133,
    "body": 0.9667,
-   "area": 0.9054,
+   "area": 0.899,
    "cycle": 2075,
    "bowl": 0.8366
   },
   "medium_teen_walk": {
    "foot": 0.0067,
    "body": 0.98,
-   "area": 0.5284,
+   "area": 0.5366,
    "cycle": 3154,
    "speed": 0.8254
   },
   "medium_teen_eat": {
    "foot": 0.0067,
    "body": 0.9767,
-   "area": 0.8812,
+   "area": 0.8842,
    "cycle": 3154,
    "bowl": 0.8627
   },
   "short_adult_walk": {
-   "foot": 0.0067,
-   "body": 0.98,
-   "area": 0.7852,
+   "foot": 0.0267,
+   "body": 0.96,
+   "area": 0.7546,
    "cycle": 3818,
-   "speed": 0.8791
+   "speed": 0.8924
   },
   "short_adult_eat": {
-   "foot": 0.0067,
-   "body": 0.9767,
-   "area": 1.3316,
+   "foot": 0.0367,
+   "body": 0.9467,
+   "area": 1.2418,
    "cycle": 3403,
-   "bowl": 0.8755
+   "bowl": 0.8791
   },
   "short_baby_walk": {
    "foot": 0.0067,
    "body": 0.98,
-   "area": 0.4713,
+   "area": 0.4781,
    "cycle": 1992,
    "speed": 0.7488
   },
@@ -607,60 +607,60 @@
    "bowl": 0.7939
   },
   "short_teen_walk": {
-   "foot": 0.01,
-   "body": 0.9767,
-   "area": 0.4352,
-   "cycle": 2241,
-   "speed": 0.6416
+   "foot": 0.0133,
+   "body": 0.9733,
+   "area": 0.4787,
+   "cycle": 2905,
+   "speed": 0.8242
   },
   "short_teen_eat": {
-   "foot": 0.01,
-   "body": 0.9733,
-   "area": 1.1341,
+   "foot": 0.0367,
+   "body": 0.95,
+   "area": 1.0698,
    "cycle": 2241,
-   "bowl": 0.8805
+   "bowl": 0.8804
   },
   "small_adult_walk": {
-   "foot": 0.0067,
-   "body": 0.9767,
-   "area": 0.6393,
-   "cycle": 1992,
-   "speed": 0.9676
+   "foot": 0.02,
+   "body": 0.9633,
+   "area": 0.5897,
+   "cycle": 2075,
+   "speed": 0.9476
   },
   "small_adult_eat": {
-   "foot": 0.01,
-   "body": 0.9767,
-   "area": 1.0593,
+   "foot": 0.02,
+   "body": 0.9667,
+   "area": 1.0489,
    "cycle": 2988,
-   "bowl": 0.8416
+   "bowl": 0.8451
   },
   "small_baby_walk": {
-   "foot": 0.0067,
-   "body": 0.98,
-   "area": 0.6139,
-   "cycle": 2988,
-   "speed": 0.9809
+   "foot": 0.0233,
+   "body": 0.96,
+   "area": 0.624,
+   "cycle": 2822,
+   "speed": 0.8515
   },
   "small_baby_eat": {
-   "foot": 0.01,
-   "body": 0.9767,
-   "area": 0.7845,
-   "cycle": 3569,
-   "bowl": 0.7896
+   "foot": 0.0167,
+   "body": 0.97,
+   "area": 0.7616,
+   "cycle": 3984,
+   "bowl": 0.7221
   },
   "small_teen_walk": {
    "foot": 0.0067,
    "body": 0.98,
-   "area": 0.6163,
+   "area": 0.6404,
    "cycle": 2988,
-   "speed": 0.7698
+   "speed": 0.7731
   },
   "small_teen_eat": {
    "foot": 0.0067,
    "body": 0.98,
-   "area": 0.9409,
-   "cycle": 3071,
-   "bowl": 0.8601
+   "area": 0.9392,
+   "cycle": 3984,
+   "bowl": 0.8583
   }
  },
  "anim": {

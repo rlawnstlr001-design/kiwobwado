@@ -259,3 +259,17 @@ input[type=range] { width: 100%; accent-color: var(--forest); }
 .dev { margin-top: 18px; padding: 10px; border: 2px dashed var(--warn); border-radius: 12px; display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
 @media (min-width: 420px) { .food-grid { grid-template-columns: repeat(4, 1fr); } }
 @media (prefers-reduced-motion: reduce) { * { animation: none !important; transition: none !important; } }
+/* 결과 카드 미리 보기 */
+.card-prev { display: flex; justify-content: center; align-items: center; min-height: 160px; margin: 6px 0 12px; }
+.card-prev img { width: min(320px, 78vw); border-radius: 10px; box-shadow: 0 6px 22px rgba(0, 0, 0, .18); }
+/* 하루 사진 앨범 */
+.album { display: grid; grid-template-columns: repeat(auto-fill, minmax(118px, 1fr)); gap: 18px 14px; margin-top: 12px; }
+.album-item { all: unset; cursor: pointer; display: flex; flex-direction: column; align-items: center; gap: 8px; text-align: center; }
+.album-item .photo { width: 100%; transform: rotate(var(--r, 0deg)); padding-bottom: 26px; transition: transform .2s; }
+.album-item .photo figcaption { font-size: 12.5px; }
+.album-item:hover .photo, .album-item:focus-visible .photo { transform: rotate(0deg) scale(1.03); }
+.album-item small { font-size: 12.5px; line-height: 1.35; color: var(--ink-2); font-weight: 700; }
+.album-strip { display: flex; gap: 12px; overflow-x: auto; padding: 6px 2px 12px; scroll-snap-type: x mandatory; }
+.album-strip .album-item { flex: 0 0 96px; scroll-snap-align: start; }
+.pic-big { display: flex; justify-content: center; margin: 8px 0 14px; }
+.pic-big .photo { width: min(240px, 64vw); transform: rotate(var(--r, 0deg)); }

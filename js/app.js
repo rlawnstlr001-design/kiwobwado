@@ -1,13 +1,14 @@
 // 키워봐도될까 — 내 생활 그대로 30일 키워 보고 반려 준비도를 확인하는 입양 전 체험
-import * as db from './db.js?v=202610121322';
-import * as E from './engine.js?v=202610121322';
-import { C, loadContent, eventById, lessonById, foodById } from './content.js?v=202610121322';
-import { track } from './track.js?v=202610121322';
-import { roomHTML, mountRoom, timeOfDay, loadAnim, clipInfo } from './room.js?v=202610121322';
-import { openGames, GAMES, titleOf } from './games.js?v=202610121322';
-import * as K from './care.js?v=202610121322';
-import { openShop, openVet, openTreats } from './shop.js?v=202610121322';
-import { isApp, initNative, scheduleCare, exactAlarm } from './native.js?v=202610121322';
+import * as db from './db.js?v=202610121339';
+import * as E from './engine.js?v=202610121339';
+import { C, loadContent, eventById, lessonById, foodById } from './content.js?v=202610121339';
+import { track } from './track.js?v=202610121339';
+import { roomHTML, mountRoom, timeOfDay, loadAnim, clipInfo } from './room.js?v=202610121339';
+import { openGames, GAMES, titleOf } from './games.js?v=202610121339';
+import * as K from './care.js?v=202610121339';
+import { openShop, openVet, openTreats } from './shop.js?v=202610121339';
+import { isApp, initNative, scheduleCare, exactAlarm } from './native.js?v=202610121339';
+import { runGuide } from './guide.js?v=202610121339';
 
 const $ = (s, el = document) => el.querySelector(s);
 const view = $('#view');
@@ -448,8 +449,33 @@ function today() {
   });
   track('day_open');
   careAlarms(false);
+  // 처음 한 번: 첫날 길잡이(자랐어요 카드보다 먼저)
+  if (!S.guided) { setTimeout(() => startGuide(), 700); return; }
   // 1년 코스: 단계가 바뀐 첫날 한 번 '자랐어요' 카드
   if (isYear() && stage !== (S.grown ?? 'baby')) { const was = S.grown ?? 'baby'; S.grown = stage; save(); growCard(was, stage, weeks); }
+}
+// 첫날 길잡이: 방의 물건·버튼을 하나씩 밝혀 짚어 준다. 세로 화면 안내가 떠 있으면 사라진 뒤에, 창이 열려 있으면 닫힌 뒤에
+function startGuide(force = false) {
+  if (document.body.dataset.route !== 'today' || document.body.classList.contains('guiding') || (!force && S.guided)) return;
+  const hint = $('#rotate-hint');
+  if ($('#sheet-root').classList.contains('on') || (hint && getComputedStyle(hint).display !== 'none')) { setTimeout(() => startGuide(force), 1500); return; }
+  // 첫 실행은 그림을 받는 중일 수 있다 — 아이 그림이 뜬 뒤에 시작해야 '쓰다듬기'가 빈자리를 비추지 않는다
+  const pimg = $('#pet-img');
+  if (pimg && !pimg.complete) { pimg.addEventListener('load', () => setTimeout(() => startGuide(force), 300), { once: true }); return; }
+  const dog = species() === 'dog', nm = petName();
+  const baby = E.stageOf(ageW(dayNow())) === 'baby';
+  runGuide([
+    { title: `${nm}${E.josa(nm, '이/가').slice(-1)} 집에 왔어요`, text: `이 방에서 ${nm}${E.josa(nm, '과/와').slice(-1)} 하루를 보내요. 무엇을 누르면 되는지 하나씩 짚어 드릴게요.` },
+    { sel: '#pet', title: '쓰다듬기', text: '손가락(마우스)으로 몸을 문질러 주세요. 머리·턱·몸마다 손 모양이 달라지고, 하루 몇 번은 마음이 올라요.' },
+    { sel: '.hud-tl .hud-card', title: '상태 카드', text: '나이와 며칠째인지, 건강·마음·습관, 사료·패드가 며칠분 남았는지 보여요. 제때 돌보면 올라가요.' },
+    { sel: '.prop-bowl', title: '밥그릇', text: `밥 시간이 되면 물건이 반짝이고 '지금!'이 떠요. 요청 시각 ${E.EARLY}분 전부터 ${E.WINDOW}분 안에 누르면 '제때'예요.` },
+    dog ? { sel: '.prop-pad', title: '배변 패드', text: '배변 챙기기·패드 갈기는 패드를 눌러요.' } : { sel: '.prop-litter', title: '화장실', text: '화장실 치우기는 화장실을 눌러요. 하루 한 번 이상이에요.' },
+    { sel: '.spot-door', title: '현관', text: baby ? '접종이 끝나기 전엔 짧은 바깥 구경, 그 뒤엔 산책이에요. 현관을 눌러 나가요.' : '산책은 현관을 눌러 나가요.' },
+    { sel: '.hud-br', title: '놀이·훈련·간식', text: '나머지 돌봄은 오른쪽 아래 도구로 해요. 반짝이는 게 지금 할 일이에요.' },
+    { sel: '[data-hud="plan"]', title: '오늘 일정', text: '하루 요청 시각과 혼자 있는 시간을 볼 수 있어요. 병원·음식 같은 일이 생기면 이 위에 알림이 떠요.' },
+    { sel: '.hud-tr', title: '샵·병원·미니게임', text: `사료·패드가 떨어지면 샵에서 사고, 아프면 병원에 가요. 미니게임으로 코인을 모아요(하루 ${COIN_CAP}개까지). 톱니바퀴엔 수첩·리포트가 있어요.` },
+    { title: '진짜처럼 대해 주세요', text: `가상이라도 제때 챙겨야 결과가 정확해요.${isApp ? ' 요청 시각마다 알림이 와요.' : ''} 이 길잡이는 메뉴에서 다시 볼 수 있어요.` },
+  ], { onDone: () => { S.guided = true; save(); } });
 }
 // 자라면 달라지는 것(1년 코스) — 줄마다 출처
 const GROW = {
@@ -690,9 +716,10 @@ function openWallet() {
 }
 function openMenu() {
   const { sheet, close } = openSheet(`<h2>메뉴</h2>
-    <div class="menu-grid"><a class="btn" href="#/book" data-close>수첩·가계부</a><a class="btn" href="#/learn" data-close>배움</a><a class="btn" href="#/report" data-close>리포트</a><button class="btn" id="m-full">전체 화면</button></div>
+    <div class="menu-grid"><a class="btn" href="#/book" data-close>수첩·가계부</a><a class="btn" href="#/learn" data-close>배움</a><a class="btn" href="#/report" data-close>리포트</a><button class="btn" id="m-full">전체 화면</button><button class="btn" id="m-guide">길잡이 다시 보기</button></div>
     <button class="btn btn-soft btn-wide" id="m-settings">설정</button><button class="btn btn-wide" data-close>닫기</button>`);
   $('#m-full', sheet).addEventListener('click', () => { close(); goLandscape(); });
+  $('#m-guide', sheet).addEventListener('click', () => { close(); setTimeout(() => startGuide(true), 250); });
   $('#m-settings', sheet).addEventListener('click', () => { close(); openSettings(); });
 }
 function openAway() {
@@ -1004,16 +1031,18 @@ async function devAction(a) {
   initNative({
     // 뒤로 가기: 열린 창 → 미니게임·펫샵 → 다른 화면이면 방으로, 방이면 앱 종료
     onBack: () => {
+      const guide = $('.guide'); if (guide) { guide.end?.(); return true; }
       const back = $('#sheet-root .sheet-back'); if (back) { back.click(); return true; }
       const x = document.querySelector('.mg .mg-x, .mg [data-x]'); if (x) { x.click(); return true; }
       if (P() && document.body.dataset.route !== 'today' && document.body.dataset.route !== 'onboard') { location.hash = '#/'; return true; }
       return false;
     },
-    onResume: () => { if (P() && !document.body.classList.contains('playing')) route(); },
+    onResume: () => { if (P() && !document.body.classList.contains('playing') && !document.body.classList.contains('guiding')) route(); },
   });
   if (DEV) window.__kiwo = { get S() { return S; }, get room() { return ROOM; }, save, route }; // 빠른 체험(지인 테스트·점검)용 상태 보기
   route();
   // 화면을 켜 둔 채 시간이 지나면(응답 창이 열리고 닫힘) 다시 그린다
-  setInterval(() => { if (P() && !$('#sheet-root').classList.contains('on') && !document.body.classList.contains('playing') && document.body.dataset.route !== 'onboard') route(); }, 60000);
-  document.addEventListener('visibilitychange', () => { if (!document.hidden && P() && !document.body.classList.contains('playing')) route(); });
+  const quiet = () => document.body.classList.contains('playing') || document.body.classList.contains('guiding');
+  setInterval(() => { if (P() && !$('#sheet-root').classList.contains('on') && !quiet() && document.body.dataset.route !== 'onboard') route(); }, 60000);
+  document.addEventListener('visibilitychange', () => { if (!document.hidden && P() && !quiet()) route(); });
 })();

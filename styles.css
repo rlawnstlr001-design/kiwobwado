@@ -237,6 +237,17 @@ input[type=range] { width: 100%; accent-color: var(--forest); }
 .next-steps a { display: block; padding: 12px 14px; border: var(--line); border-radius: 12px; margin-top: 8px; background: var(--card); text-decoration: none; font-weight: 700; }
 .next-steps small { display: block; color: var(--ink-2); font-weight: 600; }
 .future { display: grid; grid-template-columns: 110px 1fr; gap: 14px; align-items: center; }
+/* 첫날 길잡이(js/guide.js): 화면을 어둡게 덮고 대상만 둥글게 밝힌다. 길잡이 중엔 방을 누를 수 없다 */
+.guide { position: fixed; inset: 0; z-index: 80; }
+.guide-dim { position: fixed; inset: 0; background: rgba(30, 26, 22, .62); }
+.guide-hole { position: fixed; border-radius: 8px; outline: 2px solid rgba(255, 255, 255, .9); outline-offset: 0; transition: left .25s, top .25s, width .25s, height .25s; pointer-events: none; }
+.guide-tip { position: fixed; width: min(300px, calc(100vw - 24px)); background: var(--card); color: var(--ink); border-radius: 14px; padding: 12px 14px; box-shadow: 0 8px 28px rgba(0, 0, 0, .28); transition: left .25s, top .25s; }
+.guide-tip b { display: block; font-size: 16px; margin: 2px 0 4px; }
+.guide-tip p { margin: 0; font-size: 14px; line-height: 1.5; color: var(--ink-2); }
+.guide-n { font-size: 11.5px; font-weight: 800; color: var(--ink-3); }
+.guide-btns { display: flex; justify-content: flex-end; gap: 8px; margin-top: 10px; }
+@media (max-height: 460px) { .guide-tip { padding: 9px 12px; } .guide-tip b { font-size: 15px; margin: 0 0 2px; } .guide-tip p { font-size: 13px; line-height: 1.4; } .guide-btns { margin-top: 7px; } }
+@media (prefers-reduced-motion: reduce) { .guide-hole, .guide-tip { transition: none; } }
 /* 1년 코스 '자랐어요' 카드: 예전 모습 → 지금 */
 .grow-pics { display: flex; align-items: center; justify-content: center; gap: 12px; margin: 4px 0 12px; }
 .grow-pics .photo { width: min(130px, 34vw); margin: 0; }

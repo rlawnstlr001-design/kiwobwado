@@ -104,5 +104,25 @@
  },
  "small_baby_stand": {
   "ms": 2656
+ },
+ "small_teen": {
+  "box": [
+   0.0494,
+   0.0,
+   1.0,
+   0.9835
+  ],
+  "dEnd": 0.0138,
+  "walk": 1.365,
+  "wcx": 0.5603
+ },
+ "small_teen_eatf": {
+  "ms": 9960
+ },
+ "small_teen_sit": {
+  "ms": 3652
+ },
+ "small_teen_stand": {
+  "ms": 3652
  }
 }

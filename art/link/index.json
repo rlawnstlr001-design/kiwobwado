@@ -65,6 +65,26 @@
  "medium_baby_stand": {
   "ms": 3154
  },
+ "medium_teen": {
+  "box": [
+   0.0373,
+   0.0,
+   0.9403,
+   0.9791
+  ],
+  "dEnd": -0.079,
+  "walk": 1.815,
+  "wcx": 0.5428
+ },
+ "medium_teen_eatf": {
+  "ms": 9960
+ },
+ "medium_teen_sit": {
+  "ms": 4067
+ },
+ "medium_teen_stand": {
+  "ms": 4067
+ },
  "short_baby": {
   "box": [
    0.1489,

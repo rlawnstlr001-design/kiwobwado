@@ -125,6 +125,26 @@
  "short_baby_stand": {
   "ms": 3154
  },
+ "short_teen": {
+  "box": [
+   0.0072,
+   0.0,
+   1.0,
+   0.979
+  ],
+  "dEnd": -0.0167,
+  "walk": 1.768,
+  "wcx": 0.5785
+ },
+ "short_teen_eatf": {
+  "ms": 9960
+ },
+ "short_teen_sit": {
+  "ms": 4150
+ },
+ "short_teen_stand": {
+  "ms": 4150
+ },
  "small_baby": {
   "box": [
    0.0167,

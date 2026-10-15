@@ -76,6 +76,9 @@
   "walk": 1.623,
   "wcx": 0.5712
  },
+ "long_teen_eatf": {
+  "ms": 9960
+ },
  "long_teen_sit": {
   "ms": 2324
  },
@@ -152,6 +155,9 @@
   "dEnd": -0.0167,
   "walk": 1.768,
   "wcx": 0.5785
+ },
+ "short_teen_eatf": {
+  "ms": 9960
  },
  "short_teen_sit": {
   "ms": 4150

@@ -165,6 +165,26 @@
  "short_teen_stand": {
   "ms": 4150
  },
+ "small_adult": {
+  "box": [
+   0.0571,
+   0.0,
+   0.9755,
+   0.981
+  ],
+  "dEnd": -0.0404,
+  "walk": 1.409,
+  "wcx": 0.5348
+ },
+ "small_adult_eatf": {
+  "ms": 9960
+ },
+ "small_adult_sit": {
+  "ms": 2905
+ },
+ "small_adult_stand": {
+  "ms": 2905
+ },
  "small_baby": {
   "box": [
    0.0167,

@@ -5,6 +5,26 @@
   "cx": 0.5,
   "foot": 0.9117647058823529
  },
+ "large_adult": {
+  "box": [
+   0.0,
+   0.0,
+   1.0,
+   0.9787
+  ],
+  "dEnd": -0.1011,
+  "walk": 1.512,
+  "wcx": 0.5438
+ },
+ "large_adult_eatf": {
+  "ms": 9960
+ },
+ "large_adult_sit": {
+  "ms": 4150
+ },
+ "large_adult_stand": {
+  "ms": 4150
+ },
  "large_baby": {
   "box": [
    0.0123,

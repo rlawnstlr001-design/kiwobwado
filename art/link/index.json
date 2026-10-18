@@ -65,6 +65,26 @@
  "large_teen_stand": {
   "ms": 1826
  },
+ "long_adult": {
+  "box": [
+   0.0691,
+   0.0,
+   0.982,
+   0.9716
+  ],
+  "dEnd": -0.0827,
+  "walk": 1.492,
+  "wcx": 0.565
+ },
+ "long_adult_eatf": {
+  "ms": 9960
+ },
+ "long_adult_sit": {
+  "ms": 4150
+ },
+ "long_adult_stand": {
+  "ms": 4150
+ },
  "long_baby": {
   "box": [
    0.0132,

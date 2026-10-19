@@ -1,16 +1,16 @@
 // 키워봐도될까 — 내 생활 그대로 30일 키워 보고 반려 준비도를 확인하는 입양 전 체험
-import * as db from './db.js?v=202610191412';
-import * as E from './engine.js?v=202610191412';
-import { C, loadContent, eventById, lessonById, foodById } from './content.js?v=202610191412';
-import { track } from './track.js?v=202610191412';
-import { roomHTML, mountRoom, timeOfDay, loadAnim, clipInfo } from './room.js?v=202610191412';
-import { openGames, GAMES, titleOf } from './games.js?v=202610191412';
-import * as K from './care.js?v=202610191412';
-import { openShop, openVet, openTreats } from './shop.js?v=202610191412';
-import { isApp, initNative, scheduleCare, exactAlarm, shareImage } from './native.js?v=202610191412';
-import { makeCard } from './card.js?v=202610191412';
-import { runGuide } from './guide.js?v=202610191412';
-import { sfx, ambient, stopAmbient, soundOn, setSound } from './sound.js?v=202610191412';
+import * as db from './db.js?v=202610191525';
+import * as E from './engine.js?v=202610191525';
+import { C, loadContent, eventById, lessonById, foodById } from './content.js?v=202610191525';
+import { track } from './track.js?v=202610191525';
+import { roomHTML, mountRoom, timeOfDay, loadAnim, clipInfo } from './room.js?v=202610191525';
+import { openGames, GAMES, titleOf } from './games.js?v=202610191525';
+import * as K from './care.js?v=202610191525';
+import { openShop, openVet, openTreats } from './shop.js?v=202610191525';
+import { isApp, initNative, scheduleCare, exactAlarm, shareImage } from './native.js?v=202610191525';
+import { makeCard } from './card.js?v=202610191525';
+import { runGuide } from './guide.js?v=202610191525';
+import { sfx, ambient, stopAmbient, soundOn, setSound } from './sound.js?v=202610191525';
 
 const $ = (s, el = document) => el.querySelector(s);
 const view = $('#view');
@@ -284,7 +284,7 @@ function onboarding() {
       <p class="fine" style="margin-top:10px">사진은 다 자란 모습이에요. 체험은 생후 8주 아기부터 시작해요. <button class="src-btn" data-src="kennelclub">운동량 출처</button></p>`,
     () => `<p class="ob-k">3 / 8 · 어디서 데려올까요</p><h1>데려오는 길</h1>
       <div class="opt-list">${Object.entries(C.costs.adopt).map(([k, a]) => `<button class="opt${dr.route === k ? ' on' : ''}" data-route="${k}"><span><b>${a.label}</b><small>${esc(a.note)}</small></span><span class="amt">${a.amount ? won(a.amount) : '지원 제도'}</span></button>`).join('')}</div>
-      <button class="src-btn" data-src="kb2025,kara_adopt">출처</button>`,
+      <button class="src-btn" data-src="kb2025,kara_adopt,geumcheon_adopt2026">출처</button>`,
     () => `<p class="ob-k">4 / 8 · 내 하루</p><h1>평소 하루를 알려 주세요</h1><p class="ob-sub">돌봄 요청이 이 시간에 맞춰 와요. 혼자 있는 시간도 여기서 계산돼요.</p>
       <div class="card" style="margin-top:0">
         <div class="field"><label for="f-wake">일어나는 시간</label><input type="time" id="f-wake" value="${dr.life.wake}"></div>
@@ -397,7 +397,10 @@ function moodOf(plan, key) {
   if (hungry) return { text: '배가 고파서 밥그릇 앞을 서성여요', state: 'hungry' };
   if (S.stats.health < 50) return { text: '기운이 없어 보여요', state: 'sick' };
   if (now() - (S.lastDone ?? 0) < 20 * 60000) return { text: species() === 'dog' ? '신이 나서 꼬리를 흔들어요' : '기분이 좋아 장난감을 쫓아요', state: 'happy' };
+  const ad = E.adaptOf(dayNow(), course());
+  if (ad.phase === 'new') return { text: species() === 'dog' ? '새 집이 낯설어 구석에서 조심조심 살펴요' : '구석에 숨어 조용히 주변을 살펴요', state: 'idle' };
   if (S.stats.habit < 15) return { text: species() === 'dog' ? '심심해서 뭔가를 물어뜯고 있어요' : '심심해서 사고를 치고 있어요', state: 'oops' };
+  if (ad.phase === 'learn' && S.stats.bond < 50) return { text: '조금씩 새 집에 익숙해지는 중이에요', state: 'idle' };
   if (S.stats.bond < 30) return { text: '아직 보호자를 조금 어려워해요', state: 'idle' };
   return { text: species() === 'dog' ? '졸졸 따라다니며 눈을 맞춰요' : '창밖을 구경하다 눈을 깜빡여요', state: 'idle' };
 }
@@ -477,7 +480,8 @@ function today() {
     type: P().type, stage, state: roomState,
     wear: Object.values(S.wearing).filter(Boolean).map((id) => C.shop.items.find((i) => i.id === id)).filter(Boolean).map((i) => ({ src: `art/wear/${i.art}.webp`, slot: i.slot, wf: i.wf, fb: i.fb })),
     canPet: () => !sleepNow,
-    onTip: (code) => strokeTip(code),
+    shy: sleepNow ? 0 : E.adaptOf(d, course()).shy,
+    onTip: (code) => strokeTip(code === 'shy' ? `shy_${species()}` : code),
     onStroke: (n) => {
       if (sleepNow) { if (n === 1) ROOM?.nudge('자는 아이는 깨우지 말고 쉬게 둬요'); return; }
       if (n === 3) {
@@ -492,6 +496,7 @@ function today() {
   ambient(sleepNow ? 'night' : timeOfDay(nm));
   // 처음 한 번: 첫날 길잡이(자랐어요 카드보다 먼저)
   if (!S.guided) { setTimeout(() => startGuide(), 700); return; }
+  if (!S.adaptSeen && E.adaptOf(d, course()).phase === 'new') { S.adaptSeen = true; save(); setTimeout(() => adaptCard(), 500); return; }
   // 1년 코스: 단계가 바뀐 첫날 한 번 '자랐어요' 카드
   if (isYear() && stage !== (S.grown ?? 'baby')) { const was = S.grown ?? 'baby'; S.grown = stage; save(); growCard(was, stage, weeks); return; }
   // 새로 마감된 날이 있으면 '어제의 한 장'
@@ -519,13 +524,31 @@ function startGuide(force = false) {
     { sel: '[data-hud="plan"]', title: '오늘 일정', text: '하루 요청 시각과 혼자 있는 시간을 볼 수 있어요. 병원·음식 같은 일이 생기면 이 위에 알림이 떠요.' },
     { sel: '.hud-tr', title: '샵·병원·미니게임', text: `사료·패드가 떨어지면 샵에서 사고, 아프면 병원에 가요. 미니게임으로 코인을 모아요(하루 ${COIN_CAP}개까지). 톱니바퀴엔 수첩·리포트가 있어요.` },
     { title: '진짜처럼 대해 주세요', text: `가상이라도 제때 챙겨야 결과가 정확해요.${isApp ? ' 요청 시각마다 알림이 와요.' : ''} 이 길잡이는 메뉴에서 다시 볼 수 있어요.` },
-  ], { onDone: () => { S.guided = true; save(); } });
+  ], { onDone: () => { S.guided = true; save(); if (!S.adaptSeen && E.adaptOf(dayNow(), course()).phase === 'new') { S.adaptSeen = true; save(); setTimeout(() => adaptCard(), 400); } } });
 }
 // 쓰다듬는 자리 팁(코스마다 한 번): 고양이 꼬리 쪽 / 강아지 가슴 쪽 — 작은 연구라 단정하지 않게
 const TIPS = {
   cat_tail: ['꼬리 쪽은 싫어해요', '고양이를 쓰다듬는 연구에서 꼬리 뿌리 쪽을 만질 때 싫은 반응(꼬리를 탁탁 치기·귀 눕히기·피하기)이 가장 많았어요. 연구진은 꼬리 쪽은 피하라고 권해요. 머리 쪽부터 쓰다듬어 보세요.', ['ellis2015_cat']],
   dog_chest: ['가슴 쪽을 쓰다듬었어요', '개 28마리를 살펴본 작은 연구에서 가슴을 쓰다듬을 때 몸이 차분해지는 신호(미주신경 활동 증가)가 나왔대요. 다만 아이마다 좋아하는 자리가 달라요 — 몸을 기대 오는지 피하는지 살펴 주세요.', ['kuhne2014_dog']],
 };
+TIPS.shy_dog = ['아직 낯설어해요', '데려온 첫 3일쯤은 새 집에 적응하는 시간이에요. 숨거나, 잠이 많거나, 덜 먹고 사람을 망설이는 게 흔해요. 억지로 만지기보다 조용한 자리를 마련하고 밥·배변 시간을 일정하게 지켜 주세요. 스스로 다가오면 그때 쓰다듬어 주세요.', ['hsnt_333']];
+TIPS.shy_cat = ['아직 낯설어해요', '새 고양이는 처음 며칠 숨어 지내는 게 아주 흔해요. 2~3일은 조용한 방 하나에서 지내게 하고, 관심을 억지로 주지 말고 옆에 앉아 고양이가 먼저 다가오게 기다려 주세요.', ['spca_nz_cat']];
+// 데려온 뒤 적응 — 첫날 한 번. 강아지는 보호소들이 쓰는 3·3·3, 고양이는 SPCA 안내. 보호소에서 왔으면 한 줄 더
+const ADAPT = {
+  dog: [['처음 3일 — 낯섦', '숨거나 잠이 많고, 덜 먹고 사람을 망설일 수 있어요. 조용한 자리, 일정한 밥·배변 시간이 먼저예요. 친구·가족 소개는 미뤄요.'], ['3주 — 생활 익히기', '마음이 조금 놓이면서 성격이 보이기 시작하고, 하루 흐름을 익혀요.'], ['3개월 — 집처럼', '많은 아이가 이때쯤 편해져요. 다만 아이마다 달라서 더 오래 걸리기도 해요.']],
+  cat: [['처음 2~3일 — 방 하나', '조용한 방 하나에서 지내게 하고, 집의 다른 곳은 한 방씩 천천히 열어 줘요.'], ['숨는 건 흔해요', '며칠 숨어 지내도 걱정하지 마세요. 관심을 억지로 주지 말고 먼저 다가오게 기다려요.'], ['몇 주~몇 달', '완전히 자리 잡기까지 몇 주에서 몇 달이 걸릴 수 있어요.']],
+};
+function adaptCard() {
+  if ($('#sheet-root').classList.contains('on') || document.body.classList.contains('guiding')) { setTimeout(adaptCard, 1500); return; }
+  const sp = species(), shelter = P().route === 'shelter';
+  const src = [sp === 'dog' ? 'hsnt_333' : 'spca_nz_cat', ...(shelter ? ['suwon_adopt'] : [])];
+  const { sheet } = openSheet(`<span class="label">데려온 첫날</span><h2>${esc(fill('{name:은/는} 지금 적응하는 중이에요'))}</h2>
+    <ul class="tips">${ADAPT[sp].map(([t, x]) => `<li><b>${t}</b><br>${x}</li>`).join('')}</ul>
+    ${shelter ? '<p class="sub">보호소에서 온 아이는 생활환경이 크게 바뀌어요. 보호센터들도 환경 변화로 행동 문제가 생길 수 있으니 서두르지 말라고 안내해요.</p>' : ''}
+    <p class="fine">이 체험에서도 ${isYear() ? '첫날은' : '처음 3일은'} 구석에서 지내고 만지면 움찔해요. ${isYear() ? '' : '3주까지는 조금 덜 돌아다녀요. '}경험칙이라 아이마다 달라요.</p>
+    <button class="src-btn" data-src="${src.join(',')}">출처</button><button class="btn btn-main btn-wide" data-close>천천히 기다려 줄게요</button>`);
+  sheet.addEventListener('click', (e) => { const b = e.target.closest('[data-src]'); if (b) showSources(b.dataset.src.split(',')); });
+}
 function strokeTip(code) {
   S.tips = S.tips ?? {};
   if (S.tips[code] || !TIPS[code]) return;
@@ -1038,9 +1061,13 @@ function report() {
     <section class="card"><h2>앞으로의 시간</h2><div class="future"><figure class="photo" style="transform:rotate(2deg)"><img src="${photoOf('adult', 'happy')}" alt="다 자란 모습"><figcaption>다 자라면</figcaption></figure>
       <p class="sub" style="margin:0">${esc(petName())}${E.josa(petName(), '은/는').slice(-1)} 평균적으로 약 <b>${Math.round(life * 10) / 10}년</b>을 살아요. 1년 양육비 ${Math.round(y.min / 10000)}만~${Math.round(y.max / 10000)}만원이면, 평생 약 <b>${Math.round((y.min * life) / 1000000) * 100}만~${Math.round((y.max * life) / 1000000) * 100}만원</b> [계산]. 나이가 들수록 치료비가 늘어요(개 7세·고양이 6세 이후).</p></div>
       <button class="src-btn" data-src="banfield2023,kb2025,mafra2025,aaha_senior2023">출처</button></section>
-    <section class="card next-steps"><h2>다음 단계</h2>
-      <a href="${C.sources.epis_course.url}" target="_blank" rel="noopener">동물사랑배움터 입양 전 교육<small>반려견·반려묘 각 90분, 무료 — 법정 교육</small></a>
-      <a href="https://www.animal.go.kr" target="_blank" rel="noopener">국가동물보호정보시스템<small>지역 보호센터의 입양 기다리는 동물</small></a>
+    <section class="card next-steps"><h2>실제 입양까지</h2>
+      <a href="${C.sources.epis_course.url}" target="_blank" rel="noopener">1. 입양 전 교육 받기<small>동물사랑배움터 반려견·반려묘 각 90분, 무료. 보호센터에서 입양할 때 수료증을 내요.</small></a>
+      <a href="https://www.animal.go.kr" target="_blank" rel="noopener">2. 기다리는 아이 찾기<small>국가동물보호정보시스템 '반려동물 입양'에서 지역 보호센터의 아이를 볼 수 있어요.</small></a>
+      <div class="step">3. 보호센터 방문<small>신분증·교육 수료증·목줄이나 이동장을 챙겨요. 미성년자는 입양할 수 없고, 보호센터 입양은 파양할 수 없어요(수원시 안내).</small></div>
+      <div class="step">4. 데려온 뒤<small>동물등록을 하고, 사는 곳의 입양비 지원을 확인해요. 예: 서울 금천구 2026년 마리당 최대 25만 원(진료·접종·중성화·미용, 내장형 등록 조건, 입양 1년 안 신청). 지자체마다 달라요.</small></div>
+      <button class="src-btn" data-src="epis_course,suwon_adopt,geumcheon_adopt2026">출처</button>
+      ${P().route !== 'shelter' ? '<p class="fine">이번엔 펫숍·브리더를 골랐지만, 보호센터에서 기다리는 아이들도 함께 살펴보세요.</p>' : ''}
       <p class="fine">이 앱은 입양을 권하거나 말리는 앱이 아니라 판단을 돕는 도구예요.</p></section>
     ${final ? `${yearOffer()}<button class="btn btn-wide" data-restart>다른 아이로 다시 체험하기</button>` : ''}`;
   view.onclick = (e) => {

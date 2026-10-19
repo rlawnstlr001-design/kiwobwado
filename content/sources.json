@@ -517,5 +517,33 @@
   "year": "2014",
   "grade": "B",
   "url": "https://agris.fao.org/search/ar/records/65dfd5dc63b8185d9caf5e92"
+ },
+ "hsnt_333": {
+  "title": "The 3-3-3 Rule",
+  "org": "Humane Society of North Texas",
+  "year": "연도 미표기",
+  "grade": "C",
+  "url": "https://www.hsnt.org/post/the-3-3-3-rule"
+ },
+ "spca_nz_cat": {
+  "title": "Bringing your new cat home",
+  "org": "SPCA New Zealand",
+  "year": "연도 미표기",
+  "grade": "C",
+  "url": "https://www.spca.nz/advice-and-welfare/article/bringing-your-new-cat-home"
+ },
+ "suwon_adopt": {
+  "title": "반려동물센터 FAQ — 입양 관련(유실·유기동물 입양 절차)",
+  "org": "수원시",
+  "year": "2026",
+  "grade": "A",
+  "url": "https://www.suwon.go.kr/sw-www/sw-animal/sw-animal-03/sw-animal-03-03/sw-animal-03-03-02.jsp"
+ },
+ "geumcheon_adopt2026": {
+  "title": "유기·유실동물 — 2026 유기동물 입양비 지원",
+  "org": "서울 금천구청",
+  "year": "2026",
+  "grade": "A",
+  "url": "https://www.geumcheon.go.kr/portal/contents.do?key=4052"
  }
 }

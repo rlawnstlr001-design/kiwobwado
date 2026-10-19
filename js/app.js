@@ -1,16 +1,17 @@
 // 키워봐도될까 — 내 생활 그대로 30일 키워 보고 반려 준비도를 확인하는 입양 전 체험
-import * as db from './db.js?v=202610191525';
-import * as E from './engine.js?v=202610191525';
-import { C, loadContent, eventById, lessonById, foodById } from './content.js?v=202610191525';
-import { track } from './track.js?v=202610191525';
-import { roomHTML, mountRoom, timeOfDay, loadAnim, clipInfo } from './room.js?v=202610191525';
-import { openGames, GAMES, titleOf } from './games.js?v=202610191525';
-import * as K from './care.js?v=202610191525';
-import { openShop, openVet, openTreats } from './shop.js?v=202610191525';
-import { isApp, initNative, scheduleCare, exactAlarm, shareImage } from './native.js?v=202610191525';
-import { makeCard } from './card.js?v=202610191525';
-import { runGuide } from './guide.js?v=202610191525';
-import { sfx, ambient, stopAmbient, soundOn, setSound } from './sound.js?v=202610191525';
+import * as db from './db.js?v=202610191727';
+import * as E from './engine.js?v=202610191727';
+import { C, loadContent, eventById, lessonById, foodById } from './content.js?v=202610191727';
+import { track } from './track.js?v=202610191727';
+import { roomHTML, mountRoom, timeOfDay, loadAnim, clipInfo } from './room.js?v=202610191727';
+import { openGames, GAMES, titleOf } from './games.js?v=202610191727';
+import * as K from './care.js?v=202610191727';
+import { openShop, openVet, openTreats } from './shop.js?v=202610191727';
+import { isApp, initNative, scheduleCare, exactAlarm, shareImage } from './native.js?v=202610191727';
+import { makeCard } from './card.js?v=202610191727';
+import { runGuide } from './guide.js?v=202610191727';
+import { handCare } from './handcare.js?v=202610191727';
+import { sfx, ambient, stopAmbient, soundOn, setSound } from './sound.js?v=202610191727';
 
 const $ = (s, el = document) => el.querySelector(s);
 const view = $('#view');
@@ -518,9 +519,9 @@ function startGuide(force = false) {
     { sel: '#pet', title: '쓰다듬기', text: '손가락(마우스)으로 몸을 문질러 주세요. 머리·턱·몸마다 손 모양이 달라지고, 하루 몇 번은 마음이 올라요.' },
     { sel: '.hud-tl .hud-card', title: '상태 카드', text: '나이와 며칠째인지, 건강·마음·습관, 사료·패드가 며칠분 남았는지 보여요. 제때 돌보면 올라가요.' },
     { sel: '.prop-bowl', title: '밥그릇', text: `밥 시간이 되면 물건이 반짝이고 '지금!'이 떠요. 요청 시각 ${E.EARLY}분 전부터 ${E.WINDOW}분 안에 누르면 '제때'예요.` },
-    dog ? { sel: '.prop-pad', title: '배변 패드', text: '배변 챙기기·패드 갈기는 패드를 눌러요.' } : { sel: '.prop-litter', title: '화장실', text: '화장실 치우기는 화장실을 눌러요. 하루 한 번 이상이에요.' },
+    dog ? { sel: '.prop-pad', title: '배변 패드', text: '패드를 누르면 쓴 패드를 손으로 돌돌 말아 치우고 새 패드를 깔아요.' } : { sel: '.prop-litter', title: '화장실', text: '화장실을 누르면 뭉친 모래를 직접 떠서 봉투에 담아요. 하루 한 번 이상이에요.' },
     { sel: '.spot-door', title: '현관', text: baby ? '접종이 끝나기 전엔 짧은 바깥 구경, 그 뒤엔 산책이에요. 현관을 눌러 나가요.' : '산책은 현관을 눌러 나가요.' },
-    { sel: '.hud-br', title: '놀이·훈련·간식', text: '나머지 돌봄은 오른쪽 아래 도구로 해요. 반짝이는 게 지금 할 일이에요.' },
+    { sel: '.hud-br', title: '놀이·훈련·간식', text: '나머지 돌봄은 오른쪽 아래 도구로 해요. 반짝이는 게 지금 할 일이에요. 빗질은 엉킨 털을 직접 살살 빗어요.' },
     { sel: '[data-hud="plan"]', title: '오늘 일정', text: '하루 요청 시각과 혼자 있는 시간을 볼 수 있어요. 병원·음식 같은 일이 생기면 이 위에 알림이 떠요.' },
     { sel: '.hud-tr', title: '샵·병원·미니게임', text: `사료·패드가 떨어지면 샵에서 사고, 아프면 병원에 가요. 미니게임으로 코인을 모아요(하루 ${COIN_CAP}개까지). 톱니바퀴엔 수첩·리포트가 있어요.` },
     { title: '진짜처럼 대해 주세요', text: `가상이라도 제때 챙겨야 결과가 정확해요.${isApp ? ' 요청 시각마다 알림이 와요.' : ''} 이 길잡이는 메뉴에서 다시 볼 수 있어요.` },
@@ -532,6 +533,9 @@ const TIPS = {
   dog_chest: ['가슴 쪽을 쓰다듬었어요', '개 28마리를 살펴본 작은 연구에서 가슴을 쓰다듬을 때 몸이 차분해지는 신호(미주신경 활동 증가)가 나왔대요. 다만 아이마다 좋아하는 자리가 달라요 — 몸을 기대 오는지 피하는지 살펴 주세요.', ['kuhne2014_dog']],
 };
 TIPS.shy_dog = ['아직 낯설어해요', '데려온 첫 3일쯤은 새 집에 적응하는 시간이에요. 숨거나, 잠이 많거나, 덜 먹고 사람을 망설이는 게 흔해요. 억지로 만지기보다 조용한 자리를 마련하고 밥·배변 시간을 일정하게 지켜 주세요. 스스로 다가오면 그때 쓰다듬어 주세요.', ['hsnt_333']];
+TIPS.brush_long = ['엉킨 털은 가위로 자르지 마세요', '털이 긴 고양이는 매일 빗어 주는 게 좋아요. 다리 안쪽·엉덩이·가슴·목둘레가 잘 엉켜요. 엉킨 털은 피부에 바짝 붙어 있어서 가위로 자르다 다칠 수 있어요 — 심하면 동물병원에 맡겨요.', ['vca_longhair'], '빗질'];
+TIPS.brush_rough = ['살살, 짧게 빗어 주세요', '엉킨 털을 세게 당기면 아파서 빗질 자체를 싫어하게 될 수 있어요. 짧게 여러 번 살살 풀고, 끝나면 칭찬해 주세요.', [], '빗질'];
+TIPS.litter_daily = ['화장실은 하루 한 번 이상', '고양이는 깨끗한 화장실을 좋아해요. 뭉친 모래는 하루 한 번 이상 떠내고, 일주일에 한 번은 모래를 다 갈고 통을 씻어요. 화장실은 고양이 수보다 하나 더 두는 게 권장이에요.', ['aspca_litter'], '화장실'];
 TIPS.shy_cat = ['아직 낯설어해요', '새 고양이는 처음 며칠 숨어 지내는 게 아주 흔해요. 2~3일은 조용한 방 하나에서 지내게 하고, 관심을 억지로 주지 말고 옆에 앉아 고양이가 먼저 다가오게 기다려 주세요.', ['spca_nz_cat']];
 // 데려온 뒤 적응 — 첫날 한 번. 강아지는 보호소들이 쓰는 3·3·3, 고양이는 SPCA 안내. 보호소에서 왔으면 한 줄 더
 const ADAPT = {
@@ -553,10 +557,10 @@ function strokeTip(code) {
   S.tips = S.tips ?? {};
   if (S.tips[code] || !TIPS[code]) return;
   S.tips[code] = true; save();
-  const [title, text, src] = TIPS[code];
+  const [title, text, src, label = '쓰다듬기'] = TIPS[code];
   setTimeout(() => {
     if ($('#sheet-root').classList.contains('on')) return;
-    const { sheet } = openSheet(`<span class="label">쓰다듬기</span><h2>${esc(title)}</h2><p>${esc(text)}</p><button class="src-btn" data-src="${src.join(',')}">출처</button><button class="btn btn-wide" data-close>알겠어요</button>`);
+    const { sheet } = openSheet(`<span class="label">${label}</span><h2>${esc(title)}</h2><p>${esc(text)}</p>${src.length ? `<button class="src-btn" data-src="${src.join(',')}">출처</button>` : ''}<button class="btn btn-wide" data-close>알겠어요</button>`);
     sheet.addEventListener('click', (e) => { const b = e.target.closest('[data-src]'); if (b) showSources(b.dataset.src.split(',')); });
   }, 900);
 }
@@ -633,6 +637,18 @@ function actsFor(plan, key, d, nm, stage) {
     return { kind, label, icon, cls: 'done', sub: '오늘 완료' };
   });
 }
+// 손 돌봄(js/handcare.js): 이 돌봄들은 버튼 한 번이 아니라 확대 화면에서 손으로 끝까지 해야 '했어요'가 된다
+const HAND = new Set(['brush', 'potty', 'litter']);
+const hands = (kind) => {
+  const stage = E.stageOf(ageW(dayNow()));
+  track(`hand_${kind}`);
+  return handCare(kind, { type: P().type, stage, cat: species() === 'cat', longHair: !!T().brushDaily });
+};
+// 세게 빗었으면(엉킨 털이 당겨짐) 마음이 조금 내려가고 한 번 알려 준다. 장모 고양이는 첫 빗질 뒤 엉킨 털 안내
+function brushAfter(rough) {
+  if (rough >= 3) { S.stats = E.applyFx(S.stats, { bond: -1 }); toast('세게 빗어서 빗질을 조금 무서워해요'); strokeTip('brush_rough'); }
+  else if (P().type === 'long') strokeTip('brush_long');
+}
 async function doAct(kind) {
   if (BUSY || !ROOM) return;
   const key = todayKey(), d = dayNow(), nm = nowMin();
@@ -648,7 +664,13 @@ async function doAct(kind) {
   if (nm >= toMin(P().life.sleep) || nm < toMin(P().life.wake)) return ROOM.nudge('지금은 잘 시간이에요');
   if (a?.task && a.cls === 'now') {
     BUSY = true;
-    const status = E.judge(a.task, nm);
+    const status = E.judge(a.task, nm);   // 손 돌봄을 시작한 시각으로 판정
+    if (HAND.has(kind)) {
+      const r = await hands(kind);
+      if (!r.ok) { BUSY = false; return; }
+      if (kind === 'brush') brushAfter(r.rough);
+      if (kind === 'litter') strokeTip('litter_daily');
+    }
     S.results[a.task.id] = { status, at: nm };
     S.lastDone = now().getTime();
     await save();
@@ -672,6 +694,21 @@ async function doAct(kind) {
     BUSY = false;
     return today();
   }
+  // 빗질 요청이 없는 날(주 1회 빗질 성향)도 하루 한 번은 손으로 빗어 줄 수 있다: 마음 +1
+  if (kind === 'brush' && a?.cls === '' && !a.next) {
+    S.brushed ??= {};
+    if (S.brushed[key]) return ROOM.nudge('오늘은 이미 빗어 줬어요');
+    BUSY = true;
+    const r = await hands('brush');
+    BUSY = false;
+    if (!r.ok) return;
+    S.brushed[key] = true;
+    S.stats = E.applyFx(S.stats, { bond: 1 });
+    brushAfter(r.rough);
+    S.lastDone = now().getTime();
+    await save();
+    return today();
+  }
   if (a?.next) {
     const tip = kind === 'feed' ? ' 밥은 정해진 시간에 정해진 양을 주는 게 좋아요.' : '';
     return ROOM.nudge(`다음 ${a.next.label}은 ${a.next.time}예요.${tip}`);
@@ -685,6 +722,11 @@ async function careAct(kind) {
   if (kind === 'bath') {
     if (S.inv.medshampoo <= 0) return ROOM.nudge('약용 샴푸를 다 썼어요 — 병원에서 다시 처방받아요');
     if (sk.baths.includes(d)) return ROOM.nudge('오늘은 이미 씻겼어요. 너무 자주 씻기면 피부가 마를 수 있어요');
+    if (BUSY) return;
+    BUSY = true;
+    const r = await hands('bath');
+    BUSY = false;
+    if (!r.ok) return;
     S.inv.medshampoo--; sk.baths.push(d);
   } else {
     if (S.inv.meds <= 0) return ROOM.nudge('약을 다 먹였어요');
@@ -1170,7 +1212,7 @@ async function devAction(a) {
   if (DEV) window.__kiwo = { get S() { return S; }, get room() { return ROOM; }, save, route }; // 빠른 체험(지인 테스트·점검)용 상태 보기
   route();
   // 화면을 켜 둔 채 시간이 지나면(응답 창이 열리고 닫힘) 다시 그린다
-  const quiet = () => document.body.classList.contains('playing') || document.body.classList.contains('guiding');
+  const quiet = () => ['playing', 'guiding', 'handcare'].some((k) => document.body.classList.contains(k));
   setInterval(() => { if (P() && !$('#sheet-root').classList.contains('on') && !quiet() && document.body.dataset.route !== 'onboard') route(); }, 60000);
   document.addEventListener('visibilitychange', () => { if (!document.hidden && P() && !quiet()) route(); });
 })();

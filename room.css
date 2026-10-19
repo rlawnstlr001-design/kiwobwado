@@ -304,3 +304,51 @@ body.playing { overflow: hidden; }
 .vo-price { flex: none; font-weight: 900; }
 .treat-list { display: grid; gap: 6px; }
 .si-art { width: 44px; height: 44px; object-fit: contain; flex: none; }
+/* 손 돌봄(js/handcare.js) — 방 위 확대 화면. 빗질·화장실·패드·약욕을 손으로 */
+.hc { position: absolute; inset: 0; z-index: 40; background: rgba(251, 247, 239, .97); display: flex; flex-direction: column; opacity: 0; transition: opacity .22s; touch-action: none; user-select: none; -webkit-user-select: none; overflow: hidden; }
+.hc.on { opacity: 1; }
+.hc-top { display: flex; align-items: center; gap: 10px; padding: calc(8px + env(safe-area-inset-top, 0px)) 14px 8px; border-bottom: var(--line); background: var(--card); flex-wrap: wrap; }
+.hc-top b { font-size: 16px; font-weight: 900; }
+.hc-say { flex: 1 1 220px; font-size: 13.5px; font-weight: 700; color: var(--ink-2); min-width: 0; }
+.hc-bar { flex: 0 0 120px; height: 10px; border-radius: 6px; background: var(--paper-3); overflow: hidden; display: block; }
+.hc-bar i { display: block; height: 100%; width: 0; background: var(--forest); border-radius: 6px; transition: width .25s; }
+.hc-x { border: 2px solid var(--ink); background: var(--card); border-radius: 10px; padding: 5px 10px; font-weight: 900; font-size: 13px; cursor: pointer; color: var(--ink); }
+.hc-stage { flex: 1; display: flex; align-items: center; justify-content: center; gap: 4%; position: relative; min-height: 0; padding: 10px 16px; cursor: none; }
+.hc-pet, .hc-box { position: relative; height: 100%; max-height: 72vh; }
+.hc-pet img { height: 100%; width: auto; display: block; pointer-events: none; }
+.hc-box { height: auto; width: min(58vw, 92vh); max-height: none; }
+.hc-box img { width: 100%; display: block; pointer-events: none; }
+.hc-layer { position: absolute; inset: 0; pointer-events: none; }
+.hc-pet.flinch { animation: hc-flinch .35s; }
+@keyframes hc-flinch { 25% { transform: translateX(-6px) rotate(-2deg); } 60% { transform: translateX(5px) rotate(1.5deg); } }
+.hc-tool { position: absolute; width: 56px; height: 56px; margin: -28px 0 0 -10px; pointer-events: none; z-index: 5; filter: drop-shadow(0 3px 2px rgba(0,0,0,.18)); }
+.hc-tool svg { width: 100%; height: 100%; fill: var(--card); stroke: var(--ink); stroke-width: 2.2; stroke-linecap: round; stroke-linejoin: round; }
+.hc-tool[data-k="sponge"] svg { fill: #FBE38E; }
+.hc-tool[data-k="shower"] svg { fill: var(--sky-2); }
+.hc-knot { position: absolute; width: 19%; border-radius: 50%; background: radial-gradient(circle, rgba(138,106,69,.22) 0 45%, transparent 70%); aspect-ratio: 1; transform: translate(-50%, -50%) scale(calc(.55 + .45 * var(--hp, 1))); transition: transform .15s, opacity .3s; }
+.hc-knot svg { width: 100%; height: 100%; fill: none; stroke: #6E5232; stroke-width: 3.4; stroke-linecap: round; }
+.hc-knot.gone { opacity: 0; transform: translate(-50%, -80%) scale(.3); }
+.hc-fluff, .hc-ouch { position: absolute; pointer-events: none; z-index: 6; }
+.hc-fluff { width: 10px; height: 6px; border-radius: 50%; background: #E9DCC6; border: 1px solid #CDBB9C; animation: hc-float 1.1s ease-out forwards; }
+.hc-fluff.big { width: 18px; height: 11px; }
+@keyframes hc-float { to { transform: translate(14px, -46px) rotate(40deg); opacity: 0; } }
+.hc-ouch { font-weight: 900; font-size: 15px; color: var(--red); transform: translate(-50%, -100%); animation: hc-float 1s ease-out forwards; }
+.hc-bubble { position: absolute; aspect-ratio: 1; border-radius: 50%; transform: translate(-50%, -50%); background: radial-gradient(circle at 35% 30%, #fff 0 18%, rgba(255,255,255,.75) 40%, rgba(214,232,242,.75) 100%); border: 1px solid rgba(111,168,199,.5); animation: hc-pop-in .25s ease-out; transition: opacity .3s, transform .3s; }
+.hc-bubble.gone { opacity: 0; transform: translate(-50%, 20%) scale(.4); }
+@keyframes hc-pop-in { from { transform: translate(-50%, -50%) scale(.2); } }
+.hc-clump { position: absolute; width: 9%; aspect-ratio: 1.3; border-radius: 58% 42% 55% 45% / 52% 60% 40% 48%; transform: translate(-50%, -50%) rotate(var(--rot, 8deg)); background: radial-gradient(circle at 28% 30%, #E6DCC4 0 14%, transparent 16%), radial-gradient(circle at 68% 62%, #A99A7C 0 13%, transparent 15%), radial-gradient(circle at 52% 24%, #D8CDB2 0 9%, transparent 11%), radial-gradient(circle at 40% 38%, #CDBF9F, #93836A); box-shadow: inset 0 -3px 4px rgba(0,0,0,.18), 0 2px 2px rgba(0,0,0,.12); }
+.hc-clump.poop { width: 11%; aspect-ratio: 2.4; border-radius: 48% 52% 46% 54% / 62% 58% 42% 38%; --rot: -14deg; background: radial-gradient(ellipse at 35% 30%, rgba(255,255,255,.28) 0 14%, transparent 22%), linear-gradient(#7E5D3E, #4A3423); box-shadow: inset 0 -3px 4px rgba(0,0,0,.3), 0 3px 3px rgba(0,0,0,.18); }
+.hc-clump.held { z-index: 4; filter: drop-shadow(0 6px 3px rgba(0,0,0,.25)); }
+.hc-bag { flex: none; width: min(14vw, 110px); display: flex; flex-direction: column; align-items: center; gap: 2px; font-weight: 900; color: var(--ink-2); }
+.hc-bag svg { width: 100%; fill: var(--paper-2); stroke: var(--ink); stroke-width: 2.4; stroke-linejoin: round; stroke-linecap: round; }
+.hc-bag.gulp { animation: hc-gulp .35s; }
+@keyframes hc-gulp { 40% { transform: scale(1.12, .9); } }
+.hc-padbox { cursor: none; min-height: 30vh; }
+.hc-padbox #hc-pad { transform-origin: 50% 100%; transform: scaleY(calc(1 - .78 * var(--roll, 0))); filter: brightness(calc(1 - .08 * var(--roll, 0))); transition: transform .1s; }
+.hc-padbox.rolled #hc-pad { transform: scale(.42, .2); border-radius: 30%; }
+.hc-padbox #hc-pad.held { transition: none; filter: drop-shadow(0 8px 4px rgba(0,0,0,.25)); }
+.hc-padbox.empty { outline: 3px dashed var(--forest); outline-offset: -6px; border-radius: 14px; aspect-ratio: 420 / 243; }
+.hc-padbox #hc-pad.drop { animation: hc-drop .45s ease-out; }
+@keyframes hc-drop { from { transform: translateY(-30%) scale(1.08); opacity: 0; } }
+.hc.hc-done .hc-stage::after { content: "✦ ✧ ✦"; position: absolute; left: 50%; top: 18%; transform: translateX(-50%); color: #E7B54A; font-size: 30px; font-weight: 900; animation: sparkle 1.3s forwards; }
+@media (hover: none) { .hc-stage { cursor: auto; } }

@@ -545,5 +545,19 @@
   "year": "2026",
   "grade": "A",
   "url": "https://www.geumcheon.go.kr/portal/contents.do?key=4052"
+ },
+ "vca_longhair": {
+  "title": "Removing mats from long-haired cats — 매일 빗질, 엉킨 털은 가위로 자르지 않기",
+  "org": "VCA Animal Hospitals",
+  "year": "",
+  "grade": "A",
+  "url": "https://vcahospitals.com/pediatric/kitten/health-wellness/how-to-groom-a-long-haired-cat"
+ },
+ "aspca_litter": {
+  "title": "Litter Box Problems — 하루 한 번 이상 치우기, 주 1회 통 씻기, 고양이 수 + 1개",
+  "org": "ASPCA",
+  "year": "",
+  "grade": "A",
+  "url": "https://www.aspca.org/pet-care/cat-care/common-cat-behavior-issues/litter-box-problems"
  }
 }

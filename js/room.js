@@ -2,8 +2,8 @@
 // 아이가 숨 쉬고 돌아다니고, 방 안 물건(밥그릇·패드·현관)을 누르면 돌봄을 하고, 그림자 손으로 쓰다듬을 수 있다
 // 그림: art/room/room_wide.webp(방), art/sprite/<성향>_<단계>_<상태>.webp(배경 없는 아이), art/prop/*.webp(밥그릇·패드·화장실·장난감)
 
-import { mountRig, RIG } from './rig.js?v=202610191412';
-import { sfx, petLoop } from './sound.js?v=202610191412';
+import { mountRig, RIG } from './rig.js?v=202610191525';
+import { sfx, petLoop } from './sound.js?v=202610191525';
 
 // 그림자 손 — 만지는 자리에 따라 모양이 바뀐다(10/12 사용자 요청)
 // head: 위에서 손바닥을 얹어 머리를 쓰다듬기(손가락이 아래로) · chin: 아래에서 손가락을 구부려 턱 긁기 · body: 옆으로 눕힌 손으로 몸 쓸어 주기
@@ -28,6 +28,7 @@ let lastX = SPOTS[0]; // 다시 그려도 아이가 있던 자리에서 이어�
 // 움직임 다듬기 값(art/meta.json과 함께 쓴다 — tools/fix_art.py가 만든다)
 const SIZE = { walk: 1.15, eat: 1.25 }; // 클립 속 아이의 화면 넓이 ÷ 앉은 그림 넓이(먹기는 그릇 포함이라 조금 크게)
 const WALK_DEF = 0.8;   // 걷기 클립에 속도 값이 없을 때: 1초에 클립 높이의 몇 배를 가나
+const CORNER = SPOTS[4];  // 낯선 첫 며칠 머무는 자리(소파 옆 구석)
 const MIN_STEP = 8;     // 돌아다닐 때 한 번에 최소 이동(%) — 너무 짧으면 한두 발짝에 멈춰 어색하다
 const FADE = 220;       // 모습이 바뀔 때 겹쳐 사라지는 시간(ms)
 const REDUCE = typeof matchMedia === 'function' && matchMedia('(prefers-reduced-motion: reduce)').matches;
@@ -97,7 +98,7 @@ let META = { sprite: {}, clip: {}, anim: {} };
 export async function loadAnim() {
   const get = (u) => fetch(u).then((r) => (r.ok ? r.json() : {})).catch(() => ({}));
   let meta;
-  [ANIM, CLIP, meta, LINK] = await Promise.all([get('art/anim/index.json?v=202610191412'), get('art/clip/index.json?v=202610191412'), get('art/meta.json?v=202610191412'), get('art/link/index.json?v=202610191412')]);
+  [ANIM, CLIP, meta, LINK] = await Promise.all([get('art/anim/index.json?v=202610191525'), get('art/clip/index.json?v=202610191525'), get('art/meta.json?v=202610191525'), get('art/link/index.json?v=202610191525')]);
   META = { sprite: {}, clip: {}, anim: {}, ...meta };
 }
 
@@ -109,7 +110,8 @@ let liveRig = null;   // 방을 다시 그릴 때 예전 움직임 캔버스(Web
 let revertTimer = null;
 
 // 방을 살린다: 돌아다니기 + 쓰다듬기. onStroke(누적 쓰다듬은 정도)로 앱이 마음 점수를 올린다
-export function mountRoom({ type, stage, state, onStroke, canPet, onTip, wear = [] }) {
+// shy: 데려온 뒤 적응(engine adaptOf) — 1이면 구석(CORNER)에 머물고 만지면 움찔, 0.5면 덜 돌아다니고 하트가 천천히 찬다
+export function mountRoom({ type, stage, state, onStroke, canPet, onTip, wear = [], shy = 0 }) {
   clearInterval(wanderTimer);
   clearTimeout(revertTimer);
   liveRig?.destroy?.();
@@ -154,6 +156,7 @@ export function mountRoom({ type, stage, state, onStroke, canPet, onTip, wear = 
     return a && b ? Math.sqrt(size * a / b) : 1;
   };
   dropImg(state);
+  if (shy >= 1 && lastX !== CORNER) { lastX = CORNER; pet.style.setProperty('--walk', '0ms'); pet.style.setProperty('--x', `${lastX}%`); }
 
   // 모습이 바뀔 때: 나가는 모습을 그대로 복사해 FADE 동안 겹쳐 두고 사라지게 → 갑자기 바뀌는 '툭' 끊김을 줄인다
   let shownFlip = 1;
@@ -236,7 +239,7 @@ export function mountRoom({ type, stage, state, onStroke, canPet, onTip, wear = 
   // 연결 영상: 미리 받아 두고(Blob), 틀 때마다 새 주소를 만들어 첫 장면부터 다시 재생한다(같은 주소면 이어서 돈다)
   const blobs = {};
   if (LINK[name] && !REDUCE) for (const k of ['stand', 'sit', 'eatf']) {
-    if (LINK[`${name}_${k}`]) fetch(`art/link/${name}_${k}.webp?v=202610191412`).then((r) => (r.ok ? r.blob() : null)).then((b) => { if (b) blobs[k] = b; }).catch(() => {});
+    if (LINK[`${name}_${k}`]) fetch(`art/link/${name}_${k}.webp?v=202610191525`).then((r) => (r.ok ? r.blob() : null)).then((b) => { if (b) blobs[k] = b; }).catch(() => {});
   }
   // 앉은 모습(움직임 캔버스)이 보이고 있을 때만 이어 붙인다 — 다른 자세(아픔·말썽 그림)에서 시작하면 끊겨 보인다
   const linkable = (k) => blobs[k] && rigReady && rig && !cv.hidden;
@@ -330,9 +333,11 @@ export function mountRoom({ type, stage, state, onStroke, canPet, onTip, wear = 
   // 일어나기 → 걷기 → 앉기: 연결 영상이 있으면 앉은 모습에서 끊김 없이 일어나 걷고, 도착하면 다시 앉는다
   let moving = false;
   const busy = () => room.classList.contains('busy');
-  if (!calm) {
+  let tick = 0;
+  if (!calm && shy < 1) {
     wanderTimer = setInterval(() => {
       if (moving || busy() || room.classList.contains('stroking')) return;
+      if (shy && tick++ % 2) return;
       const cands = SPOTS.filter((x) => Math.abs(x - lastX) >= MIN_STEP);
       const nx = cands[Math.floor(Math.random() * cands.length)];
       if (nx === undefined) return;
@@ -393,7 +398,7 @@ export function mountRoom({ type, stage, state, onStroke, canPet, onTip, wear = 
     room.classList.add('stroking');
     rig?.pet(true);
     rig?.zone(zone);
-    const hate = zone === 'tail';
+    const hate = zone === 'tail' || (shy >= 1 && canPet());   // 낯선 며칠은 어디를 만져도 움찔
     rig?.annoy(hate && canPet());
     if (canPet() && !hate) petLoop(cat ? 'cat' : 'dog', true);   // 골골 / 헥헥
     else petLoop(null, false);
@@ -404,11 +409,11 @@ export function mountRoom({ type, stage, state, onStroke, canPet, onTip, wear = 
       if (hate) {
         // 꼬리 쪽: 하트 대신 '…', 계속 만지면 한 번 알려 준다
         tailDist += d;
-        if (tailDist > 140 && !tipped && canPet()) { tipped = true; heart(e, true); onTip?.('cat_tail'); }
+        if (tailDist > 140) { tailDist = 0; heart(e, true); if (!tipped && canPet()) { tipped = true; onTip?.(zone === 'tail' ? 'cat_tail' : 'shy'); } }
         last = { x: e.clientX, y: e.clientY };
         return;
       }
-      dist += d / (LIKE[zone] ?? 1);
+      dist += d / (LIKE[zone] ?? 1) / (shy ? 1.8 : 1);   // 적응 중엔 하트가 천천히
       if (!cat && zone === 'body' && dist > 300 && !tipped && canPet()) { tipped = true; onTip?.('dog_chest'); }
       if (dist > 110 * (hearts + 1)) {
         hearts++;
@@ -524,7 +529,7 @@ export function mountRoom({ type, stage, state, onStroke, canPet, onTip, wear = 
         const goMs = moveTo(DOOR.x, { y: DOOR.y, s: DOOR.s });
         setTimeout(() => { pet.classList.add('out'); sfx.door(); setTimeout(() => {
           say('🐾 다녀왔어요!'); sfx.door(); pet.classList.remove('out', 'face-left'); showAnim('walk', '.6s');
-          const backMs = moveTo(SPOTS[0], { y: 8, s: 1 });
+          const backMs = moveTo(shy >= 1 ? CORNER : SPOTS[0], { y: 8, s: 1 });
           const sitMs = blobs.sit && rigReady ? LINK[`${name}_sit`].ms : 0;
           setTimeout(() => { room.dataset.state = 'happy'; sitDown(() => setState('happy')); }, backMs);
           end(backMs + sitMs).then(res);

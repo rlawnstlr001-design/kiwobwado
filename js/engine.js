@@ -57,6 +57,15 @@ export const ageLabel = (weeks) => (weeks < 16 ? `생후 ${Math.floor(weeks)}주
 export const monthNo = (day, course = 'month') => Math.floor((ageWeeks(day, course) - START_WEEKS) / 4.345) + 1;
 // 사건 '며칠 뒤'(after)를 코스에 맞게: 1년 코스는 하루가 1.8주라 실제 같은 시간이 흐르게 줄인다
 export const afterDays = (after, course = 'month') => (course === 'year' ? Math.max(1, Math.round(after / 7 / COURSES.year.wpd)) : after);
+// 데려온 뒤 적응 단계 — 보호소들이 쓰는 경험칙 '3·3·3'(3일 낯섦 → 3주 생활 익히기 → 3개월 집처럼). 아이마다 다르다는 전제의 대략값.
+// 코스 하루가 실제 며칠인지로 센다(30일 코스 = 하루, 1년 코스 ≈ 12.5일). shy: 방에서 낯가림 세기(1 구석에서 안 움직임·만지면 움찔, 0.5 덜 돌아다님)
+export function adaptOf(day, course = 'month') {
+  const d = (day - 1) * COURSES[course].wpd * 7;
+  if (d < 3) return { phase: 'new', shy: 1 };
+  if (d < 21) return { phase: 'learn', shy: 0.5 };
+  if (d < 91) return { phase: 'settle', shy: 0 };
+  return { phase: 'home', shy: 0 };
+}
 export function stageOf(weeks) { return weeks < 16 ? 'baby' : weeks < 40 ? 'teen' : 'adult'; }
 // 체중 구간(진료비 표 5/10/20kg): 아기 땐 5kg
 export function weightClass(type, weeks) {

@@ -236,6 +236,7 @@ input[type=range] { width: 100%; accent-color: var(--forest); }
 .tips li { background: var(--card); border: var(--line); border-left: 4px solid var(--apricot); border-radius: 10px; padding: 10px 12px; font-size: 14.5px; }
 .next-steps a { display: block; padding: 12px 14px; border: var(--line); border-radius: 12px; margin-top: 8px; background: var(--card); text-decoration: none; font-weight: 700; }
 .next-steps small { display: block; color: var(--ink-2); font-weight: 600; }
+.next-steps .step { padding: 12px 14px; border: var(--line); border-radius: 12px; margin-top: 8px; background: var(--card); font-weight: 700; }
 .future { display: grid; grid-template-columns: 110px 1fr; gap: 14px; align-items: center; }
 /* 첫날 길잡이(js/guide.js): 화면을 어둡게 덮고 대상만 둥글게 밝힌다. 길잡이 중엔 방을 누를 수 없다 */
 .guide { position: fixed; inset: 0; z-index: 80; }

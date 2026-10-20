@@ -11,6 +11,7 @@ const StatusBar = plug('StatusBar');
 const Notify = plug('LocalNotifications');
 const Share = plug('Share');
 const Files = plug('Filesystem');
+const WidgetBridge = platform === 'android' ? plug('WidgetBridge') : null; // MainActivity에 등록한 앱 내장 플러그인(홈 화면 위젯)
 
 // 그림 공유: 웹은 공유 시트(파일 공유가 되는 브라우저) 아니면 내려받기, 앱은 캐시에 저장한 뒤 안드로이드 공유 창
 // 반환: 'shared' | 'saved' | 'cancel' | 'fail'
@@ -82,4 +83,17 @@ export async function exactAlarm(open = false) {
     const r = await Notify.checkExactNotificationSetting();
     return r.exact_alarm === 'granted';
   } catch { return null; }
+}
+
+// 홈 화면 위젯(안드로이드): 돌봄 일정 한 장을 넘기면 위젯이 지금 시각으로 '지금/다음 할 일'을 고른다. 바뀐 게 없으면 다시 안 보낸다
+let lastWidget = '';
+export async function saveWidget(snap) {
+  if (!WidgetBridge) return;
+  const data = JSON.stringify(snap);
+  if (data === lastWidget) return;
+  try { await WidgetBridge.save({ data }); lastWidget = data; } catch { /* 위젯 없음·옛 앱 */ }
+}
+export async function widgetCount() {
+  if (!WidgetBridge) return -1;
+  try { return (await WidgetBridge.count()).count ?? 0; } catch { return -1; }
 }

@@ -14,7 +14,7 @@
 .prop-bowl { left: 37.5%; bottom: 6%; width: 5.4%; z-index: 3; }
 .prop-bowl.eating { visibility: hidden; }
 .spot-door { left: 31.6%; top: 19%; width: 8.4%; height: 40%; border-radius: 6px; }
-.prop-btn.now img { filter: drop-shadow(0 0 6px rgba(255, 196, 70, .95)) drop-shadow(0 0 2px rgba(255, 196, 70, .95)); animation: glow 1.6s ease-in-out infinite; }
+.prop-btn.now img { filter: drop-shadow(0 0 6px rgba(255, 196, 70, .95)) drop-shadow(0 0 2px rgba(255, 196, 70, .95)); }   /* 빛은 고정 — filter를 계속 바꾸는 애니메이션은 휴대폰에서 매 프레임 다시 칠해 무겁다(10/20) */
 .spot-door.now { box-shadow: 0 0 0 3px rgba(255, 196, 70, .85), 0 0 22px rgba(255, 196, 70, .7); animation: ring 1.8s ease-in-out infinite; }
 @keyframes glow { 50% { filter: drop-shadow(0 0 12px rgba(255, 196, 70, 1)) drop-shadow(0 0 3px rgba(255, 196, 70, 1)); } }
 .spot-tag { position: absolute; left: 50%; bottom: calc(100% + 2px); transform: translateX(-50%); white-space: nowrap; background: rgba(255, 253, 248, .92); border-radius: 99px; padding: 1px 8px; font-size: 11.5px; font-weight: 800; line-height: 1.5; box-shadow: 0 2px 6px rgba(0, 0, 0, .12); pointer-events: none; display: flex; gap: 4px; align-items: baseline; }
@@ -132,10 +132,16 @@ details.plan-all[open] summary::after { content: "접기"; }
 
 /* 방과 색 맞추기: 시간대 조명 색을 아이에게도 곱한다(필터는 room.js GRADE). 말풍선·하트는 그대로 */
 .grade-defs { position: absolute; width: 0; height: 0; overflow: hidden; }
-.room[data-tod="morning"] :is(.pet-img, .pet-rig, .pet-clip, .pet-link, .pet-anim, .pet-ghost) { filter: url(#grade-morning); }
-.room[data-tod="day"] :is(.pet-img, .pet-rig, .pet-clip, .pet-link, .pet-anim, .pet-ghost) { filter: url(#grade-day); }
-.room[data-tod="evening"] :is(.pet-img, .pet-rig, .pet-clip, .pet-link, .pet-anim, .pet-ghost) { filter: url(#grade-evening); }
-.room[data-tod="night"] :is(.pet-img, .pet-rig, .pet-clip, .pet-link, .pet-anim, .pet-ghost) { filter: url(#grade-night); }
+/* 아이 시간대 색: 정지 그림은 SVG 곱셈 필터(한 번만 칠함), 움직이는 클립·영상·프레임은 GPU가 하는 CSS 필터 함수(SVG 곱셈에 맞춰 근사 — 털색 기준 평균 오차 1/255 안팎),
+   움직임 캔버스(.pet-rig)는 rig.js 셰이더에서 곱한다. 안드로이드에서 SVG 필터가 매 프레임 CPU로 돌아 움직임이 끊겼다(10/20) */
+.room[data-tod="morning"] :is(.pet-img, .pet-ghost:not(.graded)) { filter: url(#grade-morning); }
+.room[data-tod="morning"] :is(.pet-clip, .pet-link, .pet-anim) { filter: sepia(.32) saturate(1.5) brightness(.93); }
+.room[data-tod="day"] :is(.pet-img, .pet-ghost:not(.graded)) { filter: url(#grade-day); }
+.room[data-tod="day"] :is(.pet-clip, .pet-link, .pet-anim) { filter: sepia(.32) saturate(1.4) brightness(.94); }
+.room[data-tod="evening"] :is(.pet-img, .pet-ghost:not(.graded)) { filter: url(#grade-evening); }
+.room[data-tod="evening"] :is(.pet-clip, .pet-link, .pet-anim) { filter: sepia(.44) saturate(1.8) hue-rotate(-8deg) brightness(.81); }
+.room[data-tod="night"] :is(.pet-img, .pet-ghost:not(.graded)) { filter: url(#grade-night); }
+.room[data-tod="night"] :is(.pet-clip, .pet-link, .pet-anim) { filter: saturate(.9) brightness(.58); }
 /* 물건도 저녁·밤 조명을 받게(지금 할 일로 반짝이는 물건은 눈에 띄도록 그대로) */
 .room[data-tod="morning"] :is(.prop, .prop-btn:not(.now) img, .toy) { filter: url(#tint-morning); }
 .room[data-tod="evening"] :is(.prop, .prop-btn:not(.now) img, .toy) { filter: url(#tint-evening); }

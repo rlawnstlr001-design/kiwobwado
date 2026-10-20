@@ -16,6 +16,7 @@ export function mountRig(canvas, src, cfg, { cat = false } = {}) {
   let W = 0, H = 0, rest, pos, draw, idx, buf, prog, loc, alive = true, ready = false, bodyTex, bodyUV, ul, geo = null;
   let wears = []; // { slot, wf, fb, aspect, tex, uv, pb, ok }
   const t0 = performance.now(); let last = t0;
+  let tint = [1, 1, 1];   // 시간대 색(room.js가 정한다)
   // 귀가 붙은 자리보다 아래로 늘어진 귀면 바깥으로 들리는 방향이 반대
   const earOut = cfg.ears.map((e, i) => (e.cy > e.py ? 1 : -1) * (i === 0 ? 1 : -1));
 
@@ -25,7 +26,9 @@ export function mountRig(canvas, src, cfg, { cat = false } = {}) {
 
   function setup() {
     const vs = 'attribute vec2 p; attribute vec2 u; uniform vec2 sz; varying vec2 v; void main(){ v=u; vec2 c=p/sz*2.0-1.0; gl_Position=vec4(c.x,-c.y,0,1); }';
-    const fs = 'precision mediump float; varying vec2 v; uniform sampler2D tex; void main(){ gl_FragColor=texture2D(tex,v); }';
+    // 시간대 색(tint)은 여기서 곱한다 — 예전엔 CSS filter:url(#grade-*)(SVG 필터)를 캔버스에 걸었는데, 안드로이드는 SVG 필터를 CPU로 돌려
+    // 매 프레임 그림을 GPU에서 꺼내 다시 칠하느라 움직임이 뚝뚝 끊겼다(10/20 실기기 영상). 곱셈 한 번이라 셰이더가 거의 공짜다
+    const fs = 'precision mediump float; varying vec2 v; uniform sampler2D tex; uniform vec3 tint; void main(){ vec4 c=texture2D(tex,v); gl_FragColor=vec4(c.rgb*tint,c.a); }';
     const sh = (type, s) => { const o = gl.createShader(type); gl.shaderSource(o, s); gl.compileShader(o); return o; };
     prog = gl.createProgram();
     gl.attachShader(prog, sh(gl.VERTEX_SHADER, vs)); gl.attachShader(prog, sh(gl.FRAGMENT_SHADER, fs)); gl.linkProgram(prog); gl.useProgram(prog);
@@ -49,7 +52,7 @@ export function mountRig(canvas, src, cfg, { cat = false } = {}) {
     gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR); gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
     gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE); gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
     gl.enable(gl.BLEND); gl.blendFunc(gl.ONE, gl.ONE_MINUS_SRC_ALPHA);
-    loc = { sz: gl.getUniformLocation(prog, 'sz'), p: gl.getAttribLocation(prog, 'p') };
+    loc = { sz: gl.getUniformLocation(prog, 'sz'), p: gl.getAttribLocation(prog, 'p'), tint: gl.getUniformLocation(prog, 'tint') };
   }
   // 머리 크기·정수리: 두 눈 사이 거리로 크기를 재고, 두 눈 가운데 세로줄에서 처음 불투명한 점을 정수리로 본다
   function headGeo() {
@@ -179,6 +182,7 @@ export function mountRig(canvas, src, cfg, { cat = false } = {}) {
         gl.clearColor(0, 0, 0, 0); gl.clear(gl.COLOR_BUFFER_BIT);
         const pad = cfg.pad ?? 70;
         gl.uniform2f(loc.sz, W + pad * 2, H + pad);
+        gl.uniform3f(loc.tint, tint[0], tint[1], tint[2]);
         for (let k = 0; k < pos.length; k += 2) { draw[k] = pos[k] + pad; draw[k + 1] = pos[k + 1] + pad; }
         gl.bindTexture(gl.TEXTURE_2D, bodyTex);
         gl.bindBuffer(gl.ARRAY_BUFFER, bodyUV); gl.vertexAttribPointer(ul, 2, gl.FLOAT, false, 0, 0);
@@ -214,6 +218,7 @@ export function mountRig(canvas, src, cfg, { cat = false } = {}) {
     zone(z) { st.zone = z; },
     annoy(on) { st.annoyTarget = on ? 1 : 0; },
     mood(happy) { st.happy = happy ? 1 : 0; },
+    tint(rgb) { tint = rgb; },
     debug(f) { st.force = f; },   // 시험용: {close, tail, head} 고정
     // 입힐 것 목록 [{ src, slot: 'neck'|'head', wf: 눈 사이 거리의 몇 배 너비, fb }] — 머리는 아래 목(목)부터 그린다
     wear(list) { for (const w of wears) if (w.tex) gl.deleteTexture(w.tex); wears = [...list].sort((a, b) => (a.slot === 'head') - (b.slot === 'head')).map((w) => ({ ...w })); wears.forEach(loadWear); },

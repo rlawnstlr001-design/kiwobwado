@@ -2,8 +2,8 @@
 // 아이가 숨 쉬고 돌아다니고, 방 안 물건(밥그릇·패드·현관)을 누르면 돌봄을 하고, 그림자 손으로 쓰다듬을 수 있다
 // 그림: art/room/room_wide.webp(방), art/sprite/<성향>_<단계>_<상태>.webp(배경 없는 아이), art/prop/*.webp(밥그릇·패드·화장실·장난감)
 
-import { mountRig, RIG } from './rig.js?v=202610201423';
-import { sfx, petLoop } from './sound.js?v=202610201423';
+import { mountRig, RIG } from './rig.js?v=202610201604';
+import { sfx, petLoop } from './sound.js?v=202610201604';
 
 // 그림자 손 — 만지는 자리에 따라 모양이 바뀐다(10/12 사용자 요청)
 // head: 위에서 손바닥을 얹어 머리를 쓰다듬기(손가락이 아래로) · chin: 아래에서 손가락을 구부려 턱 긁기 · body: 옆으로 눕힌 손으로 몸 쓸어 주기
@@ -98,7 +98,7 @@ let META = { sprite: {}, clip: {}, anim: {} };
 export async function loadAnim() {
   const get = (u) => fetch(u).then((r) => (r.ok ? r.json() : {})).catch(() => ({}));
   let meta;
-  [ANIM, CLIP, meta, LINK] = await Promise.all([get('art/anim/index.json?v=202610201423'), get('art/clip/index.json?v=202610201423'), get('art/meta.json?v=202610201423'), get('art/link/index.json?v=202610201423')]);
+  [ANIM, CLIP, meta, LINK] = await Promise.all([get('art/anim/index.json?v=202610201604'), get('art/clip/index.json?v=202610201604'), get('art/meta.json?v=202610201604'), get('art/link/index.json?v=202610201604')]);
   META = { sprite: {}, clip: {}, anim: {}, ...meta };
 }
 
@@ -134,6 +134,7 @@ export function mountRoom({ type, stage, state, onStroke, canPet, onTip, wear = 
   if (RIG[name] && cv) {
     rig = mountRig(cv, `${base}idle.webp`, RIG[name], { cat });
     liveRig = rig;
+    rig?.tint((TINT[room.dataset.tod] ?? TINT.day).map((v, i) => v * WARM[i]));   // 캔버스엔 CSS 필터를 걸지 않고 셰이더에서 곱한다
     rig?.wear(wear);
     cv.addEventListener('rigready', () => {
       cv.style.height = `${rig.scale() * 100}%`;
@@ -184,7 +185,7 @@ export function mountRoom({ type, stage, state, onStroke, canPet, onTip, wear = 
       g.width = Math.round(r.width * dpr); g.height = Math.round(r.height * dpr);
       try { g.getContext('2d').drawImage(el, 0, 0, g.width, g.height); } catch { return; }
     }
-    g.className = 'pet-ghost';
+    g.className = el === cv ? 'pet-ghost graded' : 'pet-ghost';   // 움직임 캔버스를 복사한 건 이미 시간대 색이 들어가 있다
     // 가로는 pet 가운데 기준(pet은 가운데 정렬이라 안에 든 모습에 따라 너비가 바뀌어도 가운데는 그대로다)
     Object.assign(g.style, { left: `calc(50% + ${r.left - pr.left - pr.width / 2}px)`, top: `${r.top - pr.top}px`, width: `${r.width}px`, height: `${r.height}px`, transform: `scaleX(${shownFlip})`, animationDuration: `${FADE}ms` });
     pet.appendChild(g);
@@ -239,7 +240,7 @@ export function mountRoom({ type, stage, state, onStroke, canPet, onTip, wear = 
   // 연결 영상: 미리 받아 두고(Blob), 틀 때마다 새 주소를 만들어 첫 장면부터 다시 재생한다(같은 주소면 이어서 돈다)
   const blobs = {};
   if (LINK[name] && !REDUCE) for (const k of ['stand', 'sit', 'eatf']) {
-    if (LINK[`${name}_${k}`]) fetch(`art/link/${name}_${k}.webp?v=202610201423`).then((r) => (r.ok ? r.blob() : null)).then((b) => { if (b) blobs[k] = b; }).catch(() => {});
+    if (LINK[`${name}_${k}`]) fetch(`art/link/${name}_${k}.webp?v=202610201604`).then((r) => (r.ok ? r.blob() : null)).then((b) => { if (b) blobs[k] = b; }).catch(() => {});
   }
   // 앉은 모습(움직임 캔버스)이 보이고 있을 때만 이어 붙인다 — 다른 자세(아픔·말썽 그림)에서 시작하면 끊겨 보인다
   const linkable = (k) => blobs[k] && rigReady && rig && !cv.hidden;

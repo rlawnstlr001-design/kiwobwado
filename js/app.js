@@ -1,17 +1,17 @@
 // 키워봐도될까 — 내 생활 그대로 30일 키워 보고 반려 준비도를 확인하는 입양 전 체험
-import * as db from './db.js?v=202610201423';
-import * as E from './engine.js?v=202610201423';
-import { C, loadContent, eventById, lessonById, foodById } from './content.js?v=202610201423';
-import { track } from './track.js?v=202610201423';
-import { roomHTML, mountRoom, timeOfDay, loadAnim, clipInfo } from './room.js?v=202610201423';
-import { openGames, GAMES, titleOf } from './games.js?v=202610201423';
-import * as K from './care.js?v=202610201423';
-import { openShop, openVet, openTreats } from './shop.js?v=202610201423';
-import { isApp, initNative, scheduleCare, exactAlarm, shareImage } from './native.js?v=202610201423';
-import { makeCard } from './card.js?v=202610201423';
-import { runGuide } from './guide.js?v=202610201423';
-import { handCare } from './handcare.js?v=202610201423';
-import { sfx, ambient, stopAmbient, soundOn, setSound } from './sound.js?v=202610201423';
+import * as db from './db.js?v=202610201604';
+import * as E from './engine.js?v=202610201604';
+import { C, loadContent, eventById, lessonById, foodById } from './content.js?v=202610201604';
+import { track } from './track.js?v=202610201604';
+import { roomHTML, mountRoom, timeOfDay, loadAnim, clipInfo } from './room.js?v=202610201604';
+import { openGames, GAMES, titleOf } from './games.js?v=202610201604';
+import * as K from './care.js?v=202610201604';
+import { openShop, openVet, openTreats } from './shop.js?v=202610201604';
+import { isApp, initNative, scheduleCare, exactAlarm, shareImage, saveWidget, widgetCount } from './native.js?v=202610201604';
+import { makeCard } from './card.js?v=202610201604';
+import { runGuide } from './guide.js?v=202610201604';
+import { handCare } from './handcare.js?v=202610201604';
+import { sfx, ambient, stopAmbient, soundOn, setSound } from './sound.js?v=202610201604';
 
 const $ = (s, el = document) => el.querySelector(s);
 const view = $('#view');
@@ -95,6 +95,19 @@ function careAlarms(ask) {
     }
   }
   scheduleCare(items, ask);
+}
+// 홈 화면 위젯에 넘길 한 장: 오늘·내일 돌봄 시각(빠른 체험이면 그 가상 시각)과 한 일. 집 비운 시간 요청은 낮 돌봄으로 따로 정하니 뺀다
+function widgetSnap() {
+  if (!isApp || !P()) return;
+  const d = dayNow(), at = (key, hm) => { const [y, m, dd] = key.split('-').map(Number); const [h, mi] = hm.split(':').map(Number); return +new Date(y, m - 1, dd, h, mi); };
+  const tasks = [];
+  for (const n of [d, d + 1]) {
+    if (n < 1 || n > COURSE_DAYS) continue;
+    const key = keyOf(n);
+    for (const t of E.dayPlan(P(), key)) if (!t.away) tasks.push({ t: at(key, t.time), label: t.label, kind: t.kind, done: !!statusFor(t, key, n) });
+  }
+  saveWidget({ v: 1, name: petName(), sprite: `${P().type}_${E.stageOf(ageW(Math.min(Math.max(d, 1), COURSE_DAYS)))}`, startKey: P().startKey, total: COURSE_DAYS,
+    offset: S.offset || 0, wake: P().life.wake, sleep: P().life.sleep, sick: S.skin?.state === 'infected', ended: S.closed.length >= COURSE_DAYS, tasks });
 }
 
 // ---------- 알림·시트 ----------
@@ -494,6 +507,7 @@ function today() {
   });
   track('day_open');
   careAlarms(false);
+  widgetSnap();
   ambient(sleepNow ? 'night' : timeOfDay(nm));
   // 처음 한 번: 첫날 길잡이(자랐어요 카드보다 먼저)
   if (!S.guided) { setTimeout(() => startGuide(), 700); return; }
@@ -502,7 +516,15 @@ function today() {
   if (isYear() && stage !== (S.grown ?? 'baby')) { const was = S.grown ?? 'baby'; S.grown = stage; save(); growCard(was, stage, weeks); return; }
   // 새로 마감된 날이 있으면 '어제의 한 장'
   const pic = S.album?.at(-1);
-  if (pic && pic.day > (S.albumSeen ?? 0)) { S.albumSeen = pic.day; save(); setTimeout(() => { if (!$('#sheet-root').classList.contains('on') && !document.body.classList.contains('guiding')) openPic(pic.day, true); }, 600); }
+  if (pic && pic.day > (S.albumSeen ?? 0)) { S.albumSeen = pic.day; save(); setTimeout(() => { if (!$('#sheet-root').classList.contains('on') && !document.body.classList.contains('guiding')) openPic(pic.day, true); }, 600); return; }
+  // 둘째 날부터 한 번: 홈 화면 위젯 안내(안드로이드 앱, 아직 안 놓았을 때만)
+  if (!S.widgetTip && d >= 2) widgetHint();
+}
+async function widgetHint() {
+  if ((await widgetCount()) !== 0 || $('#sheet-root').classList.contains('on') || document.body.classList.contains('guiding')) return;
+  S.widgetTip = true; save();
+  openSheet(`<span class="label">홈 화면 위젯</span><h2>${esc(fill('{name:을/를} 홈 화면에 둘 수 있어요'))}</h2><p>앱을 열지 않아도 지금 챙길 돌봄과 다음 돌봄 시간이 보여요.</p>
+    <ul class="tips"><li>홈 화면 빈 곳을 길게 눌러요</li><li><b>위젯</b>을 누르고 '키워봐도될까'를 찾아요</li><li>'키워봐도될까 돌봄'을 끌어다 놓아요</li></ul><button class="btn btn-main btn-wide" data-close>알겠어요</button>`);
 }
 // 첫날 길잡이: 방의 물건·버튼을 하나씩 밝혀 짚어 준다. 세로 화면 안내가 떠 있으면 사라진 뒤에, 창이 열려 있으면 닫힌 뒤에
 function startGuide(force = false) {

@@ -2,8 +2,8 @@
 // 아이가 숨 쉬고 돌아다니고, 방 안 물건(밥그릇·패드·현관)을 누르면 돌봄을 하고, 그림자 손으로 쓰다듬을 수 있다
 // 그림: art/room/room_wide.webp(방), art/sprite/<성향>_<단계>_<상태>.webp(배경 없는 아이), art/prop/*.webp(밥그릇·패드·화장실·장난감)
 
-import { mountRig, RIG } from './rig.js?v=202610201634';
-import { sfx, petLoop } from './sound.js?v=202610201634';
+import { mountRig, RIG } from './rig.js?v=202610201651';
+import { sfx, petLoop } from './sound.js?v=202610201651';
 
 // 그림자 손 — 만지는 자리에 따라 모양이 바뀐다(10/12 사용자 요청)
 // head: 위에서 손바닥을 얹어 머리를 쓰다듬기(손가락이 아래로) · chin: 아래에서 손가락을 구부려 턱 긁기 · body: 옆으로 눕힌 손으로 몸 쓸어 주기
@@ -98,7 +98,7 @@ let META = { sprite: {}, clip: {}, anim: {} };
 export async function loadAnim() {
   const get = (u) => fetch(u).then((r) => (r.ok ? r.json() : {})).catch(() => ({}));
   let meta;
-  [ANIM, CLIP, meta, LINK] = await Promise.all([get('art/anim/index.json?v=202610201634'), get('art/clip/index.json?v=202610201634'), get('art/meta.json?v=202610201634'), get('art/link/index.json?v=202610201634')]);
+  [ANIM, CLIP, meta, LINK] = await Promise.all([get('art/anim/index.json?v=202610201651'), get('art/clip/index.json?v=202610201651'), get('art/meta.json?v=202610201651'), get('art/link/index.json?v=202610201651')]);
   META = { sprite: {}, clip: {}, anim: {}, ...meta };
 }
 
@@ -229,6 +229,7 @@ export function mountRoom({ type, stage, state, onStroke, canPet, onTip, wear = 
   // 평소·기분 좋은 상태면 부위별 움직임(없으면 꼬리 흔들기 프레임), 아니면 정지 그림
   const rest = (s) => {
     const calmish = calmOf(s);
+    if (calmish && idleOn()) { rig?.mood(s === 'happy'); return; }   // 가만히 반복 영상(10/20) — 쓰다듬는 동안만 아래 움직임 캔버스
     if (calmish && rigReady) { if (cv.hidden) ghost(cv); hideAnim(); rigOn(true); rig.mood(s === 'happy'); shownFlip = flipNow(); return; }
     if (calmish && has('wag') && !CLIP[`${name}_wag`] && showAnim('wag', cat ? '1.6s' : s === 'happy' ? '.45s' : '.7s')) return;
     if (img.hidden || (rig && !cv.hidden)) ghost(img);   // 클립·스트립·움직임 캔버스 → 정지 그림
@@ -239,11 +240,16 @@ export function mountRoom({ type, stage, state, onStroke, canPet, onTip, wear = 
 
   // 연결 영상: 미리 받아 두고(Blob), 틀 때마다 새 주소를 만들어 첫 장면부터 다시 재생한다(같은 주소면 이어서 돈다)
   const blobs = {};
-  if (LINK[name] && !REDUCE) for (const k of ['stand', 'sit', 'eatf']) {
-    if (LINK[`${name}_${k}`]) fetch(`art/link/${name}_${k}.webp?v=202610201634`).then((r) => (r.ok ? r.blob() : null)).then((b) => { if (b) blobs[k] = b; }).catch(() => {});
+  if (LINK[name] && !REDUCE) for (const k of ['stand', 'sit', 'eatf', 'idle']) {
+    if (LINK[`${name}_${k}`]) fetch(`art/link/${name}_${k}.webp?v=202610201651`).then((r) => (r.ok ? r.blob() : null)).then((b) => {
+      if (!b) return;
+      blobs[k] = b;
+      // 반복 영상이 늦게 오면: 가만히 있는 중일 때 바로 바꿔 낀다
+      if (k === 'idle' && !busy() && !room.classList.contains('stroking') && clip.hidden && calmOf(room.dataset.state)) rest(room.dataset.state);
+    }).catch(() => {});
   }
   // 앉은 모습(움직임 캔버스)이 보이고 있을 때만 이어 붙인다 — 다른 자세(아픔·말썽 그림)에서 시작하면 끊겨 보인다
-  const linkable = (k) => blobs[k] && rigReady && rig && !cv.hidden;
+  const linkable = (k) => blobs[k] && ((rigReady && rig && !cv.hidden) || (!link.hidden && link.dataset.k === 'idle'));
   // 화면 속 평소 그림의 몸 상자(그림은 pet 높이 꽉, 가로 가운데, 발 = pet 바닥)에 영상 속 몸 상자를 맞춘다
   const placeLink = () => {
     const g = LINK._geom, [x0, y0, x1, y1] = LINK[name].box;
@@ -258,6 +264,7 @@ export function mountRoom({ type, stage, state, onStroke, canPet, onTip, wear = 
     ghost(link);
     const old = link.src;
     link.src = URL.createObjectURL(blobs[k]);
+    link.dataset.k = k;
     if (old.startsWith('blob:')) setTimeout(() => URL.revokeObjectURL(old), 1000);
     anim.hidden = true; clip.hidden = true; img.hidden = false;
     rigOn(false);
@@ -267,7 +274,14 @@ export function mountRoom({ type, stage, state, onStroke, canPet, onTip, wear = 
     shownFlip = flipNow();
     return LINK[`${name}_${k}`].ms;
   };
-  function linkOff() { if (!link.hidden) { link.hidden = true; img.style.visibility = ''; } }
+  function linkOff() { if (!link.hidden) { link.hidden = true; link.dataset.k = ''; img.style.visibility = ''; } }
+  // 가만히 반복 영상 켜기 → 켰으면 true. 이미 켜져 있으면 그대로(처음부터 다시 틀지 않는다)
+  function idleOn() {
+    if (!blobs.idle || REDUCE || room.classList.contains('stroking')) return false;   // 쓰다듬는 중엔 움직임 캔버스(눈 감기·귀 반응)
+    if (!link.hidden && link.dataset.k === 'idle') return true;
+    playLink('idle');
+    return true;
+  }
   // 일어나기 끝 장면과 걷기 클립의 무게중심 차이(px, pet 기준) — 바꿔 끼울 때 이만큼 pet을 순간 이동해 아이가 제자리에 있게
   const joinPx = () => {
     const L = LINK[name], g = LINK._geom;
@@ -397,6 +411,8 @@ export function mountRoom({ type, stage, state, onStroke, canPet, onTip, wear = 
     if (e.pointerType !== 'mouse' && e.buttons === 0) return;
     showHand(e);
     room.classList.add('stroking');
+    if (link.dataset.k === 'idle' && !link.hidden && rigReady && !busy()) { linkOff(); rigOn(true); shownFlip = flipNow(); }
+    clearTimeout(idleBack);
     rig?.pet(true);
     rig?.zone(zone);
     const hate = zone === 'tail' || (shy >= 1 && canPet());   // 낯선 며칠은 어디를 만져도 움찔
@@ -425,6 +441,7 @@ export function mountRoom({ type, stage, state, onStroke, canPet, onTip, wear = 
     }
     last = { x: e.clientX, y: e.clientY };
   };
+  let idleBack = null;
   const leave = () => {
     room.classList.remove('stroking');
     rig?.pet(false);
@@ -433,6 +450,7 @@ export function mountRoom({ type, stage, state, onStroke, canPet, onTip, wear = 
     last = null;
     clearTimeout(revertTimer);
     if (hearts >= 3) revertTimer = setTimeout(() => setState(room.dataset.base), 2500);
+    else { clearTimeout(idleBack); idleBack = setTimeout(() => { if (!busy() && !room.classList.contains('stroking') && clip.hidden) rest(room.dataset.state); }, 1500); }
     dist = 0; hearts = 0;
   };
   const heart = (e, dim = false) => {

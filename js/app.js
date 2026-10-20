@@ -1,17 +1,17 @@
 // 키워봐도될까 — 내 생활 그대로 30일 키워 보고 반려 준비도를 확인하는 입양 전 체험
-import * as db from './db.js?v=202610201634';
-import * as E from './engine.js?v=202610201634';
-import { C, loadContent, eventById, lessonById, foodById } from './content.js?v=202610201634';
-import { track } from './track.js?v=202610201634';
-import { roomHTML, mountRoom, timeOfDay, loadAnim, clipInfo } from './room.js?v=202610201634';
-import { openGames, GAMES, titleOf } from './games.js?v=202610201634';
-import * as K from './care.js?v=202610201634';
-import { openShop, openVet, openTreats } from './shop.js?v=202610201634';
-import { isApp, initNative, scheduleCare, exactAlarm, shareImage, saveWidget, widgetCount } from './native.js?v=202610201634';
-import { makeCard } from './card.js?v=202610201634';
-import { runGuide } from './guide.js?v=202610201634';
-import { handCare } from './handcare.js?v=202610201634';
-import { sfx, ambient, stopAmbient, soundOn, setSound } from './sound.js?v=202610201634';
+import * as db from './db.js?v=202610201651';
+import * as E from './engine.js?v=202610201651';
+import { C, loadContent, eventById, lessonById, foodById } from './content.js?v=202610201651';
+import { track } from './track.js?v=202610201651';
+import { roomHTML, mountRoom, timeOfDay, loadAnim, clipInfo } from './room.js?v=202610201651';
+import { openGames, GAMES, titleOf } from './games.js?v=202610201651';
+import * as K from './care.js?v=202610201651';
+import { openShop, openVet, openTreats } from './shop.js?v=202610201651';
+import { isApp, initNative, scheduleCare, exactAlarm, shareImage, saveWidget, widgetCount } from './native.js?v=202610201651';
+import { makeCard } from './card.js?v=202610201651';
+import { runGuide } from './guide.js?v=202610201651';
+import { handCare } from './handcare.js?v=202610201651';
+import { sfx, ambient, stopAmbient, soundOn, setSound } from './sound.js?v=202610201651';
 
 const $ = (s, el = document) => el.querySelector(s);
 const view = $('#view');

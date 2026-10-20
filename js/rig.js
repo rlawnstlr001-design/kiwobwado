@@ -124,7 +124,7 @@ export function mountRig(canvas, src, cfg, { cat = false } = {}) {
     const hw = w.slot === 'head' ? 1 : smooth(c.headBottom, c.headTop, y0);
     const [ncx, ncy] = c.neck, g = c.ground;
     return pts.map(([x, y]) => {
-      [x, y] = rot(x, y, ncx, ncy, st.headA * hw); y += st.pet * 4 * hw; x += st.look * 3 * hw;
+      [x, y] = rot(x, y, ncx, ncy, st.headA * hw); y += st.pet * 4 * hw; x += st.look * 2 * hw;
       y = g + (y - g) * (1 + st.breath * .012);
       return [x, y];
     });
@@ -146,22 +146,22 @@ export function mountRig(canvas, src, cfg, { cat = false } = {}) {
     const zc = st.zone === 'chin' ? 1 : st.zone === 'body' ? .55 : .82;
     const close = f.close ?? Math.max(st.blink, st.pet * zc * (1 - st.annoy));
     // 귀 쫑긋: 가끔 한쪽씩
-    if (t > st.nextFlick) { st.flick[Math.random() < .5 ? 0 : 1] = 1; st.nextFlick = t + 2 + Math.random() * 4; }
+    if (t > st.nextFlick) { st.flick[Math.random() < .5 ? 0 : 1] = 1; st.nextFlick = t + 5 + Math.random() * 6; }   // 10/20 차분하게: 2~6초 → 5~11초마다
     st.flick = st.flick.map((v) => v * Math.exp(-dt * 6));
     // 갸웃: 가끔 고개를 기울였다 돌아옴
-    if (t > st.nextTilt) { st.tiltTarget = st.tiltTarget ? 0 : (Math.random() < .5 ? -1 : 1) * .11; st.nextTilt = t + (st.tiltTarget ? 1.6 : 4 + Math.random() * 4); }
-    st.tilt += (st.tiltTarget - st.tilt) * Math.min(1, dt * 4);
+    if (t > st.nextTilt) { st.tiltTarget = st.tiltTarget ? 0 : (Math.random() < .5 ? -1 : 1) * .05; st.nextTilt = t + (st.tiltTarget ? 2.2 : 9 + Math.random() * 8); }   // 10/20 차분하게: 기울기 .11→.05, 4~8초→9~17초마다
+    st.tilt += (st.tiltTarget - st.tilt) * Math.min(1, dt * 2);   // 천천히 기울고 돌아온다
 
     const breath = Math.sin(t * Math.PI * 2 / (cat ? 3.6 : 3.2));
-    const head = f.head ?? Math.sin(t * Math.PI * 2 / 5.5) * .03 + st.tilt + st.look * .09 - st.pet * (st.zone === 'chin' ? -.05 : .09) * (1 - st.annoy);
+    const head = f.head ?? Math.sin(t * Math.PI * 2 / 6.5) * .015 + st.tilt + st.look * .05 - st.pet * (st.zone === 'chin' ? -.05 : .09) * (1 - st.annoy);
     st.headA = head; st.breath = breath;
     // 꼬리: 강아지는 빠르게 흔들고(기분 좋으면 더 빠르게), 고양이는 끝을 천천히 살랑
     // 싫으면 고양이 꼬리를 탁탁 친다. 강아지는 몸(가슴)을 쓰다듬으면 더 신나게 흔든다
-    const period = cat ? 2.4 - st.annoy * 1.9 : st.happy ? .34 : .55;
+    const period = cat ? 2.4 - st.annoy * 1.9 : st.happy ? .38 : .7;   // 10/20 평소 흔들기 .55→.7초
     st.wag += dt * Math.PI * 2 / period * (1 + st.pet * (cat ? .4 : st.zone === 'body' ? 1.7 : 1.2));
     const amp = cat ? .1 + st.annoy * .14 : .16 + st.pet * .06;   // 강아지 흔들기 폭 .2→.16(10/20 — 크게 휘면 꼬리가 고무처럼 늘어나 보인다)
     const tail = (f.tail ?? (cat ? .04 : .12) + Math.sin(st.wag) * amp) * (c.tail?.dir ?? 1);
-    const ears = [0, 1].map((i) => earOut[i] * (Math.sin(t * (1.1 + i * .2) + i) * .02 + st.flick[i] * (cat ? .2 : .15) - st.pet * .05 - st.annoy * .3));   // 싫으면 귀를 옆으로 눕힌다(쓰다듬을 때 귀가 눕는 쪽으로 더 크게)
+    const ears = [0, 1].map((i) => earOut[i] * (Math.sin(t * (1.1 + i * .2) + i) * .012 + st.flick[i] * (cat ? .12 : .08) - st.pet * .05 - st.annoy * .3));   // 싫으면 귀를 옆으로 눕힌다(쓰다듬을 때 귀가 눕는 쪽으로 더 크게)
 
     const [ncx, ncy] = c.neck, g = c.ground, tl = c.tail;
     for (let k = 0; k < rest.length; k += 2) {
@@ -191,11 +191,11 @@ export function mountRig(canvas, src, cfg, { cat = false } = {}) {
       }
       // 머리: 목 기준 회전 + 쓰다듬으면 살짝 내려옴 + 커서 쪽으로
       const hw = smooth(c.headBottom, c.headTop, rest[k + 1]);
-      if (hw > 0) { [x, y] = rot(x, y, ncx, ncy, head * hw); y += st.pet * 4 * hw; x += st.look * 3 * hw; }
+      if (hw > 0) { [x, y] = rot(x, y, ncx, ncy, head * hw); y += st.pet * 4 * hw; x += st.look * 2 * hw; }
       // 숨: 바닥 기준으로 몸을 아주 살짝 늘였다 줄임, 가슴은 옆으로 조금
       const cw = Math.exp(-(((x - c.chest[0]) / 70) ** 2 + ((y - c.chest[1]) / 80) ** 2));
       y = g + (y - g) * (1 + breath * .012);
-      x += (x - c.chest[0]) * breath * .025 * cw;
+      x += (x - c.chest[0]) * breath * .018 * cw;
       pos[k] = x; pos[k + 1] = y;
     }
   }

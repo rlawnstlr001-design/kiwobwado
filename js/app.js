@@ -1,17 +1,17 @@
 // 키워봐도될까 — 내 생활 그대로 30일 키워 보고 반려 준비도를 확인하는 입양 전 체험
-import * as db from './db.js?v=202610191727';
-import * as E from './engine.js?v=202610191727';
-import { C, loadContent, eventById, lessonById, foodById } from './content.js?v=202610191727';
-import { track } from './track.js?v=202610191727';
-import { roomHTML, mountRoom, timeOfDay, loadAnim, clipInfo } from './room.js?v=202610191727';
-import { openGames, GAMES, titleOf } from './games.js?v=202610191727';
-import * as K from './care.js?v=202610191727';
-import { openShop, openVet, openTreats } from './shop.js?v=202610191727';
-import { isApp, initNative, scheduleCare, exactAlarm, shareImage } from './native.js?v=202610191727';
-import { makeCard } from './card.js?v=202610191727';
-import { runGuide } from './guide.js?v=202610191727';
-import { handCare } from './handcare.js?v=202610191727';
-import { sfx, ambient, stopAmbient, soundOn, setSound } from './sound.js?v=202610191727';
+import * as db from './db.js?v=202610201057';
+import * as E from './engine.js?v=202610201057';
+import { C, loadContent, eventById, lessonById, foodById } from './content.js?v=202610201057';
+import { track } from './track.js?v=202610201057';
+import { roomHTML, mountRoom, timeOfDay, loadAnim, clipInfo } from './room.js?v=202610201057';
+import { openGames, GAMES, titleOf } from './games.js?v=202610201057';
+import * as K from './care.js?v=202610201057';
+import { openShop, openVet, openTreats } from './shop.js?v=202610201057';
+import { isApp, initNative, scheduleCare, exactAlarm, shareImage } from './native.js?v=202610201057';
+import { makeCard } from './card.js?v=202610201057';
+import { runGuide } from './guide.js?v=202610201057';
+import { handCare } from './handcare.js?v=202610201057';
+import { sfx, ambient, stopAmbient, soundOn, setSound } from './sound.js?v=202610201057';
 
 const $ = (s, el = document) => el.querySelector(s);
 const view = $('#view');
@@ -1076,6 +1076,35 @@ function quiz() {
 
 // ---------- 리포트 ----------
 const LIFESPAN = { small: 13.53, medium: 12.7, large: 11.51, short: 11.18, long: 11.18 }; // Banfield 2023 (개는 체형별, 고양이 전체)
+// 입양 준비물 — 체험에서 실제로 쓴 것(먹인 사료·패드/모래)과 법·안내로 꼭 필요한 것. 값은 펫샵 표(다나와 판매가)에 있는 것만 적고 합한다.
+// 제휴 링크는 앱에 넣지 않는다: '자세한 준비물 글'(content/links.json, 쇼핑 커넥트에 연동된 블로그) 안에만 — 비어 있으면 버튼을 숨긴다
+function prepCard() {
+  const sp = species(), dog = sp === 'dog';
+  const item = (id) => C.shop.items.find((i) => i.id === id);
+  const cur = item(S.inv?.cur) ?? K.itemsFor(C.shop, sp).find((i) => i.cat === 'food' && !i.rx);
+  const found = S.skin?.found;
+  const rows = [
+    { id: 'food', name: cur.name.replace(/\s*\d+(\.\d+)?kg$/, ''), sub: found ? `체험에서 먹인 사료예요. ${K.PROTEIN[found]} 알레르기를 찾았으니 ${K.PROTEIN[found]}이(가) 없는 사료로 골라요.` : '체험에서 먹인 사료예요.', price: cur.price, unit: cur.name.match(/\d+(\.\d+)?kg$/)?.[0], src: cur.src },
+    dog ? { id: 'pads', name: '배변 패드', sub: '체험에서 하루 1장씩 썼어요.', price: item('pads100').price, unit: '100매', src: item('pads100').src }
+      : { id: 'litter', name: '고양이 모래', sub: '뭉친 모래는 하루 한 번 이상 떠내고, 일주일에 한 번 다 갈아요.', price: item('litter10').price, unit: '10L', src: [...item('litter10').src, 'aspca_litter'] },
+    !dog && { id: 'box', name: '화장실', sub: '고양이 수보다 하나 더 두는 게 권장이에요(한 마리면 2개).', src: ['aspca_litter'] },
+    { id: 'bowls', name: '밥그릇·물그릇', sub: '밥그릇과 물그릇을 따로 둬요.' },
+    { id: 'carrier', name: '이동장', sub: dog ? '보호센터에 데리러 갈 때 목줄이나 이동장을 챙겨요(수원시 안내). 병원 갈 때도 써요.' : '보호센터에 데리러 갈 때 이동장을 챙겨요(수원시 안내). 병원 갈 때도 써요.', src: ['suwon_adopt'] },
+    dog && { id: 'tag', name: '인식표', sub: '외출할 땐 법으로 인식표를 달아야 해요.', price: item('w_tag').price, src: item('w_tag').src },
+    dog && { id: 'leash', name: '목줄 또는 가슴줄', sub: '외출할 땐 목줄·가슴줄 같은 안전조치가 법으로 정해져 있어요.', src: ['law_walk'] },
+    T().brushDaily && { id: 'brush', name: '빗', sub: sp === 'cat' ? '털이 길어 매일 빗어 줘야 해요. 엉킨 털은 가위로 자르지 않아요.' : '체험에서 매일 빗었어요. 털이 잘 엉키는 아이예요.', src: sp === 'cat' ? ['vca_longhair'] : [] },
+    !dog && { id: 'toy', name: '사냥 놀이 장난감', sub: '낚싯대 장난감처럼 쫓고 잡는 놀이를 매일 해 줘요.', src: ['icatcare_play'] },
+  ].filter(Boolean);
+  const sum = rows.reduce((s, r) => s + (r.price || 0), 0);
+  const done = rows.filter((r) => S.prep?.[r.id]).length;
+  const link = C.links?.prep?.[sp];
+  const srcs = [...new Set(rows.flatMap((r) => r.src || []))];
+  return `<section class="card prep"><h2>입양 준비물</h2><p class="sub" style="margin:0 0 6px">체험에서 쓴 것과 꼭 필요한 것만 추렸어요. 준비한 건 눌러서 체크해요 · <span class="prep-n">${done}</span>/${rows.length}</p>
+    <div class="prep-list">${rows.map((r) => `<button class="prep-row${S.prep?.[r.id] ? ' on' : ''}" data-prep="${r.id}" aria-pressed="${!!S.prep?.[r.id]}"><i aria-hidden="true"></i><span><b>${esc(r.name)}</b><small>${esc(r.sub)}</small></span>${r.price ? `<em>${won(r.price)}${r.unit ? `<small>${r.unit}</small>` : ''}</em>` : ''}</button>`).join('')}</div>
+    <p class="fine" style="margin:8px 0 0">값은 2026년 판매가 예시(다나와)로, 값이 확인된 것만 합하면 약 ${won(sum)}이에요 [계산]. 같은 물건도 파는 곳마다 달라요.</p>
+    <button class="src-btn" data-src="${srcs.join(',')}">출처</button>
+    ${link ? `<a class="btn btn-soft btn-wide" href="${esc(link)}" target="_blank" rel="noopener" data-prep-link style="margin-top:8px">자세한 준비물 글 보기</a><p class="fine" style="margin:6px 0 0">블로그 글로 이어져요. 글 안의 상품 링크는 제휴 링크라, 그 링크로 사면 앱 만든 사람이 수수료를 받을 수 있어요. 값은 같아요.</p>` : ''}</section>`;
+}
 function report() {
   setTab('report');
   const d = dayNow();
@@ -1103,6 +1132,7 @@ function report() {
     <section class="card"><h2>앞으로의 시간</h2><div class="future"><figure class="photo" style="transform:rotate(2deg)"><img src="${photoOf('adult', 'happy')}" alt="다 자란 모습"><figcaption>다 자라면</figcaption></figure>
       <p class="sub" style="margin:0">${esc(petName())}${E.josa(petName(), '은/는').slice(-1)} 평균적으로 약 <b>${Math.round(life * 10) / 10}년</b>을 살아요. 1년 양육비 ${Math.round(y.min / 10000)}만~${Math.round(y.max / 10000)}만원이면, 평생 약 <b>${Math.round((y.min * life) / 1000000) * 100}만~${Math.round((y.max * life) / 1000000) * 100}만원</b> [계산]. 나이가 들수록 치료비가 늘어요(개 7세·고양이 6세 이후).</p></div>
       <button class="src-btn" data-src="banfield2023,kb2025,mafra2025,aaha_senior2023">출처</button></section>
+    ${prepCard()}
     <section class="card next-steps"><h2>실제 입양까지</h2>
       <a href="${C.sources.epis_course.url}" target="_blank" rel="noopener">1. 입양 전 교육 받기<small>동물사랑배움터 반려견·반려묘 각 90분, 무료. 보호센터에서 입양할 때 수료증을 내요.</small></a>
       <a href="https://www.animal.go.kr" target="_blank" rel="noopener">2. 기다리는 아이 찾기<small>국가동물보호정보시스템 '반려동물 입양'에서 지역 보호센터의 아이를 볼 수 있어요.</small></a>
@@ -1114,9 +1144,11 @@ function report() {
     ${final ? `${yearOffer()}<button class="btn btn-wide" data-restart>다른 아이로 다시 체험하기</button>` : ''}`;
   view.onclick = (e) => {
     if (e.target.closest('[data-album]')) bookSeg = 'album';
+    if (e.target.closest('[data-prep-link]')) track('prep_link');
     const b = e.target.closest('button');
     if (!b) return;
     if (b.dataset.src) return showSources(b.dataset.src.split(','));
+    if (b.dataset.prep) { S.prep ??= {}; S.prep[b.dataset.prep] = !S.prep[b.dataset.prep]; b.classList.toggle('on', S.prep[b.dataset.prep]); b.setAttribute('aria-pressed', String(S.prep[b.dataset.prep])); $('.prep-n').textContent = document.querySelectorAll('.prep-row.on').length; save(); return; }
     if (b.dataset.year != null) return confirmYear();
     if (b.dataset.restart != null) return confirmReset();
     if (b.dataset.card != null) return openCard(rep, V[0], rep.verdict === 'ready', final);

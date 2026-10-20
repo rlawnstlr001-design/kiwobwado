@@ -274,3 +274,15 @@ input[type=range] { width: 100%; accent-color: var(--forest); }
 .album-strip .album-item { flex: 0 0 96px; scroll-snap-align: start; }
 .pic-big { display: flex; justify-content: center; margin: 8px 0 14px; }
 .pic-big .photo { width: min(240px, 64vw); transform: rotate(var(--r, 0deg)); }
+/* 리포트 '입양 준비물' 체크 목록 */
+.prep-list { display: grid; gap: 6px; }
+.prep-row { display: flex; align-items: center; gap: 10px; width: 100%; text-align: left; padding: 10px 12px; border: var(--line); border-radius: 12px; background: var(--card); font: inherit; color: var(--ink); cursor: pointer; }
+.prep-row > i { flex: none; width: 20px; height: 20px; border: 2px solid var(--ink-3); border-radius: 6px; position: relative; }
+.prep-row.on > i { background: var(--forest); border-color: var(--forest); }
+.prep-row.on > i::after { content: ""; position: absolute; left: 5px; top: 1px; width: 5px; height: 10px; border: solid #fff; border-width: 0 2px 2px 0; transform: rotate(45deg); }
+.prep-row > span { flex: 1; min-width: 0; }
+.prep-row b { font-weight: 800; }
+.prep-row.on b { color: var(--ink-2); text-decoration: line-through; text-decoration-color: var(--ink-3); }
+.prep-row small { display: block; color: var(--ink-2); font-weight: 600; font-size: 12.5px; }
+.prep-row em { flex: none; font-style: normal; font-weight: 800; text-align: right; font-size: 13px; }
+.prep-row em small { font-size: 11px; color: var(--ink-3); }

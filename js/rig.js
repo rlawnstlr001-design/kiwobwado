@@ -14,6 +14,7 @@ export function mountRig(canvas, src, cfg, { cat = false } = {}) {
   if (!gl) return null;
   const st = { headA: 0, breath: 0, look: 0, pet: 0, petTarget: 0, blink: 0, nextBlink: 1.5, blinkT: -1, flick: [0, 0], nextFlick: 3, tilt: 0, tiltTarget: 0, nextTilt: 4, wag: 0, happy: 0, force: null, zone: 'head', annoy: 0, annoyTarget: 0 };
   let W = 0, H = 0, rest, pos, draw, idx, buf, prog, loc, alive = true, ready = false, bodyTex, bodyUV, ul, geo = null;
+  let tailCut = null;   // 줄마다 꼬리와 엉덩이 사이 빈틈의 x(원본 픽셀) — 이 선 너머(몸 쪽)는 꼬리와 함께 돌지 않는다
   let wears = []; // { slot, wf, fb, aspect, tex, uv, pb, ok }
   const t0 = performance.now(); let last = t0;
   let tint = [1, 1, 1];   // 시간대 색(room.js가 정한다)
@@ -21,7 +22,7 @@ export function mountRig(canvas, src, cfg, { cat = false } = {}) {
   const earOut = cfg.ears.map((e, i) => (e.cy > e.py ? 1 : -1) * (i === 0 ? 1 : -1));
 
   const img = new Image();
-  img.onload = () => { if (!alive) return; W = img.width; H = img.height; setup(); geo = headGeo(); ready = true; canvas.dispatchEvent(new Event('rigready')); requestAnimationFrame(frame); };
+  img.onload = () => { if (!alive) return; W = img.width; H = img.height; setup(); geo = headGeo(); tailCut = cutTail(); ready = true; canvas.dispatchEvent(new Event('rigready')); requestAnimationFrame(frame); };
   img.src = src;
 
   function setup() {
@@ -66,6 +67,35 @@ export function mountRig(canvas, src, cfg, { cat = false } = {}) {
       for (let y = 0; y < eyeY; y++) if (col[y * 4 + 3] > 120) { top = y; break; }
     } catch { /* 픽셀을 못 읽으면 눈 거리로 추정 */ }
     return { cx, eyeY, ed, top };
+  }
+  // 꼬리 상자 안에서 꼬리만 골라낸다: 몸 쪽(상자 바깥)에서 꼬리 쪽으로 한 줄씩 훑어 '몸 → 빈틈 → 꼬리'가 보이는 줄의 빈틈 x를 잰다.
+  // 꼬리 뿌리처럼 몸과 붙어 빈틈이 없는 줄은 가장 가까운 줄의 값을 쓴다. 예전엔 상자 안을 통째로 돌려 엉덩이가 들어갔다 나왔다 했다(10/20)
+  function cutTail() {
+    const tl = cfg.tail;
+    if (!tl) return null;
+    try {
+      const [x0, y0, x1, y1] = tl.box, left = (x0 + x1) / 2 < tl.px, step = left ? -1 : 1;
+      const cv = document.createElement('canvas'); cv.width = W; cv.height = H;
+      const g = cv.getContext('2d'); g.drawImage(img, 0, 0);
+      const d = g.getImageData(0, 0, W, H).data;
+      const op = (x, y) => x >= 0 && x < W && d[(y * W + x) * 4 + 3] > 90;
+      const start = Math.max(0, Math.min(W - 1, Math.round(left ? x1 + 8 : x0 - 8))), end = Math.round(left ? x0 - 1 : x1 + 1);
+      const rows = {};
+      for (let y = Math.max(0, Math.round(y0)); y <= Math.min(H - 1, Math.round(y1)); y++) {
+        if (!op(start, y)) continue;   // 이 줄은 몸이 없다
+        let x = start;
+        while (x !== end && op(x, y)) x += step;           // 몸
+        const g0 = x;
+        while (x !== end && !op(x, y)) x += step;          // 빈틈
+        if (x === end || Math.abs(x - g0) < 2) continue;   // 빈틈 뒤에 꼬리가 없거나 빈틈이 너무 좁다
+        rows[y] = (g0 + x - step) / 2;
+      }
+      const ys = Object.keys(rows).map(Number);
+      if (!ys.length) return null;
+      const out = new Float32Array(H).fill(NaN);
+      for (let y = 0; y < H; y++) { let best = ys[0]; for (const v of ys) if (Math.abs(v - y) < Math.abs(best - y)) best = v; out[y] = rows[best]; }
+      return { cut: out, left };
+    } catch { return null; }   // 픽셀을 못 읽으면 예전처럼 상자로만
   }
   // 액세서리 한 장을 텍스처로
   function loadWear(w) {
@@ -129,7 +159,7 @@ export function mountRig(canvas, src, cfg, { cat = false } = {}) {
     // 싫으면 고양이 꼬리를 탁탁 친다. 강아지는 몸(가슴)을 쓰다듬으면 더 신나게 흔든다
     const period = cat ? 2.4 - st.annoy * 1.9 : st.happy ? .34 : .55;
     st.wag += dt * Math.PI * 2 / period * (1 + st.pet * (cat ? .4 : st.zone === 'body' ? 1.7 : 1.2));
-    const amp = cat ? .1 + st.annoy * .14 : .2 + st.pet * .06;
+    const amp = cat ? .1 + st.annoy * .14 : .16 + st.pet * .06;   // 강아지 흔들기 폭 .2→.16(10/20 — 크게 휘면 꼬리가 고무처럼 늘어나 보인다)
     const tail = (f.tail ?? (cat ? .04 : .12) + Math.sin(st.wag) * amp) * (c.tail?.dir ?? 1);
     const ears = [0, 1].map((i) => earOut[i] * (Math.sin(t * (1.1 + i * .2) + i) * .02 + st.flick[i] * (cat ? .2 : .15) - st.pet * .05 - st.annoy * .3));   // 싫으면 귀를 옆으로 눕힌다(쓰다듬을 때 귀가 눕는 쪽으로 더 크게)
 
@@ -155,7 +185,9 @@ export function mountRig(canvas, src, cfg, { cat = false } = {}) {
         const rx = rest[k], ry = rest[k + 1];
         const w = smooth(x0 - 8, x0 + 6, rx) * smooth(x1 + 8, x1 - 6, rx) * smooth(y0 - 8, y0 + 6, ry) * smooth(y1 + 8, y1 - 6, ry)
           * smooth(4, 34, Math.hypot(rx - tl.px, ry - tl.py));
-        if (w > 0) [x, y] = rot(x, y, tl.px, tl.py, tail * w);
+        const cx = tailCut ? tailCut.cut[Math.min(H - 1, Math.max(0, Math.round(ry)))] : NaN;
+        const side = Number.isNaN(cx) ? 1 : tailCut.left ? smooth(cx + 3, cx - 3, rx) : smooth(cx - 3, cx + 3, rx);   // 엉덩이 쪽은 0
+        if (w * side > 0) [x, y] = rot(x, y, tl.px, tl.py, tail * w * side);
       }
       // 머리: 목 기준 회전 + 쓰다듬으면 살짝 내려옴 + 커서 쪽으로
       const hw = smooth(c.headBottom, c.headTop, rest[k + 1]);

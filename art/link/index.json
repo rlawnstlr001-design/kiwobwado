@@ -159,6 +159,9 @@
  "medium_baby_eatf": {
   "ms": 9960
  },
+ "medium_baby_idle": {
+  "ms": 5395
+ },
  "medium_baby_sit": {
   "ms": 3154
  },

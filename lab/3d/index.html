@@ -1,0 +1,130 @@
+<!doctype html>
+<html lang="ko"><head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>3D 시험 — 키워봐도될까</title>
+<!-- 3D 가능성 시험(10/21): 지금 방 그림 위에 3D 강아지(Quaternius Shiba Inu, CC0 — poly.pizza)를 올려 ① 그림체가 어울리는지 ② 휴대폰에서 부드러운지 본다. 앱에는 안 들어간다 -->
+<style>
+  html, body { margin: 0; height: 100%; background: #E9DCC6; font-family: 'Pretendard', -apple-system, 'Malgun Gothic', sans-serif; overflow: hidden; }
+  #room { position: fixed; left: 0; bottom: 0; width: 100vw; aspect-ratio: var(--ar, 2.4); background: url(../../art/room/room_wide.webp) center bottom / 100% auto no-repeat; touch-action: none; }
+  #room canvas { position: absolute; inset: 0; width: 100%; height: 100%; display: block; }
+  .bar { position: fixed; top: calc(8px + env(safe-area-inset-top, 0px)); left: 8px; right: 8px; display: flex; flex-wrap: wrap; gap: 6px; z-index: 5; }
+  .bar button { border: 2px solid #2D2A26; background: #FFFDF8; border-radius: 10px; padding: 5px 10px; font: inherit; font-weight: 800; font-size: 13px; color: #2D2A26; }
+  .bar button.on { background: #3F6B4F; color: #fff; border-color: #3F6B4F; }
+  #fps { position: fixed; right: 8px; bottom: 8px; z-index: 5; background: rgba(45,42,38,.8); color: #fff; font: 700 12px/1.4 monospace; padding: 4px 8px; border-radius: 8px; }
+  #note { position: fixed; left: 8px; bottom: 8px; z-index: 5; background: rgba(255,253,248,.92); border-radius: 10px; padding: 6px 10px; font-size: 12px; font-weight: 700; color: #6E665C; max-width: 50vw; }
+</style>
+</head><body>
+<div class="bar">
+  <button data-a="Idle" class="on">가만히</button><button data-a="Idle_2">두리번</button><button data-a="Walk">걷기</button><button data-a="Eating">밥 먹기</button>
+  <button data-s="toon" class="on">그림체(카툰)</button><button data-s="std">기본 3D</button>
+  <button data-look class="on">손가락 따라보기</button>
+</div>
+<div id="room"></div>
+<div id="note">3D 시험 · 강아지를 누르면 반응해요 · 모델: Quaternius(CC0)</div>
+<div id="fps">…</div>
+<script type="importmap">{ "imports": { "three": "https://unpkg.com/three@0.160.0/build/three.module.js", "three/addons/": "https://unpkg.com/three@0.160.0/examples/jsm/" } }</script>
+<script type="module">
+import * as THREE from 'three';
+import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
+
+const room = document.getElementById('room');
+const bg = new Image(); bg.src = '../../art/room/room_wide.webp';
+bg.onload = () => { room.style.setProperty('--ar', bg.naturalWidth / bg.naturalHeight); resize(); };
+
+const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+renderer.setPixelRatio(Math.min(2, devicePixelRatio || 1));
+renderer.outputColorSpace = THREE.SRGBColorSpace;
+room.appendChild(renderer.domElement);
+const scene = new THREE.Scene();
+const camera = new THREE.PerspectiveCamera(22, 2.4, 0.1, 100);
+camera.position.set(0, 3.0, 9.5); camera.lookAt(0, 1.35, 0);   // 바닥(y=0)이 방 그림 바닥 아래쪽에 오게
+// 방 그림과 같은 따뜻한 빛
+scene.add(new THREE.HemisphereLight(0xfff3e0, 0xb08a5a, 1.6));
+const sun = new THREE.DirectionalLight(0xffe2bd, 1.6); sun.position.set(-3, 5, 4); scene.add(sun);
+// 바닥 그림자(동그란 흐림)
+const sh = document.createElement('canvas'); sh.width = sh.height = 64;
+const g = sh.getContext('2d'); const gr = g.createRadialGradient(32, 32, 0, 32, 32, 32); gr.addColorStop(0, 'rgba(60,40,20,.45)'); gr.addColorStop(1, 'rgba(60,40,20,0)'); g.fillStyle = gr; g.fillRect(0, 0, 64, 64);
+const shadow = new THREE.Mesh(new THREE.PlaneGeometry(1.6, 0.8), new THREE.MeshBasicMaterial({ map: new THREE.CanvasTexture(sh), transparent: true, depthWrite: false }));
+shadow.rotation.x = -Math.PI / 2; scene.add(shadow);
+
+function resize() {
+  const w = room.clientWidth, h = room.clientHeight;
+  renderer.setSize(w, h, false); camera.aspect = w / h; camera.updateProjectionMatrix();
+}
+addEventListener('resize', resize);
+
+// 카툰 셰이딩: 3단 계조
+const steps = new Uint8Array([90, 170, 255]);
+const grad = new THREE.DataTexture(steps, 3, 1, THREE.RedFormat); grad.minFilter = grad.magFilter = THREE.NearestFilter; grad.needsUpdate = true;
+let dog, mixer, actions = {}, head, cur, std = [], toon = [];
+new GLTFLoader().load('shiba.glb', (gltf) => {
+  dog = gltf.scene;
+  dog.traverse((o) => {
+    if (o.isMesh) {
+      o.frustumCulled = false;
+      const ms = Array.isArray(o.material) ? o.material : [o.material];
+      std.push([o, o.material]);
+      const tm = ms.map((m) => new THREE.MeshToonMaterial({ color: m.color, gradientMap: grad }));
+      toon.push([o, Array.isArray(o.material) ? tm : tm[0]]);
+    }
+    if (o.isBone && o.name === 'Head') head = o;
+  });
+  // 키를 방 높이의 1/3쯤으로. 뼈대에 ×100 배율이 걸려 있어 기하 상자(Box3)로 재면 100배 틀린다 → 뼈 기준(귀 끝 ≈ 3.0)으로 맞춘다
+  dog.scale.setScalar(0.9 / 3.0);
+  scene.add(dog);
+  window.__d = { dog, camera, THREE };
+  mixer = new THREE.AnimationMixer(dog);
+  for (const c of gltf.animations) if (!c.name.includes('|')) actions[c.name] = mixer.clipAction(c);
+  setShade('toon');
+  play('Idle');
+}, undefined, (e) => { document.getElementById('note').textContent = '모델을 못 불러왔어요: ' + e.message; });
+
+function setShade(k) { for (const [o, m] of (k === 'toon' ? toon : std)) o.material = m; document.querySelectorAll('[data-s]').forEach((b) => b.classList.toggle('on', b.dataset.s === k)); }
+function play(name, once = false) {
+  const a = actions[name]; if (!a) return;
+  a.reset(); a.setLoop(once ? THREE.LoopOnce : THREE.LoopRepeat); a.clampWhenFinished = once;
+  if (cur && cur !== a) a.crossFadeFrom(cur, 0.35, false);
+  a.play(); cur = a;
+  document.querySelectorAll('[data-a]').forEach((b) => b.classList.toggle('on', b.dataset.a === name));
+}
+// 걷기: 방 바닥을 왼쪽↔오른쪽으로 오가며 끝에서 돈다
+let walkDir = 1, walking = false, x = 0, face = 0.35;
+document.querySelector('.bar').addEventListener('click', (e) => {
+  const b = e.target.closest('button'); if (!b) return;
+  if (b.dataset.a) { walking = b.dataset.a === 'Walk'; play(b.dataset.a); }
+  if (b.dataset.s) setShade(b.dataset.s);
+  if (b.dataset.look != null) { look = !look; b.classList.toggle('on', look); }
+});
+// 손가락(커서) 따라보기 + 누르면 움찔
+let look = true, tx = 0, ty = 0;
+room.addEventListener('pointermove', (e) => { const r = room.getBoundingClientRect(); tx = ((e.clientX - r.left) / r.width - 0.5) * 2; ty = ((e.clientY - r.top) / r.height - 0.5) * 2; });
+room.addEventListener('pointerdown', (e) => {
+  if (!dog) return;
+  const r = room.getBoundingClientRect(); const p = new THREE.Vector2(((e.clientX - r.left) / r.width) * 2 - 1, -((e.clientY - r.top) / r.height) * 2 + 1);
+  const ray = new THREE.Raycaster(); ray.setFromCamera(p, camera);
+  if (ray.intersectObject(dog, true).length && !walking) { play(Math.random() < .5 ? 'Idle_HitReact_Left' : 'Idle_HitReact_Right', true); setTimeout(() => !walking && play('Idle'), 900); }
+});
+
+const clock = new THREE.Clock(); let frames = 0, acc = 0;
+const fpsEl = document.getElementById('fps');
+renderer.setAnimationLoop(() => {
+  const dt = Math.min(0.05, clock.getDelta());
+  if (dog) {
+    mixer.update(dt);
+    if (walking) {
+      x += walkDir * dt * 0.55;
+      if (Math.abs(x) > 1.6) walkDir *= -1;
+      face += ((walkDir > 0 ? Math.PI / 2 : -Math.PI / 2) - face) * Math.min(1, dt * 4);
+    } else face += (0.35 - face) * Math.min(1, dt * 3);
+    dog.position.set(0.55 + x, 0, 0); dog.rotation.y = face;
+    shadow.position.set(dog.position.x, 0.01, 0.05);
+    // 고개: 애니메이션 위에 덧돌린다
+    if (head && look && !walking) { head.rotation.y += (tx * 0.6 - 0) * 1; head.rotation.x += ty * 0.25; }
+  }
+  renderer.render(scene, camera);
+  frames++; acc += dt;
+  if (acc >= 1) { fpsEl.textContent = `${Math.round(frames / acc)} fps · ${renderer.domElement.width}×${renderer.domElement.height}`; frames = 0; acc = 0; }
+});
+</script>
+</body></html>

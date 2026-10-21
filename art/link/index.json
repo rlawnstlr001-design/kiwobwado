@@ -62,6 +62,9 @@
  "large_teen_eatf": {
   "ms": 9960
  },
+ "large_teen_idle": {
+  "ms": 4648
+ },
  "large_teen_sit": {
   "ms": 1826
  },
@@ -253,6 +256,9 @@
  },
  "short_teen_eatf": {
   "ms": 9960
+ },
+ "short_teen_idle": {
+  "ms": 8964
  },
  "short_teen_sit": {
   "ms": 4150

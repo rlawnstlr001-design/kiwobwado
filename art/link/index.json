@@ -39,6 +39,9 @@
  "large_baby_eatf": {
   "ms": 9960
  },
+ "large_baby_idle": {
+  "ms": 5395
+ },
  "large_baby_sit": {
   "ms": 2988
  },
@@ -281,6 +284,9 @@
  },
  "small_baby_eatf": {
   "ms": 9960
+ },
+ "small_baby_idle": {
+  "ms": 8881
  },
  "small_baby_sit": {
   "ms": 2656

@@ -188,6 +188,9 @@
  "medium_teen_eatf": {
   "ms": 9960
  },
+ "medium_teen_idle": {
+  "ms": 4482
+ },
  "medium_teen_sit": {
   "ms": 4067
  },
@@ -313,6 +316,9 @@
  },
  "small_teen_eatf": {
   "ms": 9960
+ },
+ "small_teen_idle": {
+  "ms": 8964
  },
  "small_teen_sit": {
   "ms": 3652

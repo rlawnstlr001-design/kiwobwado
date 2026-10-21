@@ -102,6 +102,9 @@
  "long_baby_eatf": {
   "ms": 9960
  },
+ "long_baby_idle": {
+  "ms": 4814
+ },
  "long_baby_sit": {
   "ms": 2241
  },
@@ -224,6 +227,9 @@
  },
  "short_baby_eatf": {
   "ms": 9960
+ },
+ "short_baby_idle": {
+  "ms": 3984
  },
  "short_baby_sit": {
   "ms": 3154

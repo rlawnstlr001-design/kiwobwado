@@ -148,6 +148,9 @@
  "medium_adult_eatf": {
   "ms": 9960
  },
+ "medium_adult_idle": {
+  "ms": 5810
+ },
  "medium_adult_sit": {
   "ms": 2324
  },

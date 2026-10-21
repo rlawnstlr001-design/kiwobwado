@@ -61,7 +61,8 @@ new GLTFLoader().load('trellis_dog.glb', (gltf) => {
     if (!o.isMesh) return;
     const m = o.material; const map = m.map;
     mats.soft.push([o, m]);
-    mats.flat.push([o, new THREE.MeshBasicMaterial({ map, color: new THREE.Color(1, 0.9, 0.76) })   // 방 그림과 같은 따뜻한 색(TRELLIS 결과가 원본보다 옅다)]);
+    // 방 그림과 같은 따뜻한 색(TRELLIS 결과가 원본보다 옅다)
+    mats.flat.push([o, new THREE.MeshBasicMaterial({ map, color: new THREE.Color(1, 0.9, 0.76) })]);
     mats.toon.push([o, new THREE.MeshToonMaterial({ map, gradientMap: grad })]);
   });
   setLook('flat');

@@ -128,6 +128,9 @@
  "long_teen_eatf": {
   "ms": 9960
  },
+ "long_teen_idle": {
+  "ms": 8964
+ },
  "long_teen_sit": {
   "ms": 2324
  },

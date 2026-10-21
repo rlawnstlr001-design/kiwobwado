@@ -1,0 +1,95 @@
+<!doctype html>
+<html lang="ko"><head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>3D 시험 2 — 우리 그림으로 만든 3D</title>
+<!-- 3D 시험 2(10/21): 우리 골든 아기 그림 → Gemini 턴어라운드 → TRELLIS(MIT, 무료 데모)로 만든 3D. 뼈대 없음 — 그림체가 방과 어울리는지만 본다 -->
+<style>
+  html, body { margin: 0; height: 100%; background: #E9DCC6; font-family: 'Pretendard', -apple-system, 'Malgun Gothic', sans-serif; overflow: hidden; }
+  #room { position: fixed; left: 0; bottom: 0; width: 100vw; aspect-ratio: var(--ar, 2.4); background: url(../../art/room/room_wide.webp) center bottom / 100% auto no-repeat; touch-action: none; }
+  #room canvas { position: absolute; inset: 0; width: 100%; height: 100%; display: block; }
+  .bar { position: fixed; top: calc(8px + env(safe-area-inset-top, 0px)); left: 8px; right: 8px; display: flex; flex-wrap: wrap; gap: 6px; z-index: 5; }
+  .bar button { border: 2px solid #2D2A26; background: #FFFDF8; border-radius: 10px; padding: 5px 10px; font: inherit; font-weight: 800; font-size: 13px; color: #2D2A26; }
+  .bar button.on { background: #3F6B4F; color: #fff; border-color: #3F6B4F; }
+  #fps { position: fixed; right: 8px; bottom: 8px; z-index: 5; background: rgba(45,42,38,.8); color: #fff; font: 700 12px/1.4 monospace; padding: 4px 8px; border-radius: 8px; }
+  #note { position: fixed; left: 8px; bottom: 8px; z-index: 5; background: rgba(255,253,248,.92); border-radius: 10px; padding: 6px 10px; font-size: 12px; font-weight: 700; color: #6E665C; max-width: 55vw; }
+  #ref { position: fixed; right: 8px; top: 52px; z-index: 5; width: 16vw; background: #fff; border-radius: 10px; padding: 4px; box-shadow: 0 2px 8px rgba(0,0,0,.15); }
+</style>
+</head><body>
+<div class="bar">
+  <button data-l="flat" class="on">그림 색 그대로</button><button data-l="soft">부드러운 빛</button><button data-l="toon">카툰</button>
+  <button data-spin class="on">천천히 돌기</button><button data-breath class="on">숨쉬기 흉내</button>
+</div>
+<div id="room"></div>
+<img id="ref" src="../../art/sprite/medium_baby_idle.webp" alt="원래 그림">
+<div id="note">우리 그림 → 3D(TRELLIS) · 아직 뼈대 없음 · 오른쪽 위는 원래 그림 · 손가락으로 끌면 돌아가요</div>
+<div id="fps">…</div>
+<script type="importmap">{ "imports": { "three": "https://unpkg.com/three@0.160.0/build/three.module.js", "three/addons/": "https://unpkg.com/three@0.160.0/examples/jsm/" } }</script>
+<script type="module">
+import * as THREE from 'three';
+import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
+const room = document.getElementById('room');
+const bg = new Image(); bg.src = '../../art/room/room_wide.webp';
+bg.onload = () => { room.style.setProperty('--ar', bg.naturalWidth / bg.naturalHeight); resize(); };
+const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+renderer.setPixelRatio(Math.min(2, devicePixelRatio || 1));
+renderer.outputColorSpace = THREE.SRGBColorSpace;
+room.appendChild(renderer.domElement);
+const scene = new THREE.Scene();
+const camera = new THREE.PerspectiveCamera(22, 2.4, 0.1, 100);
+camera.position.set(0, 3.0, 9.5); camera.lookAt(0, 1.35, 0);
+const hemi = new THREE.HemisphereLight(0xfff3e0, 0xb08a5a, 1.5); scene.add(hemi);
+const sun = new THREE.DirectionalLight(0xffe2bd, 1.4); sun.position.set(-3, 5, 4); scene.add(sun);
+const sh = document.createElement('canvas'); sh.width = sh.height = 64;
+const g = sh.getContext('2d'); const gr = g.createRadialGradient(32, 32, 0, 32, 32, 32); gr.addColorStop(0, 'rgba(60,40,20,.45)'); gr.addColorStop(1, 'rgba(60,40,20,0)'); g.fillStyle = gr; g.fillRect(0, 0, 64, 64);
+const shadow = new THREE.Mesh(new THREE.PlaneGeometry(1.4, 0.7), new THREE.MeshBasicMaterial({ map: new THREE.CanvasTexture(sh), transparent: true, depthWrite: false }));
+shadow.rotation.x = -Math.PI / 2; shadow.position.set(0.55, 0.01, 0.05); scene.add(shadow);
+function resize() { const w = room.clientWidth, h = room.clientHeight; renderer.setSize(w, h, false); camera.aspect = w / h; camera.updateProjectionMatrix(); }
+addEventListener('resize', resize);
+const steps = new Uint8Array([110, 190, 255]);
+const grad = new THREE.DataTexture(steps, 3, 1, THREE.RedFormat); grad.minFilter = grad.magFilter = THREE.NearestFilter; grad.needsUpdate = true;
+let pivot, mats = { flat: [], soft: [], toon: [] }, spin = true, breath = true, yaw = -0.5;
+new GLTFLoader().load('trellis_dog.glb', (gltf) => {
+  const dog = gltf.scene;
+  // 크기·바닥 맞추기(뼈대 없는 모델이라 상자로 잰다): 키 0.95, 발 = y 0
+  const box = new THREE.Box3().setFromObject(dog); const size = box.getSize(new THREE.Vector3());
+  const s = 0.95 / size.y; dog.scale.setScalar(s);
+  const c = box.getCenter(new THREE.Vector3());
+  dog.position.set(-c.x * s, -box.min.y * s, -c.z * s);
+  pivot = new THREE.Group(); pivot.add(dog); pivot.position.set(0.55, 0, 0); scene.add(pivot);
+  dog.traverse((o) => {
+    if (!o.isMesh) return;
+    const m = o.material; const map = m.map;
+    mats.soft.push([o, m]);
+    mats.flat.push([o, new THREE.MeshBasicMaterial({ map, color: new THREE.Color(1, 0.9, 0.76) })   // 방 그림과 같은 따뜻한 색(TRELLIS 결과가 원본보다 옅다)]);
+    mats.toon.push([o, new THREE.MeshToonMaterial({ map, gradientMap: grad })]);
+  });
+  setLook('flat');
+  window.__p = { pivot, dog, size };
+}, undefined, (e) => { document.getElementById('note').textContent = '모델을 못 불러왔어요: ' + e.message; });
+function setLook(k) { for (const [o, m] of mats[k]) o.material = m; document.querySelectorAll('[data-l]').forEach((b) => b.classList.toggle('on', b.dataset.l === k)); }
+document.querySelector('.bar').addEventListener('click', (e) => {
+  const b = e.target.closest('button'); if (!b) return;
+  if (b.dataset.l) setLook(b.dataset.l);
+  if (b.dataset.spin != null) { spin = !spin; b.classList.toggle('on', spin); }
+  if (b.dataset.breath != null) { breath = !breath; b.classList.toggle('on', breath); }
+});
+let drag = null;
+room.addEventListener('pointerdown', (e) => { drag = e.clientX; spin = false; document.querySelector('[data-spin]').classList.remove('on'); });
+room.addEventListener('pointermove', (e) => { if (drag == null) return; yaw += (e.clientX - drag) * 0.01; drag = e.clientX; });
+addEventListener('pointerup', () => { drag = null; });
+const clock = new THREE.Clock(); let frames = 0, acc = 0, t = 0; const fpsEl = document.getElementById('fps');
+renderer.setAnimationLoop(() => {
+  const dt = Math.min(0.05, clock.getDelta()); t += dt;
+  if (pivot) {
+    if (spin) yaw += dt * 0.5;
+    pivot.rotation.y = yaw;
+    const b = breath ? Math.sin(t * Math.PI * 2 / 3.2) * 0.012 : 0;
+    pivot.scale.set(1 - b * 0.4, 1 + b, 1 - b * 0.4);
+  }
+  renderer.render(scene, camera);
+  frames++; acc += dt;
+  if (acc >= 1) { fpsEl.textContent = `${Math.round(frames / acc)} fps`; frames = 0; acc = 0; }
+});
+</script>
+</body></html>

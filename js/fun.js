@@ -3,7 +3,7 @@
 // ② 지금 일어나는 일(content/moments.json): 방을 보고 있으면 몇 분마다 하나 — 성격·단계에 따라 고른다
 // ③ 재주: 훈련(js/train.js)으로 배우는 재주 목록과 진도
 
-import { rng } from './engine.js?v=202610221211';
+import { rng } from './engine.js?v=202610221246';
 
 // 성격 — 아이마다 다르고 자라며 달라지기도 한다는 전제의 게임 설정(통계 아님)
 export const PERSONAS = {
@@ -49,15 +49,15 @@ export const replyOf = (choice, persona) => choice.as?.[persona] ?? choice.reply
 // ---------- 재주 ----------
 export const TRICKS = {
   dog: [
-    { id: 'sit', label: '앉아', say: '앉아!', did: '엉덩이를 바닥에 착' },
-    { id: 'paw', label: '손', say: '손!', did: '앞발을 손바닥에 톡' },
-    { id: 'down', label: '엎드려', say: '엎드려!', did: '배를 바닥에 쭉' },
-    { id: 'stay', label: '기다려', say: '기다려!', did: '꼼짝 않고 눈만 반짝' },
+    { id: 'sit', label: '앉아', say: '앉아!', did: '엉덩이를 바닥에 착', pose: 'idle' },
+    { id: 'paw', label: '손', say: '손!', did: '앞발을 손바닥에 톡', pose: 'paw' },
+    { id: 'down', label: '엎드려', say: '엎드려!', did: '배를 바닥에 쭉', pose: 'down' },
+    { id: 'stay', label: '기다려', say: '기다려!', did: '꼼짝 않고 눈만 반짝', pose: 'idle' },
   ],
   cat: [
-    { id: 'come', label: '이리 와', say: '이리 와~', did: '꼬리를 세우고 총총' },
-    { id: 'sit', label: '앉아', say: '앉아!', did: '앞발을 모으고 얌전히' },
-    { id: 'high5', label: '하이파이브', say: '하이파이브!', did: '앞발을 번쩍' },
+    { id: 'come', label: '이리 와', say: '이리 와~', did: '꼬리를 세우고 총총', pose: 'come' },
+    { id: 'sit', label: '앉아', say: '앉아!', did: '앞발을 모으고 얌전히', pose: 'idle' },
+    { id: 'high5', label: '하이파이브', say: '하이파이브!', did: '앞발을 번쩍', pose: 'high5' },
   ],
 };
 export const TRICK_NEED = 6;   // 재주 하나를 배우는 데 필요한 성공 점수

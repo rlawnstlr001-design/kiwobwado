@@ -1,0 +1,62 @@
+{
+ "large_adult": [
+  "paw",
+  "down"
+ ],
+ "large_baby": [
+  "paw",
+  "down"
+ ],
+ "large_teen": [
+  "paw",
+  "down"
+ ],
+ "long_adult": [
+  "high5",
+  "come"
+ ],
+ "long_baby": [
+  "high5",
+  "come"
+ ],
+ "long_teen": [
+  "high5",
+  "come"
+ ],
+ "medium_adult": [
+  "paw",
+  "down"
+ ],
+ "medium_baby": [
+  "paw",
+  "down"
+ ],
+ "medium_teen": [
+  "paw",
+  "down"
+ ],
+ "short_adult": [
+  "high5",
+  "come"
+ ],
+ "short_baby": [
+  "high5",
+  "come"
+ ],
+ "short_teen": [
+  "high5",
+  "come"
+ ],
+ "small_adult": [
+  "paw",
+  "down"
+ ],
+ "small_baby": [
+  "paw",
+  "down"
+ ],
+ "small_teen": [
+  "paw",
+  "down"
+ ]
+}

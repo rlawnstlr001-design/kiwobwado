@@ -358,3 +358,27 @@ body.playing { overflow: hidden; }
 @keyframes hc-drop { from { transform: translateY(-30%) scale(1.08); opacity: 0; } }
 .hc.hc-done .hc-stage::after { content: "✦ ✧ ✦"; position: absolute; left: 50%; top: 18%; transform: translateX(-50%); color: #E7B54A; font-size: 30px; font-weight: 900; animation: sparkle 1.3s forwards; }
 @media (hover: none) { .hc-stage { cursor: auto; } }
+
+/* 성격·재주 한 줄(상태 카드), 지금 일어나는 일 알림 */
+.hud-pers { font-style: normal; font-size: 11px; font-weight: 800; color: #9A5A30; background: var(--apricot-2); border-radius: 99px; padding: 1px 7px; white-space: nowrap; }
+.alert.mo { background: #FFD45E; color: var(--ink); }
+/* 훈련(js/train.js) — 손 돌봄 확대 화면(.hc)을 그대로 쓰고 아래에 버튼 줄 */
+.tr-stage { cursor: auto; }
+.tr-pet { position: relative; height: 100%; max-height: 58vh; transition: transform .2s; }
+.tr-pet img { height: 100%; width: auto; display: block; pointer-events: none; }
+.tr-pet.think { animation: tr-think .9s ease-in-out infinite; }
+.tr-pet.pop { animation: tr-pop .35s ease-out; }
+.tr-pet.cheer { animation: tr-cheer .6s ease-out 2; }
+.tr-pet.off { transform: rotate(-4deg) translateX(-8px); filter: saturate(.85); }
+@keyframes tr-think { 50% { transform: rotate(2deg) translateY(-2px); } }
+@keyframes tr-pop { 40% { transform: translateY(-14px) scale(1.04); } }
+@keyframes tr-cheer { 30% { transform: translateY(-18px); } 60% { transform: translateY(0); } }
+.tr-bub { position: absolute; left: 50%; top: 2%; transform: translateX(-50%); background: var(--card); border: 2px solid var(--ink); border-radius: 14px; padding: 4px 12px; font-weight: 900; font-size: 18px; white-space: nowrap; }
+.tr-did { position: absolute; left: 50%; bottom: 4%; transform: translateX(-50%); background: var(--forest); color: #fff; border-radius: 99px; padding: 4px 12px; font-weight: 900; font-size: 14px; white-space: nowrap; animation: tr-pop .35s; }
+.tr-bot { padding: 8px 14px calc(10px + env(safe-area-inset-bottom, 0px)); border-top: var(--line); background: var(--card); display: flex; flex-direction: column; gap: 8px; }
+.tr-know { display: flex; flex-wrap: wrap; gap: 8px 14px; align-items: center; font-size: 13px; font-weight: 700; color: var(--ink-2); }
+.tr-know .chip { padding: 3px 10px; font-size: 12.5px; }
+.tr-ls { display: inline-flex; flex-wrap: wrap; gap: 6px; align-items: center; }
+.tr-btns { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.tr-btns .btn { font-size: 18px; padding: 12px 0; font-weight: 900; }
+.tr-round { margin: 0; font-size: 12px; color: var(--ink-3, #8A8277); text-align: center; }

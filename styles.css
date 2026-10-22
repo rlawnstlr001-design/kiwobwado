@@ -76,6 +76,10 @@ main { max-width: 560px; margin: 0 auto; padding: 4px 16px calc(96px + env(safe-
 .pill.behavior { background: var(--apricot-2); color: #9A5A30; }
 .pill.life { background: var(--paper-2); color: var(--ink-2); }
 .pill.law { background: var(--forest-2); color: var(--forest); }
+.pill.now { background: #FFE8A3; color: #8A5A00; }
+.persona-card { margin-top: 12px; padding: 14px; border-radius: 14px; border: 2px dashed var(--apricot); background: var(--apricot-2); animation: pc-in .5s ease-out; }
+.persona-card h2 { margin: 2px 0 4px; }
+@keyframes pc-in { from { transform: scale(.92) rotate(-1deg); opacity: 0; } to { transform: none; opacity: 1; } }
 
 /* ---------- 시작(서류 작성) ---------- */
 .onboard { padding: 10px 0 0; min-height: calc(100dvh - 120px); display: flex; flex-direction: column; }

@@ -1,0 +1,194 @@
+{
+  "_note": "지금 일어나는 일(js/fun.js) — 방을 보고 있으면 몇 분마다 하나. 답은 가볍고, 결과(fx)는 마음·습관 ±1~2. good: 1 좋은 대응 · 0 괜찮음 · -1 실제라면 피할 대응. persona: 성격별 가중치(없으면 1). as: 성격별 다른 반응. stages: 이 단계에서만. 조언이 들어간 답엔 src(content/sources.json)를 단다 — 출처 없는 건 사실 주장 없이 이야기로만.",
+  "items": [
+    {
+      "id": "slipper", "species": "dog", "state": "oops", "persona": { "play": 3, "food": 1, "shy": 0.5, "cuddle": 1 },
+      "title": "슬리퍼를 물고 도망가요", "text": "{name:이/가} 현관 슬리퍼를 물고 방 한가운데로 달려가 꼬리를 흔들며 쳐다봐요.",
+      "choices": [
+        { "label": "씹어도 되는 장난감을 내밀어 바꿔 준다", "good": 1, "fx": { "habit": 2, "bond": 1 }, "reply": "슬리퍼를 툭 내려놓고 장난감을 물어요. 바꿔 준 뒤 칭찬하면 '이건 씹어도 되는 것'을 배워요.", "src": ["vca_teething", "avsab_training"] },
+        { "label": "쫓아가서 뺏는다", "good": 0, "fx": { "habit": -1 }, "reply": "술래잡기인 줄 알고 더 신나서 도망가요. 다음엔 슬리퍼를 물면 놀아 준다고 기억할지도 몰라요.", "as": { "shy": "쫓아오니 겁먹고 소파 밑으로 숨어 버렸어요." } },
+        { "label": "큰 소리로 혼낸다", "good": -1, "fx": { "bond": -2 }, "reply": "움찔하더니 슬리퍼를 떨어뜨리고 구석으로 가요. 겁을 주는 훈련은 관계를 해칠 수 있어 보상으로 가르치는 걸 권해요.", "src": ["avsab_training"] }
+      ]
+    },
+    {
+      "id": "toybring", "species": "dog", "state": "happy", "persona": { "play": 3, "cuddle": 2, "shy": 0.5 },
+      "title": "장난감을 물어 왔어요", "text": "{name:이/가} 공을 물고 와서 발치에 툭 내려놓고 엉덩이를 들썩여요.",
+      "choices": [
+        { "label": "던져 준다", "good": 1, "fx": { "bond": 2 }, "reply": "쏜살같이 달려가 물고 와요. 또 내려놓고 또 쳐다봐요. 한 판 더?", "as": { "food": "공보다 던지는 손에 간식이 있나 먼저 킁킁거려요. 그래도 신나게 물어 와요." } },
+        { "label": "지금은 바빠서 못 본 척한다", "good": 0, "fx": { "bond": -1 }, "reply": "공 앞에 엎드려 한참 기다리다가 한숨을 푹 쉬어요.", "as": { "cuddle": "공을 다시 물고 무릎에 턱을 올려요. 쉽게 포기하지 않아요." } }
+      ]
+    },
+    {
+      "id": "zoomies", "species": "both", "state": "happy", "persona": { "play": 3, "food": 1, "cuddle": 1, "shy": 0.5 },
+      "title": "갑자기 우다다!", "text": "{name:이/가} 갑자기 방을 몇 바퀴나 전속력으로 달려요. 귀가 뒤로 휘날려요.",
+      "choices": [
+        { "label": "다치지 않게 바닥 물건만 치워 둔다", "good": 1, "fx": { "habit": 1, "bond": 1 }, "reply": "한참 뛰더니 철퍼덕 엎드려 헥헥거려요. 만족한 얼굴이에요." },
+        { "label": "같이 뛰어 준다", "good": 0, "fx": { "bond": 2, "habit": -1 }, "reply": "더 신나서 소파까지 뛰어올라요. 재밌지만 흥분이 쉽게 안 가라앉아요." },
+        { "label": "멈추라고 소리친다", "good": -1, "fx": { "bond": -1 }, "reply": "깜짝 놀라 멈추고 눈치를 봐요. 신났던 기분이 쏙 들어갔어요." }
+      ]
+    },
+    {
+      "id": "nipplay", "species": "dog", "state": "oops", "stages": ["baby", "teen"], "persona": { "play": 3, "food": 1, "cuddle": 1, "shy": 0.5 },
+      "title": "손가락을 앙 물어요", "text": "놀아 주던 손을 {name:이/가} 이빨로 앙 물어요. 꽤 따끔해요.",
+      "choices": [
+        { "label": "'아야' 하고 잠깐 놀이를 멈춘다", "good": 1, "fx": { "habit": 2 }, "reply": "멈칫하더니 손을 핥아요. 세게 물면 놀이가 끝난다는 걸 조금씩 배워요.", "src": ["aspca_nip"] },
+        { "label": "물어도 되는 장난감을 손 대신 내민다", "good": 1, "fx": { "habit": 1, "bond": 1 }, "reply": "장난감을 물고 신나게 당겨요. 손은 장난감이 아니라는 걸 알려 주는 방법이에요.", "src": ["aspca_nip"] },
+        { "label": "손을 더 흔들며 놀아 준다", "good": -1, "fx": { "habit": -2, "bond": 1 }, "reply": "손이 최고의 장난감이 됐어요. 다 크면 이 놀이가 아플 수 있어요.", "src": ["aspca_nip"] }
+      ]
+    },
+    {
+      "id": "headtilt", "species": "dog", "state": "idle", "persona": { "cuddle": 2, "shy": 1, "play": 1, "food": 1 },
+      "title": "고개를 갸웃해요", "text": "{name:을/를} 불렀더니 고개를 한쪽으로 갸웃 기울여요.",
+      "choices": [
+        { "label": "이름을 한 번 더 불러 본다", "good": 1, "fx": { "bond": 1 }, "reply": "이번엔 반대쪽으로 갸웃! 이름을 부르면 좋은 일이 생긴다고 느끼게 해 주면 부르면 오는 아이가 돼요.", "as": { "food": "갸웃하더니 혹시 간식인가 싶어 달려와요." } },
+        { "label": "'산책?' 하고 말해 본다", "good": 0, "fx": { "bond": 1 }, "reply": "귀가 쫑긋 서고 현관 쪽을 봐요. 아는 단어가 하나 생겼어요. 이제 진짜 나가야 할 것 같아요." }
+      ]
+    },
+    {
+      "id": "doorbell", "species": "dog", "state": "oops", "stages": ["teen", "adult"], "persona": { "shy": 2, "play": 1, "food": 1, "cuddle": 1 },
+      "title": "초인종에 왕왕 짖어요", "text": "택배 초인종이 울리자 {name:이/가} 현관을 향해 크게 짖어요.",
+      "choices": [
+        { "label": "짖음이 멈춘 순간 조용히 칭찬하고 간식을 준다", "good": 1, "fx": { "habit": 2 }, "reply": "몇 번 더 짖다 멈췄을 때 간식을 받았어요. 조용히 있으면 좋은 일이 생긴다는 걸 배우는 중이에요.", "src": ["aspca_bark"] },
+        { "label": "'조용히 해!' 하고 더 크게 소리친다", "good": -1, "fx": { "habit": -1 }, "reply": "보호자도 같이 짖는 줄 알고 더 크게 짖어요. 소리치면 오히려 부추길 수 있대요.", "src": ["aspca_bark"] }
+      ]
+    },
+    {
+      "id": "padwin", "species": "dog", "state": "happy", "stages": ["baby", "teen"], "persona": {},
+      "title": "패드에 정확히 쉬했어요!", "text": "{name:이/가} 패드 위에서 쉬를 하고 뿌듯한 얼굴로 돌아봐요.",
+      "choices": [
+        { "label": "바로 신나게 칭찬하고 간식을 준다", "good": 1, "fx": { "habit": 3, "bond": 1 }, "reply": "꼬리가 프로펠러처럼 돌아요. 볼일을 본 직후 칭찬하면 '여기서 하면 좋은 일이 생긴다'를 빨리 배워요.", "src": ["hw_potty"] },
+        { "label": "말없이 패드만 치운다", "good": 0, "fx": { "habit": 1 }, "reply": "잘했는데 아무 일도 없었어요. 다음에도 여기서 할지는 반반이에요." }
+      ]
+    },
+    {
+      "id": "tissue", "species": "dog", "state": "oops", "persona": { "play": 2, "food": 2, "shy": 0.5, "cuddle": 1 },
+      "title": "휴지를 다 뜯어 놨어요", "text": "잠깐 한눈판 사이 {name:이/가} 휴지를 한 롤 다 풀어서 눈처럼 뿌려 놨어요.",
+      "choices": [
+        { "label": "치우고 휴지는 닿지 않는 곳에 둔다", "good": 1, "fx": { "habit": 1 }, "reply": "사고는 못 치게 미리 막는 게 제일 쉬워요. {name:은/는} 휴지 눈밭에서 뒹굴다 잠들었어요." },
+        { "label": "휴지 앞에 데려가 혼낸다", "good": -1, "fx": { "bond": -2 }, "reply": "지난 일로 혼나면 왜 혼나는지 몰라 겁만 먹어요. 벌보다 보상으로 가르치는 걸 권해요.", "src": ["avsab_training"] }
+      ]
+    },
+    {
+      "id": "vacuum", "species": "both", "state": "idle", "persona": { "shy": 4, "cuddle": 1, "play": 0.5, "food": 0.5 },
+      "title": "청소기 소리에 숨었어요", "text": "청소기를 켜자 {name:이/가} 소파 밑으로 쏙 들어가 나오지 않아요.",
+      "choices": [
+        { "label": "청소기를 끄고 스스로 나올 때까지 기다린다", "good": 1, "fx": { "bond": 2 }, "reply": "한참 뒤 코부터 살금살금 나와요. 무서운 경험은 억지로 겪게 하기보다 천천히 익숙해지게 해요.", "src": ["avsab_social"] },
+        { "label": "간식을 들고 이름을 부른다", "good": 0, "fx": { "bond": 1 }, "reply": "간식 냄새에 반쯤 나왔다가 다시 들어가요. 서두르지 않는 게 좋아요.", "as": { "food": "간식 냄새를 이기지 못하고 금방 나왔어요. 역시 먹보예요." } },
+        { "label": "손을 넣어 꺼낸다", "good": -1, "fx": { "bond": -2 }, "reply": "버둥거리며 더 깊이 숨어요. 무서울 때 억지로 붙잡히면 그 상황을 더 싫어하게 될 수 있어요.", "src": ["avsab_social"] }
+      ]
+    },
+    {
+      "id": "bellyup", "species": "dog", "state": "sleep", "persona": { "cuddle": 3, "play": 1, "food": 1, "shy": 0.3 },
+      "title": "배를 까고 자요", "text": "{name:이/가} 네 다리를 하늘로 뻗고 배를 드러낸 채 코를 골아요.",
+      "choices": [
+        { "label": "살금살금 사진만 찍는다", "good": 1, "fx": { "bond": 1 }, "reply": "찰칵. 오늘 최고의 한 장이에요. 푹 자게 두는 것도 돌봄이에요." },
+        { "label": "배를 살살 만진다", "good": 0, "fx": {}, "reply": "다리를 버둥거리며 깼어요. 기지개를 한 번 켜고 다시 자요.", "as": { "cuddle": "눈도 안 뜨고 몸을 더 쭉 늘여요. 더 만지라는 뜻 같아요.", "shy": "화들짝 놀라 일어나 주변을 살펴요. 자는 건 그냥 두는 게 좋겠어요." } }
+      ]
+    },
+    {
+      "id": "lean", "species": "dog", "state": "happy", "persona": { "cuddle": 4, "shy": 0.5, "play": 1, "food": 1 },
+      "title": "다리에 몸을 기대 와요", "text": "소파에 앉아 있는데 {name:이/가} 다가와 다리에 몸을 꾹 기대요.",
+      "choices": [
+        { "label": "가슴 쪽을 천천히 쓰다듬는다", "good": 1, "fx": { "bond": 2 }, "reply": "숨이 길어지고 눈이 반쯤 감겨요. 작은 연구에서 가슴을 쓰다듬을 때 몸이 차분해지는 신호가 보였대요. 아이마다 좋아하는 곳은 달라요.", "src": ["kuhne2014_dog"] },
+        { "label": "머리를 콩콩 두드린다", "good": 0, "fx": {}, "reply": "눈을 질끈 감고 고개를 살짝 피해요. 머리 위로 손이 오는 걸 부담스러워하는 아이도 있어요." }
+      ]
+    },
+    {
+      "id": "bagsniff", "species": "both", "state": "hungry", "persona": { "food": 5, "play": 1, "shy": 0.3, "cuddle": 0.5 },
+      "title": "사료 봉투를 뜯으려 해요", "text": "{name:이/가} 사료 봉투에 코를 박고 앞발로 박박 긁어요.",
+      "choices": [
+        { "label": "봉투를 밀폐 통에 옮기고 높은 곳에 둔다", "good": 1, "fx": { "habit": 2 }, "reply": "아쉬운 듯 통을 올려다봐요. 사료는 정해진 시간에 정해진 양을 주는 게 좋아요.", "src": ["vca_dog_feed", "vca_cat_feed"] },
+        { "label": "귀여워서 한 줌 준다", "good": -1, "fx": { "habit": -2, "bond": 1 }, "reply": "와그작와그작. 다음에도 봉투를 긁으면 밥이 나온다고 배웠어요. 정해진 양보다 많이 먹으면 살도 쪄요.", "src": ["vca_dog_feed", "vca_cat_feed"] }
+      ]
+    },
+    {
+      "id": "cup", "species": "cat", "state": "oops", "persona": { "play": 3, "food": 1, "cuddle": 1, "shy": 0.5 },
+      "title": "컵을 앞발로 툭… 툭…", "text": "{name:이/가} 탁자 위 컵을 앞발로 조금씩 밀어요. 눈은 보호자를 보고 있어요.",
+      "choices": [
+        { "label": "깨지는 물건은 탁자에서 치워 둔다", "good": 1, "fx": { "habit": 1 }, "reply": "밀 게 없어지자 하품을 하고 창가로 가요. 미리 치워 두는 게 제일 쉬워요." },
+        { "label": "웃으면서 지켜본다", "good": 0, "fx": { "bond": 1, "habit": -1 }, "reply": "툭… 쨍그랑! 결국 떨어뜨렸어요. 보호자 반응이 재밌었는지 또 할 기세예요." },
+        { "label": "소리쳐서 쫓아낸다", "good": -1, "fx": { "bond": -2 }, "reply": "깜짝 놀라 침대 밑으로 숨어요. 겁을 주는 방법은 관계를 해칠 수 있어요.", "src": ["avsab_training"] }
+      ]
+    },
+    {
+      "id": "ankle", "species": "cat", "state": "oops", "stages": ["baby", "teen"], "persona": { "play": 4, "food": 1, "cuddle": 1, "shy": 0.3 },
+      "title": "발목 습격!", "text": "지나가는데 {name:이/가} 소파 뒤에서 튀어나와 발목을 와락 껴안고 물어요.",
+      "choices": [
+        { "label": "멈춰 서고 낚싯대 장난감으로 관심을 돌린다", "good": 1, "fx": { "habit": 2, "bond": 1 }, "reply": "깃털을 보자 바로 그쪽으로 뛰어들어요. 사냥 본능은 손발이 아닌 장난감으로 풀게 해 줘요.", "src": ["icatcare_play"] },
+        { "label": "발로 살살 같이 놀아 준다", "good": -1, "fx": { "habit": -2, "bond": 1 }, "reply": "신나서 더 세게 물어요. 사람 손발을 사냥감으로 배우면 다 커서 곤란해요.", "src": ["icatcare_play"] }
+      ]
+    },
+    {
+      "id": "box", "species": "cat", "state": "happy", "persona": { "play": 2, "shy": 2, "cuddle": 1, "food": 1 },
+      "title": "택배 상자에 쏙", "text": "택배를 뜯자마자 {name:이/가} 빈 상자에 쏙 들어가 눈만 내놓고 있어요.",
+      "choices": [
+        { "label": "상자를 며칠 그대로 둔다", "good": 1, "fx": { "bond": 2 }, "reply": "상자 안에서 낮잠까지 자요. 비싼 집보다 상자가 좋은가 봐요.", "as": { "shy": "상자 안이 아늑한지 경계하던 표정이 풀렸어요." } },
+        { "label": "상자를 바로 접어 버린다", "good": 0, "fx": { "bond": -1 }, "reply": "상자가 있던 자리를 한참 쳐다봐요." }
+      ]
+    },
+    {
+      "id": "blink", "species": "cat", "state": "idle", "persona": { "cuddle": 3, "shy": 1, "play": 1, "food": 1 },
+      "title": "눈을 천천히 깜빡여요", "text": "{name:이/가} 멀리서 보호자를 보며 눈을 아주 천천히 감았다 떠요.",
+      "choices": [
+        { "label": "나도 천천히 눈을 깜빡여 준다", "good": 1, "fx": { "bond": 2 }, "reply": "{name:이/가} 한 번 더 천천히 깜빡이더니 그 자리에서 몸을 둥글게 말아요." },
+        { "label": "다가가서 안아 올린다", "good": 0, "fx": { "bond": -1 }, "reply": "버둥거리며 내려가서 저만치 가 앉아요.", "as": { "cuddle": "의외로 품에 안겨 골골송을 불러요. 개냥이였군요." } }
+      ]
+    },
+    {
+      "id": "laptop", "species": "cat", "state": "idle", "persona": { "cuddle": 4, "play": 1, "food": 1, "shy": 0.3 },
+      "title": "노트북 위에 앉았어요", "text": "일하는데 {name:이/가} 키보드 위에 털썩 앉아요. 화면에 ㅁㅁㅁㅁㅁㅁ가 끝없이 찍혀요.",
+      "choices": [
+        { "label": "옆에 담요를 깔아 자리를 만들어 준다", "good": 1, "fx": { "bond": 2 }, "reply": "담요로 옮겨 가 꾹꾹이를 하다 잠들어요. 보호자 옆에 있고 싶었던 거예요." },
+        { "label": "번쩍 들어 바닥에 내려놓는다", "good": 0, "fx": { "bond": -1 }, "reply": "3초 만에 다시 키보드로 올라와요." }
+      ]
+    },
+    {
+      "id": "knead", "species": "cat", "state": "happy", "persona": { "cuddle": 3, "food": 1, "play": 1, "shy": 1 },
+      "title": "꾹꾹이를 해요", "text": "{name:이/가} 담요 위에서 앞발로 꾹꾹 누르며 골골 소리를 내요.",
+      "choices": [
+        { "label": "방해하지 않고 지켜본다", "good": 1, "fx": { "bond": 1 }, "reply": "한참 꾹꾹 누르다 그 자리에 동그랗게 누워 잠들어요." },
+        { "label": "무릎을 내어 준다", "good": 1, "fx": { "bond": 2 }, "reply": "무릎 위에서 꾹꾹이를 이어 가요. 발톱이 조금 따끔해요.", "as": { "shy": "무릎은 아직 부담스러운지 담요로 돌아가요." } }
+      ]
+    },
+    {
+      "id": "sofascratch", "species": "cat", "state": "oops", "persona": { "play": 2, "food": 1, "cuddle": 1, "shy": 1 },
+      "title": "소파에 발톱을 박박", "text": "{name:이/가} 소파 옆면에 몸을 쭉 늘이고 발톱을 박박 갈아요.",
+      "choices": [
+        { "label": "그 자리 앞에 스크래처를 두고, 쓰면 칭찬한다", "good": 1, "fx": { "habit": 2 }, "reply": "스크래처에 발톱을 갈자 간식을 받았어요. 발톱 갈기는 고양이의 자연스러운 행동이라 갈 곳을 마련해 주는 게 답이에요.", "src": ["aafp_declaw"] },
+        { "label": "물을 뿌려 쫓는다", "good": -1, "fx": { "bond": -2 }, "reply": "놀라서 도망가요. 보호자가 없을 땐 또 소파를 긁을 거예요. 겁을 주는 방법보다 보상을 권해요.", "src": ["avsab_training"] }
+      ]
+    },
+    {
+      "id": "tailpet", "species": "cat", "state": "oops", "persona": { "shy": 2, "play": 1, "food": 1, "cuddle": 1 },
+      "title": "꼬리를 탁탁 쳐요", "text": "등을 쓰다듬다 꼬리 쪽에 손이 가자 {name:이/가} 꼬리를 바닥에 탁탁 쳐요.",
+      "choices": [
+        { "label": "손을 머리·볼 쪽으로 옮긴다", "good": 1, "fx": { "bond": 2 }, "reply": "볼을 손에 비비며 골골거려요. 고양이를 쓰다듬는 연구에서 꼬리 뿌리 쪽은 싫은 반응이 가장 많았어요.", "src": ["ellis2015_cat"] },
+        { "label": "괜찮겠지 하고 계속 쓰다듬는다", "good": -1, "fx": { "bond": -2 }, "reply": "귀가 뒤로 젖혀지더니 손을 앙 물고 도망가요.", "src": ["ellis2015_cat"] }
+      ]
+    },
+    {
+      "id": "mouse", "species": "cat", "state": "happy", "persona": { "play": 4, "cuddle": 2, "food": 1, "shy": 0.5 },
+      "title": "장난감 쥐를 물어 왔어요", "text": "{name:이/가} 장난감 쥐를 물고 와서 발치에 내려놓고 자랑스럽게 앉아요.",
+      "choices": [
+        { "label": "칭찬하고 낚싯대로 한 판 더 놀아 준다", "good": 1, "fx": { "bond": 2, "habit": 1 }, "reply": "몸을 낮추고 엉덩이를 씰룩씰룩… 와락! 짧게 자주 놀아 주는 게 좋아요.", "src": ["icatcare_play"] },
+        { "label": "쥐를 치워 둔다", "good": 0, "fx": { "bond": -1 }, "reply": "선물을 거절당했어요. 조금 뒤 다른 장난감을 또 물어 와요." }
+      ]
+    },
+    {
+      "id": "hide_cat", "species": "cat", "state": "idle", "persona": { "shy": 5, "cuddle": 0.5, "play": 0.5, "food": 0.5 },
+      "title": "침대 밑에서 안 나와요", "text": "{name:이/가} 오늘은 침대 밑 구석에서 눈만 반짝이고 나오지 않아요.",
+      "choices": [
+        { "label": "근처에 물·밥을 두고 조용히 기다린다", "good": 1, "fx": { "bond": 2 }, "reply": "밤이 되자 살금살금 나와 밥을 먹고 방을 둘러봐요. 숨는 건 흔한 일이라 먼저 다가오게 기다려 줘요.", "src": ["spca_nz_cat"] },
+        { "label": "손을 뻗어 꺼낸다", "good": -1, "fx": { "bond": -2 }, "reply": "하악 소리를 내며 더 안쪽으로 들어가요.", "src": ["spca_nz_cat"] }
+      ]
+    },
+    {
+      "id": "window", "species": "both", "state": "idle", "persona": { "play": 2, "shy": 1, "cuddle": 1, "food": 1 },
+      "title": "창밖 새를 보고 있어요", "text": "{name:이/가} 창가에 붙어 참새를 눈으로 쫓으며 이상한 소리를 내요.",
+      "choices": [
+        { "label": "창가에 편한 자리를 만들어 준다", "good": 1, "fx": { "bond": 1, "habit": 1 }, "reply": "하루 중 제일 좋아하는 자리가 생겼어요. 창밖 구경도 좋은 놀잇감이에요." },
+        { "label": "같이 구경한다", "good": 1, "fx": { "bond": 1 }, "reply": "새가 날아가자 둘이 동시에 '아…' 했어요." }
+      ]
+    }
+  ]
+}

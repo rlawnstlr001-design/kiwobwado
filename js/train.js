@@ -3,14 +3,28 @@
 // 너무 빨리(하기 전) 칭찬하거나 늦으면 점수 없음. 재주마다 TRICK_NEED점이면 배운 재주 — 배운 건 언제든 '재주 보기'
 // 근거: 보상(칭찬·간식) 기반 훈련 권장(avsab_training). 망설임·타이밍 값은 게임 설정이다.
 
-import { sfx } from './sound.js?v=202610221211';
-import { TRICKS, TRICK_NEED, TRAIN_MOD, nextTrick, learned, focusOf } from './fun.js?v=202610221211';
-import { josa } from './engine.js?v=202610221211';
+import { sfx } from './sound.js?v=202610221246';
+import { TRICKS, TRICK_NEED, TRAIN_MOD, nextTrick, learned, focusOf } from './fun.js?v=202610221246';
+import { josa } from './engine.js?v=202610221246';
 const eul = (w) => `'${w}'${josa(w, '을/를').slice(-1)}`;
 
 const ROUNDS = 5;
+// 재주 자세 그림 목록(tools/make_tricks.py → art/sprite/tricks.json). 없는 자세는 평소(앉은) 그림 + 말풍선
+let POSES = null;
+const loadPoses = () => (POSES ??= fetch('art/sprite/tricks.json?v=202610221246').then((r) => (r.ok ? r.json() : {})).catch(() => ({})));
+const loadImg = (src) => new Promise((res) => { const i = new Image(); i.onload = () => res(i); i.onerror = () => res(null); i.src = src; });
 
-export function training({ type, stage, species, persona, prog: prog0 = {}, petName = '아이' }) {
+export async function training(opts) {
+  const { type, stage } = opts;
+  const name = `${type}_${stage}`;
+  const have = (await loadPoses())[name] ?? [];
+  const idle = await loadImg(`art/sprite/${name}_idle.webp`);
+  // 자세 그림 키 = 평소 그림 키 대비 비율(같은 배율로 만들었다) → 훈련 화면에서 높이를 그 비율로
+  const ratio = {};
+  await Promise.all(have.map(async (p) => { const i = await loadImg(`art/sprite/${name}_${p}.webp`); if (i && idle) ratio[p] = i.naturalHeight / idle.naturalHeight; }));
+  return run(opts, ratio);
+}
+function run({ type, stage, species, persona, prog: prog0 = {}, petName = '아이' }, ratio) {
   return new Promise((resolve) => {
     const prog = { ...prog0 };
     const mod = TRAIN_MOD[persona] ?? TRAIN_MOD.cuddle;
@@ -50,7 +64,8 @@ export function training({ type, stage, species, persona, prog: prog0 = {}, petN
       know.innerHTML = `${cur ? `<span class="tr-now">배우는 중 <b>${cur.label}</b> ${Math.min(TRICK_NEED, Math.floor(prog[cur.id] || 0))}/${TRICK_NEED}</span>` : '<span class="tr-now">재주를 다 배웠어요!</span>'}
         ${ls.length ? `<span class="tr-ls">재주 보기 ${ls.map((t) => `<button class="chip" data-show="${t.id}" type="button">${t.label}</button>`).join('')}</span>` : ''}`;
     };
-    const setPet = (st, cls = '') => { im.src = img(st); pet.className = `tr-pet ${cls}`; };
+    const setPet = (st, cls = '') => { im.src = img(st); im.style.height = `${(ratio[st] ?? 1) * 100}%`; pet.className = `tr-pet ${cls}`; };
+    const poseOf = (t) => (t.pose && ratio[t.pose] ? t.pose : 'idle');
     const reset = () => {
       phase = 'ready';
       setPet('idle');
@@ -88,7 +103,7 @@ export function training({ type, stage, species, persona, prog: prog0 = {}, petN
         bub.hidden = true;
         if (Math.random() < focusOf(prog[cur.id] || 0, persona)) {
           phase = 'did';
-          setPet('idle', 'pop');   // 재주 자세 그림은 없어서 평소(앉은) 그림 + 말풍선으로 — 칭찬받으면 기쁨 그림
+          setPet(poseOf(cur), 'pop');   // 재주 자세 그림(없으면 평소 앉은 그림) + 말풍선 — 칭찬받으면 기쁨 그림
           did.textContent = cur.did; did.hidden = false;
           later(() => { if (phase === 'did') { phase = 'late'; setPet('idle'); did.hidden = true; endRound('조금 늦었어요 — 해낸 바로 그때 칭찬해야 뭘 잘했는지 알아요'); } }, mod.window);
         } else {
@@ -134,7 +149,7 @@ export function training({ type, stage, species, persona, prog: prog0 = {}, petN
       phase = 'show';
       sfx.pop();
       bub.textContent = t.say; bub.hidden = false;
-      later(() => { bub.hidden = true; setPet('idle', 'pop'); did.textContent = `${t.did}!`; did.hidden = false; say(`${t.label} — 척척!`); }, 500);
+      later(() => { bub.hidden = true; setPet(poseOf(t), 'pop'); did.textContent = `${t.did}!`; did.hidden = false; say(`${t.label} — 척척!`); }, 500);
       later(() => (round >= ROUNDS ? null : reset()), 1900);
     });
 

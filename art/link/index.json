@@ -88,6 +88,9 @@
  "long_adult_eatf": {
   "ms": 9960
  },
+ "long_adult_idle": {
+  "ms": 3984
+ },
  "long_adult_sit": {
   "ms": 4150
  },

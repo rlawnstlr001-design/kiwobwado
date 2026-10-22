@@ -3,9 +3,9 @@
 // 너무 빨리(하기 전) 칭찬하거나 늦으면 점수 없음. 재주마다 TRICK_NEED점이면 배운 재주 — 배운 건 언제든 '재주 보기'
 // 근거: 보상(칭찬·간식) 기반 훈련 권장(avsab_training). 망설임·타이밍 값은 게임 설정이다.
 
-import { sfx } from './sound.js?v=202610221151';
-import { TRICKS, TRICK_NEED, TRAIN_MOD, nextTrick, learned, focusOf } from './fun.js?v=202610221151';
-import { josa } from './engine.js?v=202610221151';
+import { sfx } from './sound.js?v=202610221211';
+import { TRICKS, TRICK_NEED, TRAIN_MOD, nextTrick, learned, focusOf } from './fun.js?v=202610221211';
+import { josa } from './engine.js?v=202610221211';
 const eul = (w) => `'${w}'${josa(w, '을/를').slice(-1)}`;
 
 const ROUNDS = 5;

@@ -91,6 +91,14 @@ main { max-width: 560px; margin: 0 auto; padding: 4px 16px calc(96px + env(safe-
 .ob-note { background: var(--paper-2); border-radius: 12px; padding: 12px 14px; font-size: 13.5px; color: var(--ink-2); margin-top: 14px; }
 .pick-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
 .pick-grid.three { grid-template-columns: 1fr 1fr 1fr; }
+.pick-grid.five { grid-template-columns: repeat(5, 1fr); gap: 8px; }
+@media (max-width: 560px) { .pick-grid.five { grid-template-columns: repeat(3, 1fr); } }
+.pick-grid.five .pick small { font-size: 11px; }
+.ob-name { display: flex; gap: 14px; align-items: center; margin: 4px 0 6px; }
+.ob-name .photo { flex: 0 0 min(130px, 32vw); margin: 0; }
+.ob-name .photo img { width: 100%; display: block; }
+.ob-name h1 { margin: 0 0 8px; font-size: 22px; }
+.ob-name .ob-input { margin: 0; }
 .pick { border: 2px solid var(--paper-3); background: var(--card); border-radius: 16px; padding: 8px 8px 12px; cursor: pointer; text-align: center; display: flex; flex-direction: column; align-items: center; gap: 4px; }
 .pick img { width: 100%; aspect-ratio: 1; object-fit: cover; border-radius: 10px; background: var(--paper-2); }
 .pick b { font-size: 15px; }

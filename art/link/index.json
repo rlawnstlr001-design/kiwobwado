@@ -19,6 +19,9 @@
  "large_adult_eatf": {
   "ms": 9960
  },
+ "large_adult_idle": {
+  "ms": 6557
+ },
  "large_adult_sit": {
   "ms": 4150
  },
@@ -285,6 +288,9 @@
  },
  "small_adult_eatf": {
   "ms": 9960
+ },
+ "small_adult_idle": {
+  "ms": 4897
  },
  "small_adult_sit": {
   "ms": 2905

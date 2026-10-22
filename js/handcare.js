@@ -3,8 +3,8 @@
 // 그림: 아이 = art/sprite/<성향>_<단계>_idle.webp(배경 없음), 화장실·패드 = art/prop/*.webp
 // 근거: 장모 고양이 매일 빗질·엉킨 털 가위 금지(vca_longhair), 화장실 하루 1번 이상(aspca_litter), 약욕 거품 10~15분(iscaid2025·merck_pyoderma)
 
-import { RIG } from './rig.js?v=202610220513';
-import { sfx } from './sound.js?v=202610220513';
+import { RIG } from './rig.js?v=202610221014';
+import { sfx } from './sound.js?v=202610221014';
 
 const TITLE = { brush: '빗질', litter: '화장실 치우기', potty: '패드 갈기', bath: '약욕' };
 const FAST = 1 / 220;  // 빗이 1ms에 아이 키의 이 비율보다 빨리 움직이면 '세게'(작은 화면에서도 같은 느낌) — 엉킨 털이 당겨진다

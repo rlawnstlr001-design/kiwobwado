@@ -223,6 +223,9 @@
  "short_adult_eatf": {
   "ms": 9960
  },
+ "short_adult_idle": {
+  "ms": 4648
+ },
  "short_adult_sit": {
   "ms": 3901
  },

@@ -26,10 +26,36 @@ export function mountRig(canvas, src, cfg, { cat = false } = {}) {
   img.src = src;
 
   function setup() {
-    const vs = 'attribute vec2 p; attribute vec2 u; uniform vec2 sz; varying vec2 v; void main(){ v=u; vec2 c=p/sz*2.0-1.0; gl_Position=vec4(c.x,-c.y,0,1); }';
+    const vs = 'attribute vec2 p; attribute vec2 u; uniform vec2 sz; uniform vec2 off; varying vec2 v; varying vec2 q; void main(){ v=u; q=p+off; vec2 c=(p+off)/sz*2.0-1.0; gl_Position=vec4(c.x,-c.y,0,1); }';
     // 시간대 색(tint)은 여기서 곱한다 — 예전엔 CSS filter:url(#grade-*)(SVG 필터)를 캔버스에 걸었는데, 안드로이드는 SVG 필터를 CPU로 돌려
     // 매 프레임 그림을 GPU에서 꺼내 다시 칠하느라 움직임이 뚝뚝 끊겼다(10/20 실기기 영상). 곱셈 한 번이라 셰이더가 거의 공짜다
-    const fs = 'precision mediump float; varying vec2 v; uniform sampler2D tex; uniform vec3 tint; void main(){ vec4 c=texture2D(tex,v); gl_FragColor=vec4(c.rgb*tint,c.a); }';
+    // 액세서리가 스티커처럼 떠 보이던 것(10/26 실기기) → 그림과 어우러지게 네 가지 그리기 방식(mode)
+    //  0 몸 · 1 액세서리(채도 살짝 낮춰 수채 종이 색에 맞추고, 목에 감긴 원통처럼 양옆을 어둡게, 목 실루엣 밖은 잘라 냄)
+    //  2 그림자(액세서리 모양을 아래로 밀어 털 위에만 옅게) · 3 털 덮기(몸을 다시 그리되 액세서리 윗가장자리 안쪽 몇 px만 — 털이 목걸이를 살짝 덮는다)
+    const fs = `precision mediump float; varying vec2 v; varying vec2 q;
+      uniform sampler2D tex; uniform sampler2D aux; uniform vec3 tint; uniform float mode; uniform vec4 box; uniform vec2 bsz; uniform float pad; uniform float fur; uniform float cyl;
+      float bodyA(vec2 at){ return texture2D(aux, (at - vec2(pad, pad)) / bsz).a; }
+      void main(){
+        vec4 c = texture2D(tex, v);
+        if (mode > 2.5) {
+          vec2 a = (q - box.xy) / box.zw;
+          if (a.x < 0.0 || a.x > 1.0 || a.y < 0.0 || a.y > 1.0) discard;
+          float len = fur * (0.55 + 0.2 * sin(q.x * 0.33) + 0.15 * sin(q.x * 1.07 + 1.3) + 0.1 * sin(q.x * 2.6 + 0.4));   // 물결진 털끝
+          float k = smoothstep(0.3, 0.7, texture2D(aux, a).a) * (1.0 - smoothstep(0.2, 0.6, texture2D(aux, vec2(a.x, a.y - len / box.w)).a));
+          if (k < 0.01) discard;
+          gl_FragColor = vec4(c.rgb * tint, c.a) * k; return;
+        }
+        if (mode > 1.5) { float sa = c.a * 0.16 * bodyA(q); gl_FragColor = vec4(vec3(0.32, 0.2, 0.1) * sa, sa); return; }
+        if (mode > 0.5) {
+          float l = dot(c.rgb, vec3(0.299, 0.587, 0.114));
+          vec3 r = mix(c.rgb, vec3(l), 0.18) * vec3(1.0, 0.96, 0.9);
+          float sx = abs(v.x - 0.5) * 2.0;
+          r *= 1.0 - cyl * (0.32 * sx * sx * sx + 0.12 * smoothstep(0.55, 1.0, v.y));
+          float clip = cyl > 0.5 ? smoothstep(0.35, 0.95, bodyA(q)) * smoothstep(0.0, 0.05, v.x) * smoothstep(1.0, 0.95, v.x) : 1.0;   // 목 실루엣 밖·양끝은 목 뒤로 돌아가 안 보인다
+          gl_FragColor = vec4(r * tint, c.a) * clip; return;
+        }
+        gl_FragColor = vec4(c.rgb * tint, c.a);
+      }`;
     const sh = (type, s) => { const o = gl.createShader(type); gl.shaderSource(o, s); gl.compileShader(o); return o; };
     prog = gl.createProgram();
     gl.attachShader(prog, sh(gl.VERTEX_SHADER, vs)); gl.attachShader(prog, sh(gl.FRAGMENT_SHADER, fs)); gl.linkProgram(prog); gl.useProgram(prog);
@@ -53,20 +79,26 @@ export function mountRig(canvas, src, cfg, { cat = false } = {}) {
     gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR); gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
     gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE); gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
     gl.enable(gl.BLEND); gl.blendFunc(gl.ONE, gl.ONE_MINUS_SRC_ALPHA);
-    loc = { sz: gl.getUniformLocation(prog, 'sz'), p: gl.getAttribLocation(prog, 'p'), tint: gl.getUniformLocation(prog, 'tint') };
+    const U = (n) => gl.getUniformLocation(prog, n);
+    loc = { sz: U('sz'), p: gl.getAttribLocation(prog, 'p'), tint: U('tint'), off: U('off'), mode: U('mode'), box: U('box'), bsz: U('bsz'), pad: U('pad'), fur: U('fur'), cyl: U('cyl') };
+    gl.uniform1i(U('tex'), 0); gl.uniform1i(U('aux'), 1);
   }
   // 머리 크기·정수리: 두 눈 사이 거리로 크기를 재고, 두 눈 가운데 세로줄에서 처음 불투명한 점을 정수리로 본다
   function headGeo() {
     const [a, b] = cfg.eyes;
     const cx = (a[0] + b[0]) / 2, eyeY = (a[1] + b[1]) / 2, ed = Math.abs(b[0] - a[0]);
-    let top = eyeY - ed;
+    let top = eyeY - ed, span = null;
     try {
       const cv = document.createElement('canvas'); cv.width = W; cv.height = H;
       const g = cv.getContext('2d'); g.drawImage(img, 0, 0);
       const col = g.getImageData(Math.round(cx), 0, 1, Math.round(eyeY)).data;
       for (let y = 0; y < eyeY; y++) if (col[y * 4 + 3] > 120) { top = y; break; }
+      // 목 폭: 목 자리보다 조금 아래 줄에서 목 x부터 좌우로 불투명한 끝까지
+      const ny = Math.round(cfg.neck[1] + ed * 0.1), nx = Math.round(cfg.neck[0]);
+      const row = g.getImageData(0, Math.min(H - 1, ny), W, 1).data, op = (x) => row[x * 4 + 3] > 80;
+      if (op(nx)) { let l = nx, r = nx; while (l > 0 && op(l - 1)) l--; while (r < W - 1 && op(r + 1)) r++; span = [l, r]; }
     } catch { /* 픽셀을 못 읽으면 눈 거리로 추정 */ }
-    return { cx, eyeY, ed, top };
+    return { cx, eyeY, ed, top, span };
   }
   // 꼬리 상자 안에서 꼬리만 골라낸다: 몸 쪽(상자 바깥)에서 꼬리 쪽으로 한 줄씩 훑어 '몸 → 빈틈 → 꼬리'가 보이는 줄의 빈틈 x를 잰다.
   // 꼬리 뿌리처럼 몸과 붙어 빈틈이 없는 줄은 가장 가까운 줄의 값을 쓴다. 예전엔 상자 안을 통째로 돌려 엉덩이가 들어갔다 나왔다 했다(10/20)
@@ -116,9 +148,11 @@ export function mountRig(canvas, src, cfg, { cat = false } = {}) {
   // 액세서리 네 모서리(원본 픽셀): 목 = 목 자리 아래로 걸치고, 머리 = 정수리부터 이마까지 덮게
   function wearQuad(w) {
     const c = cfg, { cx, eyeY, ed, top } = geo;
-    const wd = ed * w.wf, ht = wd / w.aspect;
+    const span = w.tuck && geo.span && geo.span[1] - geo.span[0] > ed ? geo.span : null;   // 목에 감기는 것은 실제 목 폭에 맞춘다
+    const wd = span ? (span[1] - span[0]) * 1.04 : ed * w.wf, ht = (wd / w.aspect) * (w.hs ?? 1);   // hs: 세로 눌러 담기(목걸이 띠가 너무 두껍지 않게)
     let x0, y0;
     if (w.slot === 'head') { const bottom = top + (eyeY - top) * w.fb; x0 = cx - wd / 2; y0 = bottom - ht; }
+    else if (span) { x0 = (span[0] + span[1]) / 2 - wd / 2; y0 = c.neck[1] - ed * 0.05 - ht * 0.31; }   // 띠 윗선(그림 높이의 31%)이 목 자리에 오게
     else { x0 = c.neck[0] - wd / 2; y0 = c.neck[1] - ed * (w.fb ?? 0.12); }
     const pts = [[x0, y0], [x0 + wd, y0], [x0, y0 + ht], [x0 + wd, y0 + ht]];
     const hw = w.slot === 'head' ? 1 : smooth(c.headBottom, c.headTop, y0);
@@ -215,6 +249,7 @@ export function mountRig(canvas, src, cfg, { cat = false } = {}) {
         const pad = cfg.pad ?? 70;
         gl.uniform2f(loc.sz, W + pad * 2, H + pad);
         gl.uniform3f(loc.tint, tint[0], tint[1], tint[2]);
+        gl.uniform2f(loc.off, 0, 0); gl.uniform1f(loc.mode, 0); gl.uniform2f(loc.bsz, W, H); gl.uniform1f(loc.pad, pad);
         for (let k = 0; k < pos.length; k += 2) { draw[k] = pos[k] + pad; draw[k + 1] = pos[k + 1] + pad; }
         gl.bindTexture(gl.TEXTURE_2D, bodyTex);
         gl.bindBuffer(gl.ARRAY_BUFFER, bodyUV); gl.vertexAttribPointer(ul, 2, gl.FLOAT, false, 0, 0);
@@ -223,11 +258,32 @@ export function mountRig(canvas, src, cfg, { cat = false } = {}) {
         gl.drawElements(gl.TRIANGLES, idx.length, gl.UNSIGNED_SHORT, 0);
         for (const w of wears) {
           if (!w.ok || !geo) continue;
-          const q = new Float32Array(wearQuad(w).flatMap(([x, y]) => [x + pad, y + pad]));
-          gl.bindTexture(gl.TEXTURE_2D, w.tex);
-          gl.bindBuffer(gl.ARRAY_BUFFER, w.uv); gl.vertexAttribPointer(ul, 2, gl.FLOAT, false, 0, 0);
-          gl.bindBuffer(gl.ARRAY_BUFFER, w.pb); gl.bufferData(gl.ARRAY_BUFFER, q, gl.DYNAMIC_DRAW); gl.vertexAttribPointer(loc.p, 2, gl.FLOAT, false, 0, 0);
-          gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
+          const neck = w.slot !== 'head';
+          const quad = wearQuad(w), q = new Float32Array(quad.flatMap(([x, y]) => [x + pad, y + pad]));
+          const quadDraw = () => {
+            gl.bindTexture(gl.TEXTURE_2D, w.tex);
+            gl.bindBuffer(gl.ARRAY_BUFFER, w.uv); gl.vertexAttribPointer(ul, 2, gl.FLOAT, false, 0, 0);
+            gl.bindBuffer(gl.ARRAY_BUFFER, w.pb); gl.bufferData(gl.ARRAY_BUFFER, q, gl.DYNAMIC_DRAW); gl.vertexAttribPointer(loc.p, 2, gl.FLOAT, false, 0, 0);
+            gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
+          };
+          gl.activeTexture(gl.TEXTURE1); gl.bindTexture(gl.TEXTURE_2D, bodyTex); gl.activeTexture(gl.TEXTURE0);
+          // ① 그림자: 아래로 조금 밀어 털 위에만
+          gl.uniform1f(loc.mode, 2); gl.uniform2f(loc.off, geo.ed * 0.02, geo.ed * (neck ? 0.07 : 0.05)); quadDraw();
+          // ② 액세서리
+          gl.uniform2f(loc.off, 0, 0); gl.uniform1f(loc.mode, 1); gl.uniform1f(loc.cyl, neck ? 1 : 0.35); quadDraw();
+          // ③ 털 덮기(목걸이·반다나처럼 목에 감기는 것만): 몸 그물을 다시 그려 윗가장자리를 털로 살짝 덮는다
+          if (w.tuck) {
+            const xs = quad.map((p) => p[0] + pad), ys = quad.map((p) => p[1] + pad);
+            const bx = Math.min(...xs), by = Math.min(...ys);
+            gl.uniform4f(loc.box, bx, by, Math.max(...xs) - bx, Math.max(...ys) - by);
+            gl.uniform1f(loc.fur, geo.ed * 0.11); gl.uniform1f(loc.mode, 3);
+            gl.activeTexture(gl.TEXTURE1); gl.bindTexture(gl.TEXTURE_2D, w.tex); gl.activeTexture(gl.TEXTURE0);
+            gl.bindTexture(gl.TEXTURE_2D, bodyTex);
+            gl.bindBuffer(gl.ARRAY_BUFFER, bodyUV); gl.vertexAttribPointer(ul, 2, gl.FLOAT, false, 0, 0);
+            gl.bindBuffer(gl.ARRAY_BUFFER, buf); gl.vertexAttribPointer(loc.p, 2, gl.FLOAT, false, 0, 0);
+            gl.drawElements(gl.TRIANGLES, idx.length, gl.UNSIGNED_SHORT, 0);
+          }
+          gl.uniform1f(loc.mode, 0);
         }
       }
     }

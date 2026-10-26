@@ -1,8 +1,8 @@
 // 미니게임 — 코인 벌기(1코인 = 1,000원, 가격은 실제 평균값이라 "반려 생활비 = 이만큼의 노력"을 느끼게)
 // 반려 경주(봇 3마리와 원근 경주) · 장애물 경주(↑↓←→ 타이밍) — js/race.js(10/26, 산책 달리기 대체) · 사천성(반려용품 짝 맞추기) · 간식 맞추기(3개 맞추기)
 // 판마다 받는 코인은 앱(app.js)이 하루 한도 안에서 정한다
-import { C } from './content.js?v=202610261149';
-import { raceGame, agilityGame } from './race.js?v=202610261149';
+import { C } from './content.js?v=202610261237';
+import { raceGame, agilityGame } from './race.js?v=202610261237';
 
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 const shuffle = (a) => { for (let i = a.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [a[i], a[j]] = [a[j], a[i]]; } return a; };
@@ -12,8 +12,8 @@ export const titleOf = (k, species) => (k === 'run' && species === 'cat' ? '사�
 const OLD = { run: { title: '산책 달리기' } };
 
 export const GAMES = {
-  race: { title: '반려 경주', icon: '🏁', desc: '동네 친구 셋과 100m 경주! 화면을 리듬 있게 톡톡 — 결승선에서 보호자가 팔 벌리고 기다려요.', coins: (s) => Math.min(15, Math.floor(s / 8)) },
-  agility: { title: '장애물 경주', icon: '🚧', desc: '↑ 뛰어넘기 · ↓ 기어가기 · → 멀리뛰기 · ← 기다려! 다가오는 장애물에 맞춰 눌러 완주해요.', coins: (s) => Math.min(15, Math.floor(s / 190)) },
+  race: { title: '반려 경주', icon: '🏁', desc: '동네 친구 셋과 100m 경주! 발판 두 개를 번갈아 톡톡 — 결승선에서 보호자가 팔 벌리고 기다려요.', coins: (s) => Math.min(15, Math.floor(s / 8)) },
+  agility: { title: '장애물 경주', icon: '🚧', desc: '어질리티 코스! 허들·터널·위브 폴·A자 경사로를 ↑↓←→ 타이밍에 맞춰 통과해요.', coins: (s) => Math.min(15, Math.floor(s / 430)) },
   shisen: { title: '사천성', icon: '🧸', desc: '같은 반려용품 두 개를 두 번 이하로 꺾이는 길로 이어 없애요.', coins: (s) => Math.min(15, Math.floor(s / 13)) },
   match: { title: '간식 맞추기', icon: '🥕', desc: '이웃한 간식을 바꿔 같은 것 3개를 한 줄로 맞춰요.', coins: (s) => Math.min(15, Math.floor(s / 80)) },
 };

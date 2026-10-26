@@ -479,3 +479,22 @@ body.playing { overflow: hidden; }
 .race2.shake { animation: ag-stumble .3s; }
 .ag2 .ag-legend { color: var(--ink); text-shadow: 0 1px 0 #fff; max-width: 40%; }
 .ag2 .ag-pad button.on { transform: translateY(2px); box-shadow: none; }
+
+/* ---------- 경주 3차(10/26): 역동성 ---------- */
+.r2-rhythm { position: absolute; left: 50%; top: 66px; transform: translateX(-50%); display: flex; align-items: center; gap: 6px; font-size: 12px; font-weight: 900; color: var(--ink-2); pointer-events: none; z-index: 5; text-shadow: 0 1px 0 #fff; }
+.r2-rhythm > i { display: block; width: 120px; height: 8px; border-radius: 99px; background: rgba(255, 255, 255, .75); overflow: hidden; }
+.r2-rhythm > i > i { display: block; height: 100%; width: 0; background: linear-gradient(90deg, #F2A93B, #FFD45E); border-radius: 99px; transition: width .08s; }
+.r2-rhythm.full > i > i { background: linear-gradient(90deg, #FFD45E, #fff6c8, #FFD45E); animation: r2-glow .4s linear infinite; }
+@keyframes r2-glow { 50% { filter: brightness(1.3); } }
+.r2-pop { position: absolute; left: 50%; top: 30%; transform: translate(-50%, -50%) scale(.4); opacity: 0; font-size: 44px; font-weight: 900; color: #fff; -webkit-text-stroke: 2px var(--ink); paint-order: stroke fill; text-shadow: 0 4px 0 var(--ink); pointer-events: none; z-index: 8; white-space: nowrap; }
+.r2-pop.on { animation: r2-pop .9s cubic-bezier(.2, 1.6, .4, 1) forwards; }
+.r2-pop.gold { color: #FFD45E; }
+@keyframes r2-pop { 0% { opacity: 0; transform: translate(-50%, -50%) scale(.4); } 25% { opacity: 1; transform: translate(-50%, -50%) scale(1.15); } 70% { opacity: 1; transform: translate(-50%, -60%) scale(1); } 100% { opacity: 0; transform: translate(-50%, -90%) scale(.95); } }
+.r2-goal { position: absolute; left: 50%; top: 38%; transform: translate(-50%, -50%) scale(.2); opacity: 0; font-size: 96px; font-weight: 900; color: #E8657A; -webkit-text-stroke: 4px #fff; paint-order: stroke fill; text-shadow: 0 6px 0 rgba(45, 42, 38, .35); pointer-events: none; z-index: 8; letter-spacing: .02em; }
+.r2-goal.on { animation: r2-goal 1.4s cubic-bezier(.2, 1.5, .4, 1) forwards; }
+@keyframes r2-goal { 0% { opacity: 0; transform: translate(-50%, -50%) scale(.2) rotate(-8deg); } 30% { opacity: 1; transform: translate(-50%, -50%) scale(1.15) rotate(3deg); } 55% { transform: translate(-50%, -50%) scale(1) rotate(0); } 85% { opacity: 1; } 100% { opacity: 0; transform: translate(-50%, -70%) scale(1); } }
+.race-count.pop { animation: r2-count .8s ease-out; }
+@keyframes r2-count { 0% { transform: translate(-50%, -50%) scale(2.2); opacity: 0; } 25% { transform: translate(-50%, -50%) scale(1); opacity: 1; } 100% { transform: translate(-50%, -50%) scale(.9); opacity: .9; } }
+#ag-combo.fire { color: #E8572E; font-size: 22px; animation: r2-glow .35s linear infinite; }
+.ag2.hit .ag-judge { animation: ag-stumble .3s; }
+.r2-msg-wrap { display: none; }

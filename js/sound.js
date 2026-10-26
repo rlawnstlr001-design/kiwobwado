@@ -99,6 +99,10 @@ export const sfx = {
     }
     return () => {};
   },
+  // 경주(10/26): 흙길 한 걸음 · 추월 휙 · 관중 함성(잡음을 부풀려 '와아' 느낌)
+  step() { if (ready()) burst(0.03, { bp: 900 + Math.random() * 500, q: 1.2, vol: 0.16 }); },
+  whoosh() { if (!ready()) return; for (let i = 0; i < 6; i++) burst(0.05, { bp: 900 + i * 450, q: 0.9, vol: 0.12, at: i * 0.035 }); },
+  cheer() { if (!ready()) return; for (let i = 0; i < 14; i++) burst(0.16, { bp: 700 + Math.random() * 1600, q: 0.7, vol: 0.13, at: i * 0.07 }); },
   // 걷는 발소리(강아지 발톱이 마룻바닥에 톡톡). 고양이는 조용히 걷는다
   steps(ms, every = 0.24) { if (!ready()) return; for (let t = 0; t < ms / 1000; t += every) burst(0.012, { bp: 4500, q: 2, vol: 0.09, at: t + Math.random() * 0.03 }); },
   // 배고프다고 부르기: 강아지 '낑' / 고양이 '야옹'(합성이라 실제 목소리와 다르다)

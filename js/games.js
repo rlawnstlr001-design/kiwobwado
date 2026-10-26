@@ -1,16 +1,19 @@
 // 미니게임 — 코인 벌기(1코인 = 1,000원, 가격은 실제 평균값이라 "반려 생활비 = 이만큼의 노력"을 느끼게)
-// 산책 달리기(먹이면 안 되는 음식은 뛰어넘고 줘도 되는 간식은 모으기) · 사천성(반려용품 짝 맞추기) · 간식 맞추기(3개 맞추기)
-// 그림 없이 코드·이모지로만. 판마다 받는 코인은 앱(app.js)이 하루 한도 안에서 정한다
-import { C } from './content.js?v=202610221515';
+// 반려 경주(봇 3마리와 원근 경주) · 장애물 경주(↑↓←→ 타이밍) — js/race.js(10/26, 산책 달리기 대체) · 사천성(반려용품 짝 맞추기) · 간식 맞추기(3개 맞추기)
+// 판마다 받는 코인은 앱(app.js)이 하루 한도 안에서 정한다
+import { C } from './content.js?v=202610261149';
+import { raceGame, agilityGame } from './race.js?v=202610261149';
 
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 const shuffle = (a) => { for (let i = a.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [a[i], a[j]] = [a[j], a[i]]; } return a; };
 const pick = (a) => a[Math.floor(Math.random() * a.length)];
 
-export const titleOf = (k, species) => (k === 'run' && species === 'cat' ? '사냥 달리기' : GAMES[k].title); // 고양이는 산책 대신 사냥 놀이
+export const titleOf = (k, species) => (k === 'run' && species === 'cat' ? '사냥 달리기' : (GAMES[k] ?? OLD[k] ?? { title: k }).title); // 예전 기록(run)도 이름이 보이게
+const OLD = { run: { title: '산책 달리기' } };
 
 export const GAMES = {
-  run: { title: '산책 달리기', icon: '🐾', desc: '화면을 누르면 점프! 먹이면 안 되는 음식은 뛰어넘고, 줘도 되는 간식은 모아요.', coins: (s) => Math.min(15, Math.floor(s / 25)) },
+  race: { title: '반려 경주', icon: '🏁', desc: '동네 친구 셋과 100m 경주! 화면을 리듬 있게 톡톡 — 결승선에서 보호자가 팔 벌리고 기다려요.', coins: (s) => Math.min(15, Math.floor(s / 8)) },
+  agility: { title: '장애물 경주', icon: '🚧', desc: '↑ 뛰어넘기 · ↓ 기어가기 · → 멀리뛰기 · ← 기다려! 다가오는 장애물에 맞춰 눌러 완주해요.', coins: (s) => Math.min(15, Math.floor(s / 190)) },
   shisen: { title: '사천성', icon: '🧸', desc: '같은 반려용품 두 개를 두 번 이하로 꺾이는 길로 이어 없애요.', coins: (s) => Math.min(15, Math.floor(s / 13)) },
   match: { title: '간식 맞추기', icon: '🥕', desc: '이웃한 간식을 바꿔 같은 것 3개를 한 줄로 맞춰요.', coins: (s) => Math.min(15, Math.floor(s / 80)) },
 };
@@ -40,7 +43,7 @@ export function openGames(ctx) {
   const play = (k) => {
     body.onclick = null;
     root.querySelector('.mg-title').textContent = titleOf(k, ctx.species);
-    const run = { run: runGame, shisen: shisenGame, match: matchGame }[k];
+    const run = { race: raceGame, agility: agilityGame, run: runGame, shisen: shisenGame, match: matchGame }[k];
     stop = run(body, ctx, (score) => finish(k, score));
   };
   const finish = (k, score) => {
@@ -50,7 +53,8 @@ export function openGames(ctx) {
     root.querySelector('#mg-coins').textContent = r.coins;
     root.querySelector('#mg-earned').textContent = r.earned;
     const raw = GAMES[k].coins(score);
-    body.innerHTML = `<div class="mg-end"><p class="mg-k">${titleOf(k, ctx.species)}</p><p class="mg-score">${score}점</p>
+    const note = ctx.note; ctx.note = null;   // 경주: '2등 · 12.34초', 장애물: '완주 · 완벽 18'
+    body.innerHTML = `<div class="mg-end"><p class="mg-k">${titleOf(k, ctx.species)}</p>${note ? `<p class="mg-place">${note}</p>` : ''}<p class="mg-score">${score}점</p>
       <p class="mg-got"><i class="ci"></i> +${r.given}${r.given < raw ? ` <small>(오늘 한도 ${ctx.cap}개를 다 채웠어요 — 점수는 기록돼요)</small>` : ''}</p>
       <p class="mg-sub">= 실제라면 ${(r.given * 1000).toLocaleString('ko-KR')}원어치</p>
       <div class="mg-btns"><button class="btn btn-main" data-again>다시 하기</button><button class="btn" data-menu>다른 게임</button></div></div>`;

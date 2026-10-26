@@ -19,77 +19,121 @@
  "large_adult": [
   "collar",
   "bandana",
-  "bowtie"
+  "bowtie",
+  "ribbon",
+  "beanie",
+  "straw"
  ],
  "large_baby": [
   "collar",
   "bandana",
-  "bowtie"
+  "bowtie",
+  "ribbon",
+  "beanie",
+  "straw"
  ],
  "large_teen": [
   "collar",
   "bandana",
-  "bowtie"
+  "bowtie",
+  "ribbon",
+  "beanie",
+  "straw"
  ],
  "long_adult": [
   "collar",
   "bandana",
-  "bowtie"
+  "bowtie",
+  "ribbon",
+  "beanie",
+  "straw"
  ],
  "long_baby": [
   "collar",
   "bandana",
-  "bowtie"
+  "bowtie",
+  "ribbon",
+  "beanie",
+  "straw"
  ],
  "long_teen": [
   "collar",
   "bandana",
-  "bowtie"
+  "bowtie",
+  "ribbon",
+  "beanie",
+  "straw"
  ],
  "medium_adult": [
   "collar",
   "bandana",
-  "bowtie"
+  "bowtie",
+  "ribbon",
+  "beanie",
+  "straw"
  ],
  "medium_baby": [
   "collar",
   "bandana",
-  "bowtie"
+  "bowtie",
+  "ribbon",
+  "beanie",
+  "straw"
  ],
  "medium_teen": [
   "collar",
   "bandana",
-  "bowtie"
+  "bowtie",
+  "ribbon",
+  "beanie",
+  "straw"
  ],
  "short_adult": [
   "collar",
   "bandana",
-  "bowtie"
+  "bowtie",
+  "ribbon",
+  "beanie",
+  "straw"
  ],
  "short_baby": [
   "collar",
   "bandana",
-  "bowtie"
+  "bowtie",
+  "ribbon",
+  "beanie",
+  "straw"
  ],
  "short_teen": [
   "collar",
   "bandana",
-  "bowtie"
+  "bowtie",
+  "ribbon",
+  "beanie",
+  "straw"
  ],
  "small_adult": [
   "collar",
   "bandana",
-  "bowtie"
+  "bowtie",
+  "ribbon",
+  "beanie",
+  "straw"
  ],
  "small_baby": [
   "straw",
   "bandana",
   "collar",
-  "bowtie"
+  "bowtie",
+  "ribbon",
+  "beanie"
  ],
  "small_teen": [
   "collar",
   "bandana",
-  "bowtie"
+  "bowtie",
+  "ribbon",
+  "beanie",
+  "straw"
  ]
 }

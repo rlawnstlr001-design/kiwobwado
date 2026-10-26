@@ -7,7 +7,7 @@
 const smooth = (a, b, x) => { const t = Math.min(1, Math.max(0, (x - a) / (b - a))); return t * t * (3 - 2 * t); };
 const rot = (x, y, cx, cy, a) => { const c = Math.cos(a), s = Math.sin(a); const dx = x - cx, dy = y - cy; return [cx + dx * c - dy * s, cy + dx * s + dy * c]; };
 const NX = 72, NY = 100;
-const KE = 8;   // 그려 넣은 액세서리 레이어(make_wear.py)는 그림 위 여백(모자가 넘치는 자리)까지 그물을 KE줄 더 늘린다
+const KE = 8, KS = 6;   // 그려 넣은 액세서리 레이어(make_wear.py)는 그림 위·좌우 여백(모자가 넘치는 자리)까지 그물을 위 KE줄·좌우 KS칸 더 늘린다
 
 export function mountRig(canvas, src, cfg, { cat = false } = {}) {
   // preserveDrawingBuffer: 모습이 바뀔 때 room.js가 지금 그림을 복사해 겹쳐 사라지게(크로스페이드) 하려면 그려 둔 화면이 남아 있어야 한다
@@ -150,37 +150,34 @@ export function mountRig(canvas, src, cfg, { cat = false } = {}) {
   }
   // 그려 넣은 레이어: 텍스처 = 그림 너비 × (위 여백 P + 그림 높이). 그물 = 위 여백 KE줄 + 몸 그물 그대로 → 몸과 똑같이 휜다
   function layerMesh(w) {
-    const P = w.pad ?? 0, rows = NY + 1 + KE, n = (NX + 1) * rows;
+    // 그려 넣은 레이어 = 그림 + 위·좌우 여백 P(모자 챙이 그림 밖으로 넘친다). 그물 = 몸 그물 + 위 KE줄 + 좌우 KS칸
+    const P = w.pad ?? 0, cols = NX + 1 + 2 * KS, rows = NY + 1 + KE, n = cols * rows;
     const uv = new Float32Array(n * 2);
-    w.lrest = new Float32Array(KE * (NX + 1) * 2);
-    for (let j = 0; j < rows; j++) for (let i = 0; i <= NX; i++) {
-      const k = (j * (NX + 1) + i) * 2;
-      const x = (i / NX) * W, y = j < KE ? -P * (KE - j) / KE : ((j - KE) / NY) * H;
-      uv[k] = x / W; uv[k + 1] = (y + P) / (H + P);
-      if (j < KE) { w.lrest[k] = x; w.lrest[k + 1] = y; }
+    w.lrest = new Float32Array(n * 2); w.lsrc = new Int32Array(n);   // 여백 점: 제자리 + 가장 가까운 몸 점
+    for (let j = 0; j < rows; j++) for (let i = 0; i < cols; i++) {
+      const v = j * cols + i, bi = i - KS, bj = j - KE;
+      const x = bi < 0 ? (-P * -bi) / KS : bi > NX ? W + (P * (bi - NX)) / KS : (bi / NX) * W;
+      const y = bj < 0 ? (-P * -bj) / KE : (bj / NY) * H;
+      uv[v * 2] = (x + P) / (W + 2 * P); uv[v * 2 + 1] = (y + P) / (H + P);
+      w.lrest[v * 2] = x; w.lrest[v * 2 + 1] = y;
+      w.lsrc[v] = Math.max(0, Math.min(NY, bj)) * (NX + 1) + Math.max(0, Math.min(NX, bi));
     }
     w.luv = gl.createBuffer(); gl.bindBuffer(gl.ARRAY_BUFFER, w.luv); gl.bufferData(gl.ARRAY_BUFFER, uv, gl.STATIC_DRAW);
     const ids = [];
-    for (let j = 0; j < rows - 1; j++) for (let i = 0; i < NX; i++) { const a = j * (NX + 1) + i, b = a + 1, c = a + NX + 1, d = c + 1; ids.push(a, b, c, b, d, c); }
+    for (let j = 0; j < rows - 1; j++) for (let i = 0; i < cols - 1; i++) { const a = j * cols + i, b = a + 1, c = a + cols, d = c + 1; ids.push(a, b, c, b, d, c); }
     w.lidx = gl.createBuffer(); gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, w.lidx); gl.bufferData(gl.ELEMENT_ARRAY_BUFFER, new Uint16Array(ids), gl.STATIC_DRAW);
     w.lcount = ids.length;
     w.lpos = new Float32Array(n * 2);
     w.lbuf = gl.createBuffer();
   }
-  // 위 여백 줄: 맨 윗줄과 같은 만큼 움직이되 머리 기울기(목 기준)는 그대로 따라 돈다
+  // 몸 안쪽 점은 몸 그물 그대로, 여백 점은 가장 가까운 몸 점과 같이 움직이되 머리 기울기(목 기준)로 돈다
   function layerPos(w, pad) {
-    const [ncx, ncy] = cfg.neck, a = st.headA, top = KE * (NX + 1) * 2;
-    for (let i = 0; i <= NX; i++) {
-      const k0 = i * 2;   // 몸 그물 맨 윗줄
-      const [r0x, r0y] = rot(rest[k0], rest[k0 + 1], ncx, ncy, a);
-      const dx = pos[k0] - r0x, dy = pos[k0 + 1] - r0y;
-      for (let j = 0; j < KE; j++) {
-        const k = (j * (NX + 1) + i) * 2;
-        const [x, y] = rot(w.lrest[k], w.lrest[k + 1], ncx, ncy, a);
-        w.lpos[k] = x + dx + pad; w.lpos[k + 1] = y + dy + pad;
-      }
+    const [ncx, ncy] = cfg.neck, a = st.headA, c = Math.cos(a), s = Math.sin(a), n = w.lsrc.length;
+    for (let v = 0; v < n; v++) {
+      const b = w.lsrc[v] * 2, ox = w.lrest[v * 2] - rest[b], oy = w.lrest[v * 2 + 1] - rest[b + 1];
+      if (ox === 0 && oy === 0) { w.lpos[v * 2] = draw[b]; w.lpos[v * 2 + 1] = draw[b + 1]; continue; }
+      w.lpos[v * 2] = draw[b] + ox * c - oy * s; w.lpos[v * 2 + 1] = draw[b + 1] + ox * s + oy * c;
     }
-    for (let k = 0; k < pos.length; k++) w.lpos[top + k] = draw[k];
   }
   // 액세서리 네 모서리(원본 픽셀): 목 = 목 자리 아래로 걸치고, 머리 = 정수리부터 이마까지 덮게
   function wearQuad(w) {

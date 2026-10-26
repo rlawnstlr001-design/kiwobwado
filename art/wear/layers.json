@@ -17,50 +17,79 @@
   "small_teen": 148
  },
  "large_adult": [
-  "collar"
+  "collar",
+  "bandana",
+  "bowtie"
  ],
  "large_baby": [
-  "collar"
+  "collar",
+  "bandana",
+  "bowtie"
  ],
  "large_teen": [
-  "collar"
+  "collar",
+  "bandana",
+  "bowtie"
  ],
  "long_adult": [
-  "collar"
+  "collar",
+  "bandana",
+  "bowtie"
  ],
  "long_baby": [
-  "collar"
+  "collar",
+  "bandana",
+  "bowtie"
  ],
  "long_teen": [
-  "collar"
+  "collar",
+  "bandana",
+  "bowtie"
  ],
  "medium_adult": [
-  "collar"
+  "collar",
+  "bandana",
+  "bowtie"
  ],
  "medium_baby": [
-  "collar"
+  "collar",
+  "bandana",
+  "bowtie"
  ],
  "medium_teen": [
-  "collar"
+  "collar",
+  "bandana",
+  "bowtie"
  ],
  "short_adult": [
-  "collar"
+  "collar",
+  "bandana",
+  "bowtie"
  ],
  "short_baby": [
-  "collar"
+  "collar",
+  "bandana",
+  "bowtie"
  ],
  "short_teen": [
-  "collar"
+  "collar",
+  "bandana",
+  "bowtie"
  ],
  "small_adult": [
-  "collar"
+  "collar",
+  "bandana",
+  "bowtie"
  ],
  "small_baby": [
   "straw",
   "bandana",
-  "collar"
+  "collar",
+  "bowtie"
  ],
  "small_teen": [
-  "collar"
+  "collar",
+  "bandana",
+  "bowtie"
  ]
 }

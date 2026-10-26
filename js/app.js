@@ -1,19 +1,19 @@
 // 키워봐도될까 — 내 생활 그대로 30일 키워 보고 반려 준비도를 확인하는 입양 전 체험
-import * as db from './db.js?v=202610261327';
-import * as E from './engine.js?v=202610261327';
-import { C, loadContent, eventById, lessonById, foodById, momentById } from './content.js?v=202610261327';
-import { track } from './track.js?v=202610261327';
-import { roomHTML, mountRoom, timeOfDay, loadAnim, clipInfo } from './room.js?v=202610261327';
-import { openGames, GAMES, titleOf } from './games.js?v=202610261327';
-import * as K from './care.js?v=202610261327';
-import { openShop, openVet, openTreats } from './shop.js?v=202610261327';
-import { isApp, initNative, scheduleCare, exactAlarm, shareImage, saveWidget, widgetCount } from './native.js?v=202610261327';
-import { makeCard } from './card.js?v=202610261327';
-import { runGuide } from './guide.js?v=202610261327';
-import { handCare } from './handcare.js?v=202610261327';
-import { sfx, ambient, stopAmbient, soundOn, setSound } from './sound.js?v=202610261327';
-import * as F from './fun.js?v=202610261327';
-import { training } from './train.js?v=202610261327';
+import * as db from './db.js?v=202610261352';
+import * as E from './engine.js?v=202610261352';
+import { C, loadContent, eventById, lessonById, foodById, momentById } from './content.js?v=202610261352';
+import { track } from './track.js?v=202610261352';
+import { roomHTML, mountRoom, timeOfDay, loadAnim, clipInfo } from './room.js?v=202610261352';
+import { openGames, GAMES, titleOf } from './games.js?v=202610261352';
+import * as K from './care.js?v=202610261352';
+import { openShop, openVet, openTreats } from './shop.js?v=202610261352';
+import { isApp, initNative, scheduleCare, exactAlarm, shareImage, saveWidget, widgetCount } from './native.js?v=202610261352';
+import { makeCard } from './card.js?v=202610261352';
+import { runGuide } from './guide.js?v=202610261352';
+import { handCare } from './handcare.js?v=202610261352';
+import { sfx, ambient, stopAmbient, soundOn, setSound } from './sound.js?v=202610261352';
+import * as F from './fun.js?v=202610261352';
+import { training } from './train.js?v=202610261352';
 
 const $ = (s, el = document) => el.querySelector(s);
 const view = $('#view');

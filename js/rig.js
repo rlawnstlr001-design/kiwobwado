@@ -7,12 +7,14 @@
 const smooth = (a, b, x) => { const t = Math.min(1, Math.max(0, (x - a) / (b - a))); return t * t * (3 - 2 * t); };
 const rot = (x, y, cx, cy, a) => { const c = Math.cos(a), s = Math.sin(a); const dx = x - cx, dy = y - cy; return [cx + dx * c - dy * s, cy + dx * s + dy * c]; };
 const NX = 72, NY = 100;
+const KE = 8;   // 그려 넣은 액세서리 레이어(make_wear.py)는 그림 위 여백(모자가 넘치는 자리)까지 그물을 KE줄 더 늘린다
 
 export function mountRig(canvas, src, cfg, { cat = false } = {}) {
   // preserveDrawingBuffer: 모습이 바뀔 때 room.js가 지금 그림을 복사해 겹쳐 사라지게(크로스페이드) 하려면 그려 둔 화면이 남아 있어야 한다
   const gl = canvas.getContext('webgl', { premultipliedAlpha: true, alpha: true, antialias: true, preserveDrawingBuffer: true });
   if (!gl) return null;
   const st = { headA: 0, breath: 0, look: 0, pet: 0, petTarget: 0, blink: 0, nextBlink: 1.5, blinkT: -1, flick: [0, 0], nextFlick: 3, tilt: 0, tiltTarget: 0, nextTilt: 4, wag: 0, happy: 0, force: null, zone: 'head', annoy: 0, annoyTarget: 0 };
+  let ibuf = null;
   let W = 0, H = 0, rest, pos, draw, idx, buf, prog, loc, alive = true, ready = false, bodyTex, bodyUV, ul, geo = null;
   let tailCut = null;   // 줄마다 꼬리와 엉덩이 사이 빈틈의 x(원본 픽셀) — 이 선 너머(몸 쪽)는 꼬리와 함께 돌지 않는다
   let wears = []; // { slot, wf, fb, aspect, tex, uv, pb, ok }
@@ -72,7 +74,7 @@ export function mountRig(canvas, src, cfg, { cat = false } = {}) {
     bodyUV = gl.createBuffer(); gl.bindBuffer(gl.ARRAY_BUFFER, bodyUV); gl.bufferData(gl.ARRAY_BUFFER, uv, gl.STATIC_DRAW);
     ul = gl.getAttribLocation(prog, 'u'); gl.enableVertexAttribArray(ul); gl.vertexAttribPointer(ul, 2, gl.FLOAT, false, 0, 0);
     buf = gl.createBuffer();
-    const ib = gl.createBuffer(); gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, ib); gl.bufferData(gl.ELEMENT_ARRAY_BUFFER, idx, gl.STATIC_DRAW);
+    ibuf = gl.createBuffer(); gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, ibuf); gl.bufferData(gl.ELEMENT_ARRAY_BUFFER, idx, gl.STATIC_DRAW);
     bodyTex = gl.createTexture(); gl.bindTexture(gl.TEXTURE_2D, bodyTex);
     gl.pixelStorei(gl.UNPACK_PREMULTIPLY_ALPHA_WEBGL, true);
     gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, img);
@@ -141,9 +143,44 @@ export function mountRig(canvas, src, cfg, { cat = false } = {}) {
       gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE); gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
       w.uv = gl.createBuffer(); gl.bindBuffer(gl.ARRAY_BUFFER, w.uv); gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([0, 0, 1, 0, 0, 1, 1, 1]), gl.STATIC_DRAW);
       w.pb = gl.createBuffer();
+      if (w.layer && ready) layerMesh(w);
       w.ok = true;
     };
     im.src = w.src;
+  }
+  // 그려 넣은 레이어: 텍스처 = 그림 너비 × (위 여백 P + 그림 높이). 그물 = 위 여백 KE줄 + 몸 그물 그대로 → 몸과 똑같이 휜다
+  function layerMesh(w) {
+    const P = w.pad ?? 0, rows = NY + 1 + KE, n = (NX + 1) * rows;
+    const uv = new Float32Array(n * 2);
+    w.lrest = new Float32Array(KE * (NX + 1) * 2);
+    for (let j = 0; j < rows; j++) for (let i = 0; i <= NX; i++) {
+      const k = (j * (NX + 1) + i) * 2;
+      const x = (i / NX) * W, y = j < KE ? -P * (KE - j) / KE : ((j - KE) / NY) * H;
+      uv[k] = x / W; uv[k + 1] = (y + P) / (H + P);
+      if (j < KE) { w.lrest[k] = x; w.lrest[k + 1] = y; }
+    }
+    w.luv = gl.createBuffer(); gl.bindBuffer(gl.ARRAY_BUFFER, w.luv); gl.bufferData(gl.ARRAY_BUFFER, uv, gl.STATIC_DRAW);
+    const ids = [];
+    for (let j = 0; j < rows - 1; j++) for (let i = 0; i < NX; i++) { const a = j * (NX + 1) + i, b = a + 1, c = a + NX + 1, d = c + 1; ids.push(a, b, c, b, d, c); }
+    w.lidx = gl.createBuffer(); gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, w.lidx); gl.bufferData(gl.ELEMENT_ARRAY_BUFFER, new Uint16Array(ids), gl.STATIC_DRAW);
+    w.lcount = ids.length;
+    w.lpos = new Float32Array(n * 2);
+    w.lbuf = gl.createBuffer();
+  }
+  // 위 여백 줄: 맨 윗줄과 같은 만큼 움직이되 머리 기울기(목 기준)는 그대로 따라 돈다
+  function layerPos(w, pad) {
+    const [ncx, ncy] = cfg.neck, a = st.headA, top = KE * (NX + 1) * 2;
+    for (let i = 0; i <= NX; i++) {
+      const k0 = i * 2;   // 몸 그물 맨 윗줄
+      const [r0x, r0y] = rot(rest[k0], rest[k0 + 1], ncx, ncy, a);
+      const dx = pos[k0] - r0x, dy = pos[k0 + 1] - r0y;
+      for (let j = 0; j < KE; j++) {
+        const k = (j * (NX + 1) + i) * 2;
+        const [x, y] = rot(w.lrest[k], w.lrest[k + 1], ncx, ncy, a);
+        w.lpos[k] = x + dx + pad; w.lpos[k + 1] = y + dy + pad;
+      }
+    }
+    for (let k = 0; k < pos.length; k++) w.lpos[top + k] = draw[k];
   }
   // 액세서리 네 모서리(원본 픽셀): 목 = 목 자리 아래로 걸치고, 머리 = 정수리부터 이마까지 덮게
   function wearQuad(w) {
@@ -258,6 +295,17 @@ export function mountRig(canvas, src, cfg, { cat = false } = {}) {
         gl.drawElements(gl.TRIANGLES, idx.length, gl.UNSIGNED_SHORT, 0);
         for (const w of wears) {
           if (!w.ok || !geo) continue;
+          if (w.layer) {   // 그려 넣은 레이어: 몸과 같은 그물로 그대로
+            if (!w.lbuf) layerMesh(w);
+            layerPos(w, pad);
+            gl.uniform1f(loc.mode, 0);
+            gl.bindTexture(gl.TEXTURE_2D, w.tex);
+            gl.bindBuffer(gl.ARRAY_BUFFER, w.luv); gl.vertexAttribPointer(ul, 2, gl.FLOAT, false, 0, 0);
+            gl.bindBuffer(gl.ARRAY_BUFFER, w.lbuf); gl.bufferData(gl.ARRAY_BUFFER, w.lpos, gl.DYNAMIC_DRAW); gl.vertexAttribPointer(loc.p, 2, gl.FLOAT, false, 0, 0);
+            gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, w.lidx); gl.drawElements(gl.TRIANGLES, w.lcount, gl.UNSIGNED_SHORT, 0);
+            gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, ibuf);
+            continue;
+          }
           const neck = w.slot !== 'head';
           const quad = wearQuad(w), q = new Float32Array(quad.flatMap(([x, y]) => [x + pad, y + pad]));
           const quadDraw = () => {

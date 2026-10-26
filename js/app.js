@@ -1,19 +1,19 @@
 // 키워봐도될까 — 내 생활 그대로 30일 키워 보고 반려 준비도를 확인하는 입양 전 체험
-import * as db from './db.js?v=202610261649';
-import * as E from './engine.js?v=202610261649';
-import { C, loadContent, eventById, lessonById, foodById, momentById } from './content.js?v=202610261649';
-import { track } from './track.js?v=202610261649';
-import { roomHTML, mountRoom, timeOfDay, loadAnim, clipInfo } from './room.js?v=202610261649';
-import { openGames, GAMES, titleOf } from './games.js?v=202610261649';
-import * as K from './care.js?v=202610261649';
-import { openShop, openVet, openTreats } from './shop.js?v=202610261649';
-import { isApp, initNative, scheduleCare, exactAlarm, shareImage, saveWidget, widgetCount } from './native.js?v=202610261649';
-import { makeCard } from './card.js?v=202610261649';
-import { runGuide } from './guide.js?v=202610261649';
-import { handCare } from './handcare.js?v=202610261649';
-import { sfx, ambient, stopAmbient, soundOn, setSound } from './sound.js?v=202610261649';
-import * as F from './fun.js?v=202610261649';
-import { training } from './train.js?v=202610261649';
+import * as db from './db.js?v=202610261716';
+import * as E from './engine.js?v=202610261716';
+import { C, loadContent, eventById, lessonById, foodById, momentById } from './content.js?v=202610261716';
+import { track } from './track.js?v=202610261716';
+import { roomHTML, mountRoom, timeOfDay, loadAnim, clipInfo } from './room.js?v=202610261716';
+import { openGames, GAMES, titleOf } from './games.js?v=202610261716';
+import * as K from './care.js?v=202610261716';
+import { openShop, openVet, openTreats } from './shop.js?v=202610261716';
+import { isApp, initNative, scheduleCare, exactAlarm, shareImage, saveWidget, widgetCount } from './native.js?v=202610261716';
+import { makeCard } from './card.js?v=202610261716';
+import { runGuide } from './guide.js?v=202610261716';
+import { handCare } from './handcare.js?v=202610261716';
+import { sfx, ambient, stopAmbient, soundOn, setSound } from './sound.js?v=202610261716';
+import * as F from './fun.js?v=202610261716';
+import { training } from './train.js?v=202610261716';
 
 const $ = (s, el = document) => el.querySelector(s);
 const view = $('#view');
@@ -511,7 +511,7 @@ function today() {
   view.onclick = onTodayClick;
   ROOM = mountRoom({
     type: P().type, stage, state: roomState,
-    wear: Object.values(S.wearing).filter(Boolean).map((id) => C.shop.items.find((i) => i.id === id)).filter(Boolean).map((i) => ({ src: `art/wear/${i.art}.webp`, slot: i.slot, wf: i.wf, fb: i.fb, hs: i.hs, tuck: !!i.tuck })),
+    wear: Object.values(S.wearing).filter(Boolean).map((id) => C.shop.items.find((i) => i.id === id)).filter(Boolean).map((i) => ({ src: `art/wear/${i.art}.webp`, art: i.art, slot: i.slot, wf: i.wf, fb: i.fb, hs: i.hs, tuck: !!i.tuck })),
     canPet: () => !sleepNow,
     shy: sleepNow ? 0 : E.adaptOf(d, course()).shy,
     onTip: (code) => strokeTip(code === 'shy' ? `shy_${species()}` : code),

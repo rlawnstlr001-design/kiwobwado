@@ -1,0 +1,66 @@
+{
+ "_pad": {
+  "large_adult": 148,
+  "large_baby": 141,
+  "large_teen": 150,
+  "long_adult": 148,
+  "long_baby": 148,
+  "long_teen": 148,
+  "medium_adult": 149,
+  "medium_baby": 148,
+  "medium_teen": 150,
+  "short_adult": 148,
+  "short_baby": 148,
+  "short_teen": 149,
+  "small_adult": 147,
+  "small_baby": 148,
+  "small_teen": 148
+ },
+ "large_adult": [
+  "collar"
+ ],
+ "large_baby": [
+  "collar"
+ ],
+ "large_teen": [
+  "collar"
+ ],
+ "long_adult": [
+  "collar"
+ ],
+ "long_baby": [
+  "collar"
+ ],
+ "long_teen": [
+  "collar"
+ ],
+ "medium_adult": [
+  "collar"
+ ],
+ "medium_baby": [
+  "collar"
+ ],
+ "medium_teen": [
+  "collar"
+ ],
+ "short_adult": [
+  "collar"
+ ],
+ "short_baby": [
+  "collar"
+ ],
+ "short_teen": [
+  "collar"
+ ],
+ "small_adult": [
+  "collar"
+ ],
+ "small_baby": [
+  "straw",
+  "bandana",
+  "collar"
+ ],
+ "small_teen": [
+  "collar"
+ ]
+}

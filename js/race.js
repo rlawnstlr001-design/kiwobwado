@@ -9,17 +9,19 @@
 // 그림: 아이 뒷모습 art/sprite/<성향>_<단계>_back0·back1.webp(tools/make_tricks.py --back, 목록 backs.json — 없으면 같은 성향 다른 단계로),
 //       보호자 art/race/owner0~3.webp(tools/make_owners.py)
 
-import { sfx } from './sound.js?v=202610261252';
-import { rng } from './engine.js?v=202610261252';
+import { sfx } from './sound.js?v=202610261327';
+import { rng } from './engine.js?v=202610261327';
 
 const TYPES = ['small', 'medium', 'large', 'short', 'long'];
 const SIZE = { small: 0.5, medium: 0.6, large: 0.7, short: 0.48, long: 0.5 };     // 달릴 때 키(m) — 원근 크기 계산용
 const BOT_NAMES = ['초코', '몽이', '까미', '쿠키', '라떼', '호떡', '감자', '모찌', '탄이', '별이'];
 const shuffleR = (a, r) => { for (let i = a.length - 1; i > 0; i--) { const j = Math.floor(r() * (i + 1)); [a[i], a[j]] = [a[j], a[i]]; } return a; };
 const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
+// '#RRGGBB'를 f배 어둡게(f<1)·밝게(f>1)
+const shade = (hex, f) => { const n = parseInt(hex.slice(1), 16); const ch = (v) => Math.round(clamp(f > 1 ? v + (255 - v) * (f - 1) : v * f, 0, 255)); return `rgb(${ch(n >> 16)},${ch((n >> 8) & 255)},${ch(n & 255)})`; };
 const loadImg = (src) => new Promise((res) => { const i = new Image(); i.onload = () => res(i); i.onerror = () => res(null); i.src = src; });
 let BACKS = null;
-const backs = () => (BACKS ??= fetch('art/sprite/backs.json?v=202610261252').then((r) => (r.ok ? r.json() : {})).catch(() => ({})));
+const backs = () => (BACKS ??= fetch('art/sprite/backs.json?v=202610261327').then((r) => (r.ok ? r.json() : {})).catch(() => ({})));
 // 뒷모습 2장(없는 단계면 같은 성향의 가장 가까운 단계)
 async function backFrames(type, stage) {
   const have = await backs();
@@ -37,14 +39,14 @@ const owners = () => Promise.all([0, 1, 2, 3].map((i) => loadImg(`art/race/owner
 function makeView(cv) {
   const g = cv.getContext('2d');
   // 역동성(10/26 3차): dolly(<1이면 카메라가 아이에게 다가가며 화각이 넓어져 배경이 빨려 들어감) · pitch(지평선 이동) · roll · bobY · trauma(흔들림) · 입자
-  const V = { g, W: 0, H: 0, HOR: 0, F: 0, Z0: 3.2, Z0b: 3.2, HC: 1.15, camX: 0, dpr: 1, baseF: 0, baseHOR: 0, dolly: 1, pitch: 0, roll: 0, bobY: 0, trauma: 0, parts: [] };
+  const V = { g, W: 0, H: 0, HOR: 0, F: 0, Z0: 3.2, Z0b: 3.2, HC: 1.15, HCb: 1.15, camX: 0, dpr: 1, baseF: 0, baseHOR: 0, dolly: 1, pitch: 0, roll: 0, bobY: 0, trauma: 0, parts: [] };
   V.size = () => {
     const dpr = Math.min(2, devicePixelRatio || 1);
     V.dpr = dpr;
     V.W = cv.clientWidth; V.H = cv.clientHeight;
     cv.width = V.W * dpr; cv.height = V.H * dpr; g.setTransform(dpr, 0, 0, dpr, 0, 0);
     V.baseHOR = V.HOR = V.H * 0.34;
-    V.baseF = V.F = (V.H * 0.9 - V.HOR) * V.Z0b / V.HC;
+    V.baseF = V.F = (V.H * 0.9 - V.HOR) * V.Z0b / V.HCb;
     V.Z0 = V.Z0b;
   };
   // 한 장면 시작: 카메라 효과를 캔버스 변환으로
@@ -147,10 +149,36 @@ function makeView(cv) {
     g.globalAlpha = 1;
     return { ...p, w, h };
   };
-  V.shadow = (x, z, r) => {
-    const p = V.p(x, z);
+  V.shadow = (x, z, r, y = 0) => {
+    const p = V.p(x, z, y);
     if (!p) return;
     g.fillStyle = 'rgba(60,40,20,.14)'; g.beginPath(); g.ellipse(p.x, p.y, r * 0.7 * p.k, r * 0.7 * p.k * 0.26, 0, 0, Math.PI * 2); g.fill();
+  };
+  // 3D 점들로 된 면 하나
+  V.poly = (pts, fill) => {
+    const q = pts.map(([x, z, y]) => V.p(x, z, y));
+    if (q.some((v) => !v)) return;
+    g.fillStyle = fill; g.beginPath(); q.forEach((v, i) => (i ? g.lineTo(v.x, v.y) : g.moveTo(v.x, v.y))); g.closePath(); g.fill();
+  };
+  // 상자(x0~x1, z0~z1, y0~y1): 카메라에서 보이는 면만 — 앞면 = 본색, 윗면 밝게, 옆면 어둡게
+  V.box = (x0, x1, z0, z1, y0, y1, col) => {
+    z0 = Math.max(z0, 0.65);
+    if (z1 <= z0) return;
+    if (V.camX < x0) V.poly([[x0, z0, y0], [x0, z1, y0], [x0, z1, y1], [x0, z0, y1]], shade(col, 0.7));
+    if (V.camX > x1) V.poly([[x1, z0, y0], [x1, z1, y0], [x1, z1, y1], [x1, z0, y1]], shade(col, 0.78));
+    if (y1 < V.HC) V.poly([[x0, z0, y1], [x1, z0, y1], [x1, z1, y1], [x0, z1, y1]], shade(col, 1.15));
+    V.poly([[x0, z0, y0], [x1, z0, y0], [x1, z0, y1], [x0, z0, y1]], col);
+  };
+  // 원기둥(줄무늬 + 좌우 음영 + 둥근 머리)
+  V.pole = (x, z, h, rad, cols) => {
+    const a = V.p(x, z), b = V.p(x, z, h);
+    if (!a || !b) return;
+    const w = Math.max(2, rad * 2 * a.k), n = 6;
+    for (let i = 0; i < n; i++) { const y0 = a.y + ((b.y - a.y) * i) / n, y1 = a.y + ((b.y - a.y) * (i + 1)) / n; g.fillStyle = cols[i % cols.length]; g.fillRect(a.x - w / 2, y1, w, y0 - y1 + 0.5); }
+    const gr = g.createLinearGradient(a.x - w / 2, 0, a.x + w / 2, 0);
+    gr.addColorStop(0, 'rgba(0,0,0,.3)'); gr.addColorStop(0.35, 'rgba(255,255,255,.4)'); gr.addColorStop(1, 'rgba(0,0,0,.38)');
+    g.fillStyle = gr; g.fillRect(a.x - w / 2, b.y, w, a.y - b.y);
+    g.fillStyle = cols[0]; g.beginPath(); g.ellipse(b.x, b.y, w / 2, w / 4, 0, 0, Math.PI * 2); g.fill();
   };
   V.emoji = (e, x, z, hm) => {
     const p = V.p(x, z);
@@ -190,6 +218,34 @@ function drawTrack(V, sNow, lanes, LW, len) {
     const side = Math.max(1.6, 3.2 - half);   // 좁은 코스는 장식을 더 멀리
     V.emoji(['🌳', '🌼', '🌲', '🚩'][k], -half - side, z, [1.3, 0.45, 1.3, 0.9][k]);
     V.emoji(['🌲', '🚩', '🌳', '🌼'][k], half + side, z, [1.3, 0.9, 1.3, 0.45][k]);
+  }
+}
+// 어질리티 경기장(10/26 입체): 깎은 잔디 줄무늬 · 코스 흰 선 · 광고판 같은 색 펜스(두께 있는 판) · 먼 안개
+function drawArena(V, sNow) {
+  const FAR = 220, z0 = V.Z0 - sNow, g = V.g;
+  V.quad(-8, 8, 0.7, FAR, '#86BE63');
+  for (let s = Math.floor((sNow - V.Z0) / 3) * 3; s < sNow + 100; s += 3) {
+    if (Math.abs(Math.round(s / 3)) % 2) continue;
+    const z = z0 + s; if (z + 3 < 0.7) continue;
+    V.quad(-8, 8, Math.max(z, 0.7), z + 3, '#77B055');
+  }
+  V.quad(-1.3, -1.24, 0.7, FAR, 'rgba(255,255,255,.75)'); V.quad(1.24, 1.3, 0.7, FAR, 'rgba(255,255,255,.75)');
+  const fog = g.createLinearGradient(0, V.HOR - 4, 0, V.HOR + V.H * 0.09);
+  fog.addColorStop(0, 'rgba(227,243,246,.7)'); fog.addColorStop(1, 'rgba(227,243,246,0)');
+  g.fillStyle = fog; g.fillRect(-V.W * 0.1, V.HOR - 4, V.W * 1.2, V.H * 0.09 + 4);
+  const C = ['#E8657A', '#FFFFFF', '#4F8FC0', '#F2D24B'];
+  const boards = [];
+  for (let s = Math.floor((sNow - V.Z0) / 2.4) * 2.4; s < sNow + 90; s += 2.4) boards.push(s);
+  for (const s of boards.reverse()) {
+    const z = z0 + s; if (z + 2.3 < 0.7) continue;
+    const c = C[Math.abs(Math.round(s / 2.4)) % 4];
+    V.box(-2.75, -2.62, z, z + 2.3, 0, 0.55, c); V.box(2.62, 2.75, z, z + 2.3, 0, 0.55, c);
+  }
+  for (let s = Math.ceil((sNow + 150) / 6) * 6 - 3; s > sNow - V.Z0; s -= 6) {
+    const z = z0 + s; if (z < 1) continue;
+    const k = Math.abs(Math.round(s / 6)) % 3;
+    V.emoji(['🌳', '🌲', '🚩'][k], -4.2, z, [1.6, 1.6, 1.0][k]);
+    V.emoji(['🌲', '🚩', '🌳'][k], 4.2, z, [1.6, 1.0, 1.6][k]);
   }
 }
 // 결승 아치(GOAL) — 두 기둥 + 현수막
@@ -405,7 +461,7 @@ export function agilityGame(body, ctx, done) {
   shuffleR(kinds, r);
   for (const k of kinds) {
     if (k === 'hurdle') { parts.push({ k, at }); checks.push({ at, dir: 'up', k }); at += 9; }
-    if (k === 'tunnel') { parts.push({ k, at, len: 3 }); checks.push({ at, dir: 'down', k }); at += 11; }
+    if (k === 'tunnel') { parts.push({ k, at, len: 4, bend: (r() < 0.5 ? -1 : 1) * 0.8 }); checks.push({ at, dir: 'down', k }); at += 12; }
     if (k === 'weave') {
       const first = r() < 0.5 ? 'left' : 'right';
       const poles = [];
@@ -415,6 +471,7 @@ export function agilityGame(body, ctx, done) {
     if (k === 'aframe') { parts.push({ k, at, len: 6 }); checks.push({ at, dir: 'up', k }); checks.push({ at: at + 3, dir: 'down', k }); at += 6 + 9; }
   }
   const END = at + 4;
+  const AH = 1.5;   // A자 경사로 꼭대기(m) — 실제 대회 1.7m 안팎
   body.innerHTML = `<div class="race2 ag2" id="ag"><canvas id="ag-cv"></canvas>
     <div class="r2-top"><span id="ag-life">♥♥♥</span><b id="ag-score">0점</b><span id="ag-combo"></span></div><div class="r2-prog ag-prog2"><i id="ag-bar"></i></div>
     <div class="ag-judge" id="ag-judge"></div>
@@ -432,13 +489,13 @@ export function agilityGame(body, ctx, done) {
   const speed = () => 5.2 + Math.min(2.4, (s / END) * 2.4);
   const judge = (txt, cls) => { $judge.textContent = txt; $judge.className = `ag-judge on ${cls}`; clearTimeout(judge.t); judge.t = setTimeout(() => { $judge.className = 'ag-judge'; }, 650); };
   const groundY = (pos) => {   // A자 경사로 위면 높이
-    for (const p of parts) if (p.k === 'aframe' && pos > p.at && pos < p.at + p.len) { const u = (pos - p.at) / p.len; return 1.0 * (1 - Math.abs(u * 2 - 1)); }
+    for (const p of parts) if (p.k === 'aframe' && pos > p.at && pos < p.at + p.len) { const u = (pos - p.at) / p.len; return AH * (1 - Math.abs(u * 2 - 1)); }
     return 0;
   };
   const act = (d, c) => {
     if (d === 'up' && c.k === 'hurdle') jump = 1;
     if (d === 'down' && c.k === 'tunnel') duck = 1;
-    if (d === 'left' || d === 'right') swayTo = d === 'left' ? -0.32 : 0.32;
+    if (d === 'left' || d === 'right') swayTo = d === 'left' ? -0.46 : 0.46;
   };
   const press = (d) => {
     if (!started || over || ended) return;
@@ -476,41 +533,94 @@ export function agilityGame(body, ctx, done) {
   addEventListener('keydown', onKey);
   const onResize = () => V.size();
   addEventListener('resize', onResize);
-  const LW = 2.0;
-  const drawPart = (p) => {
+  const TR = 0.45, AW = 0.6;   // 터널 반지름(실제 지름 60cm 안팎) · 경사로 반폭
+  const tunnelX = (p, pos) => p.bend * Math.sin(Math.PI * clamp((pos - p.at) / p.len, 0, 1));   // 휘어진 터널의 가운데 선
+  const tunnelNow = () => parts.find((p) => p.k === 'tunnel' && s > p.at && s < p.at + p.len);
+  const G = V.g;
+  const drawAframe = (zA, zP, zB) => {
+    const yAt = (zz) => (zz <= zA || zz >= zB ? 0 : AH * (1 - Math.abs(((zz - zA) / (zB - zA)) * 2 - 1)));
+    const run = (zB - zA) / 2, zone = run * (1.06 / Math.hypot(run, AH));   // 접촉 구역: 경사면 따라 1.06m
+    V.quad(-AW - 0.2, AW + 0.2, Math.max(zA, 0.7), zB + 0.5, 'rgba(60,40,20,.15)');
+    // 한쪽 면: 판 + 노란 접촉 구역 + 미끄럼 방지 살 + 양옆 난간
+    const slope = (z0, z1, top, c0, c1) => {
+      z0 = Math.max(z0, 0.7);
+      if (z1 <= z0) return;
+      V.quad(-AW, AW, z0, z1, top, yAt(z0), yAt(z1));
+      const a = Math.max(c0, z0), b = Math.min(c1, z1);
+      if (b > a) V.quad(-AW, AW, a, b, '#F2D24B', yAt(a), yAt(b));
+      for (let zz = zA + 0.15; zz < zB; zz += 0.3) if (zz > z0 && zz + 0.05 < z1) { const y = yAt(zz); V.box(-AW + 0.05, AW - 0.05, zz, zz + 0.05, y, y + 0.025, zz > c0 && zz < c1 ? '#D9B42C' : shade(top, 0.82)); }
+      for (const [x0, x1, xi] of [[-AW - 0.02, -AW + 0.05, -AW + 0.05], [AW - 0.05, AW + 0.02, AW - 0.05]]) {
+        V.poly([[xi, z0, yAt(z0)], [xi, z1, yAt(z1)], [xi, z1, yAt(z1) + 0.08], [xi, z0, yAt(z0) + 0.08]], '#6E4220');
+        V.poly([[x0, z0, yAt(z0) + 0.08], [x1, z0, yAt(z0) + 0.08], [x1, z1, yAt(z1) + 0.08], [x0, z1, yAt(z1) + 0.08]], '#8A5A30');
+      }
+    };
+    slope(zP, zB, '#C98446', zB - zone, zB);   // 먼 쪽(내려가는 면)
+    slope(zA, zP, '#D9894A', zA, zA + zone);   // 오르는 면
+    if (zP > 0.75) V.box(-AW - 0.02, AW + 0.02, zP - 0.04, zP + 0.04, AH, AH + 0.05, '#6E4220');   // 꼭대기 이음새
+  };
+  // 장애물 → 그릴 거리(z)별 조각들. 터널은 고리 14개로 나눠 아이 앞뒤를 제대로 가린다
+  const addPart = (p, items) => {
     const z = V.Z0 + (p.at - s);
     if (p.k === 'hurdle') {
-      if (z < 0.8 || z > 120) return;
-      for (const x of [-0.75, 0.75]) { const a = V.p(x, z), b = V.p(x, z, 0.75); if (a && b) { V.g.strokeStyle = '#7A5A3A'; V.g.lineWidth = Math.max(2, 0.06 * a.k); V.g.beginPath(); V.g.moveTo(a.x, a.y); V.g.lineTo(b.x, b.y); V.g.stroke(); } }
-      const a = V.p(-0.75, z, 0.45), b = V.p(0.75, z, 0.45);
-      if (a && b) { const n = 6; for (let i = 0; i < n; i++) { V.g.strokeStyle = i % 2 ? '#fff' : '#E8657A'; V.g.lineWidth = Math.max(3, 0.08 * a.k); V.g.beginPath(); V.g.moveTo(a.x + (b.x - a.x) * i / n, a.y); V.g.lineTo(a.x + (b.x - a.x) * (i + 1) / n, b.y); V.g.stroke(); } }
+      if (z < 0.7 || z > 120) return;
+      items.push({ z, draw: () => {
+        V.quad(-0.8, 0.8, z + 0.05, z + 0.32, 'rgba(60,40,20,.13)');
+        for (const [x0, x1] of [[-1.04, -0.8], [0.8, 1.04]]) { V.box(x0, x1, z - 0.03, z + 0.05, 0, 0.92, '#4F8FC0'); V.box(x0, x1, z - 0.03, z + 0.05, 0.92, 0.98, '#FFFFFF'); }   // 날개 판
+        V.box(-0.8, 0.8, z, z + 0.05, 0.42, 0.48, '#FFFFFF');
+        for (let i = 0; i < 6; i += 2) {
+          const a = -0.8 + (1.6 * i) / 6, b = -0.8 + (1.6 * (i + 1)) / 6;
+          V.poly([[a, z, 0.42], [b, z, 0.42], [b, z, 0.48], [a, z, 0.48]], '#E8657A');
+          V.poly([[a, z, 0.48], [b, z, 0.48], [b, z + 0.05, 0.48], [a, z + 0.05, 0.48]], '#F08A9A');
+        }
+      } });
     }
     if (p.k === 'tunnel') {
-      const z1 = z + p.len;
-      if (z1 < 0.8 || z > 140) return;
-      const ring = (zz, fill, stroke) => { const c = V.p(0, zz, 0.42); if (!c) return; const rx = 0.62 * c.k, ry = 0.46 * c.k; V.g.fillStyle = fill; V.g.strokeStyle = stroke; V.g.lineWidth = Math.max(2, 0.08 * c.k); V.g.beginPath(); V.g.ellipse(c.x, c.y + ry * 0.08, rx, ry, 0, Math.PI, 0); V.g.lineTo(c.x + rx, V.p(0, zz).y); V.g.lineTo(c.x - rx, V.p(0, zz).y); V.g.closePath(); V.g.fill(); if (stroke) V.g.stroke(); };
-      const inside = s > p.at - 0.2 && s < p.at + p.len;
-      if (inside) { const ze = V.Z0 + (p.at + p.len - s); if (ze > 1.2) ring(ze, 'rgba(111,168,216,.55)', '#3D78A8'); }   // 안에 있으면 나가는 구멍만
-      if (z > V.Z0 + 0.3) { ring(Math.max(z, 0.8), '#6FA8D8', '#3D78A8'); const c = V.p(0, z, 0.38); if (c) { V.g.fillStyle = 'rgba(30,60,90,.65)'; V.g.beginPath(); V.g.ellipse(c.x, c.y + 0.1 * c.k, 0.48 * c.k, 0.34 * c.k, 0, Math.PI, 0); V.g.lineTo(c.x + 0.48 * c.k, V.p(0, z).y); V.g.lineTo(c.x - 0.48 * c.k, V.p(0, z).y); V.g.closePath(); V.g.fill(); } }
+      const N = 14;
+      for (let i = N; i >= 0; i--) {
+        const ps = p.at + (p.len * i) / N, zz = V.Z0 + (ps - s);
+        if (zz < 0.8 || zz > 140) continue;
+        const xc = tunnelX(p, ps);
+        items.push({ z: zz + 0.002, draw: () => {
+          const c = V.p(xc, zz, TR);
+          if (!c) return;
+          const rr = TR * c.k, front = zz < V.Z0 - 0.05;   // 아이보다 카메라 쪽 고리는 반투명(천 너머로 아이가 비친다)
+          if (front) {   // 카메라 쪽: 천은 아주 옅게, 뼈대 고리만 또렷이 — 안의 아이가 보이게
+            const fa = clamp((zz - 0.8) / 1.4, 0, 1);
+            if (fa < 0.02) return;
+            G.globalAlpha = 0.04 * fa; G.fillStyle = '#4F8FC0'; G.beginPath(); G.arc(c.x, c.y, rr, 0, Math.PI * 2); G.fill();
+            G.globalAlpha = 0.75 * fa; G.strokeStyle = '#2F5F8A'; G.lineWidth = Math.max(2, 0.05 * c.k); G.stroke();
+            G.globalAlpha = 1;
+            return;
+          }
+          const inside = s > p.at - 0.1 && s < p.at + p.len;   // 아이가 안에 있으면 먼 고리는 안쪽 벽(더 어둡게)
+          G.globalAlpha = 1;
+          G.fillStyle = inside ? (i % 2 ? '#2F5F8A' : '#285378') : (i % 2 ? '#4F8FC0' : '#3D78A8');
+          G.beginPath(); G.arc(c.x, c.y, rr, 0, Math.PI * 2); G.fill();
+          G.strokeStyle = 'rgba(20,50,80,.5)'; G.lineWidth = Math.max(1, 0.03 * c.k); G.stroke();
+          G.fillStyle = 'rgba(255,255,255,.2)'; G.beginPath(); G.ellipse(c.x - rr * 0.25, c.y - rr * 0.6, rr * 0.5, rr * 0.2, -0.3, 0, Math.PI * 2); G.fill();
+          if (i === 0 && !front) {   // 입구: 깊은 구멍
+            const gr = G.createRadialGradient(c.x, c.y, rr * 0.1, c.x, c.y, rr * 0.84);
+            gr.addColorStop(0, '#0B1622'); gr.addColorStop(1, '#2A4866');
+            G.fillStyle = gr; G.beginPath(); G.arc(c.x, c.y, rr * 0.84, 0, Math.PI * 2); G.fill();
+          }
+          G.globalAlpha = 1;
+        } });
+      }
     }
     if (p.k === 'weave') {
+      const zA = V.Z0 + (p.poles[0].at - s) - 0.4, zB = V.Z0 + (p.poles[p.poles.length - 1].at - s) + 0.4;
+      if (zB > 0.7 && zA < 120) items.push({ z: zB + 0.01, draw: () => V.box(-0.04, 0.04, zA, zB, 0, 0.03, '#9AA3AD') });   // 바닥 레일
       for (const q of p.poles) {
-        const zz = V.Z0 + (q.at - s); if (zz < 0.8 || zz > 120) continue;
-        const x = q.dir === 'left' ? 0.28 : -0.28;     // 왼쪽으로 돌아야 하는 폴은 오른쪽에 서 있다
-        const a = V.p(x, zz), b = V.p(x, zz, 1.0);
-        if (!a || !b) continue;
-        const w = Math.max(2, 0.05 * a.k);
-        for (let i = 0; i < 5; i++) { V.g.strokeStyle = i % 2 ? '#fff' : '#F2A93B'; V.g.lineWidth = w; V.g.beginPath(); V.g.moveTo(a.x, a.y + (b.y - a.y) * i / 5); V.g.lineTo(a.x, a.y + (b.y - a.y) * (i + 1) / 5); V.g.stroke(); }
+        const zz = V.Z0 + (q.at - s);
+        if (zz < 0.7 || zz > 120) continue;
+        items.push({ z: zz, draw: () => { V.shadow(0.08, zz + 0.06, 0.28); V.pole(0, zz, 1.0, 0.028, ['#F2A93B', '#FFFFFF']); } });
       }
     }
     if (p.k === 'aframe') {
-      const zA = V.Z0 + (p.at - s), zP = zA + p.len / 2, zB = zA + p.len;
-      if (zB < 0.8 || zA > 140) return;
-      const z0 = Math.max(zA, 0.8), y0 = z0 > zA ? groundY(s + (z0 - V.Z0)) : 0;
-      V.quad(-0.62, 0.62, zP, zB, '#B5763D', 1.0, 0);
-      V.quad(-0.62, 0.62, z0, zP, '#D9894A', y0, 1.0);
-      V.quad(-0.62, 0.62, Math.max(zA, 0.8), Math.max(zA + 0.6, 0.9), '#F2D24B', y0, Math.min(1, y0 + 0.2));   // 접촉 구역(노랑)
-      for (let i = 1; i < 6; i++) { const zz = zA + i * 0.5; if (zz > 0.8 && zz < zP) V.line(-0.6, zz, 0.6, zz, 'rgba(90,50,20,.45)', 0.03, ((zz - zA) / (p.len / 2))); }
+      const zA = z, zP = zA + p.len / 2, zB = zA + p.len;
+      if (zB < 0.7 || zA > 140) return;
+      const on = s > p.at - 0.5 && s < p.at + p.len;
+      items.push({ z: on ? V.Z0 + 0.01 : zA + 3, draw: () => drawAframe(zA, zP, zB) });   // 경사로 위에 있을 땐 늘 아이 밑에
     }
   };
   let lastCount = '';
@@ -536,30 +646,29 @@ export function agilityGame(body, ctx, done) {
       if (started && jump <= 0 && groundY(s) === 0) { sfx.step(); const fp = V.p(sway, V.Z0); if (fp) V.emit(fp.x + (frameNo ? 10 : -10), fp.y, { n: 3, size: 6, speed: 60, spread: 1.4, ang: -Math.PI / 2 + (frameNo ? 0.6 : -0.6), life: 0.45 }); }
     }
     jump = Math.max(0, jump - dt * 1.9); duck = Math.max(0, duck - dt * 1.4);
-    sway += (swayTo - sway) * Math.min(1, dt * 10); swayTo *= Math.exp(-dt * 3);
+    const inWeave = parts.some((p) => p.k === 'weave' && s > p.at - 1.5 && s < p.at + p.poles.length * 1.6);
+    sway += (swayTo - sway) * Math.min(1, dt * 10); if (!inWeave) swayTo *= Math.exp(-dt * 3);   // 위브 중엔 다음 폴까지 그 쪽에 머문다
+    const tp = tunnelNow(); if (tp) { sway = tunnelX(tp, s); swayTo = sway; }   // 휘어진 터널은 길 따라
     // 카메라: 빠를수록 다가가며 화각 넓게 · 점프·경사로면 따라 오르고 · 지그재그면 기울기
-    const hyNow = groundY(s) + Math.sin(jump * Math.PI) * 0.55 * (jump > 0 ? 1 : 0);
+    const hj = jump > 0 ? Math.sin(jump * Math.PI) * 0.55 : 0;
     const spN = clamp((speed() - 5.2) / 2.4, 0, 1);
     V.dolly += (1 - 0.12 - 0.14 * spN - (combo >= 8 ? 0.05 : 0) - V.dolly) * Math.min(1, raw * 3);
-    V.pitch += (hyNow * V.H * 0.12 - V.pitch) * Math.min(1, raw * 6);
+    V.HC += (V.HCb + groundY(s) * 0.85 + hj * 0.3 - V.HC) * Math.min(1, raw * 7);   // 경사로·점프면 카메라도 실제로 같이 올라간다
+    V.pitch += (hj * V.H * 0.05 - V.pitch) * Math.min(1, raw * 6);
+    V.camX += (sway * (tp ? 0.75 : inWeave ? 0.12 : 0.35) - V.camX) * Math.min(1, raw * 6);   // 좌우로 따라가며 가까운 것·먼 것이 다르게 움직인다(시차)
     V.roll += (sway * 0.07 + (frameNo ? 1 : -1) * 0.004 - V.roll) * Math.min(1, raw * 8);
     V.bobY = -Math.abs(Math.sin(ft * Math.PI)) * 4;
     // 그리기
-    V.camX = 0;
     V.begin(raw);
     V.sky();
-    drawTrack(V, s, 1, LW, 0);
+    drawArena(V, s);
     V.speedLines(0.25 + spN * 0.35 + (combo >= 8 ? 0.35 : 0), t);
     const items = [];
-    for (const p of parts) {
-      let z = V.Z0 + (p.at - s);
-      if (p.k === 'aframe') z = s > p.at - 0.5 && s < p.at + p.len ? V.Z0 + 0.01 : z + 3;   // 경사로 위에 있을 땐 늘 아이 밑에
-      items.push({ z, draw: () => drawPart(p) });
-    }
+    for (const p of parts) addPart(p, items);
     // 화살표 표시(다음 3개)
     checks.filter((c) => !c.state).slice(0, 3).forEach((c, i) => {
       const z = V.Z0 + (c.at - s);
-      items.push({ z: z - 0.01, draw: () => { const p = V.p(c.k === 'weave' ? (c.dir === 'left' ? 0.28 : -0.28) : 0, z, c.k === 'tunnel' ? 1.1 : c.k === 'aframe' ? 1.6 : 1.25); if (!p) return; const rr = Math.max(9, Math.min(30, 0.22 * p.k)); V.g.globalAlpha = i ? 0.6 : 1; V.g.fillStyle = COLOR[c.dir]; V.g.beginPath(); V.g.arc(p.x, p.y, rr, 0, Math.PI * 2); V.g.fill(); V.g.strokeStyle = '#fff'; V.g.lineWidth = 3; V.g.stroke(); V.g.fillStyle = '#fff'; V.g.font = `900 ${Math.round(rr * 1.3)}px sans-serif`; V.g.textAlign = 'center'; V.g.textBaseline = 'middle'; V.g.fillText(ARROW[c.dir], p.x, p.y + 1); V.g.globalAlpha = 1; } });
+      items.push({ z: z - 0.01, draw: () => { const p = V.p(c.k === 'weave' ? (c.dir === 'left' ? -0.46 : 0.46) : 0, z, c.k === 'tunnel' ? 1.25 : c.k === 'aframe' ? groundY(c.at + 0.01) + 0.95 : 1.3); if (!p) return; const rr = Math.max(9, Math.min(30, 0.22 * p.k)); V.g.globalAlpha = i ? 0.6 : 1; V.g.fillStyle = COLOR[c.dir]; V.g.beginPath(); V.g.arc(p.x, p.y, rr, 0, Math.PI * 2); V.g.fill(); V.g.strokeStyle = '#fff'; V.g.lineWidth = 3; V.g.stroke(); V.g.fillStyle = '#fff'; V.g.font = `900 ${Math.round(rr * 1.3)}px sans-serif`; V.g.textAlign = 'center'; V.g.textBaseline = 'middle'; V.g.fillText(ARROW[c.dir], p.x, p.y + 1); V.g.globalAlpha = 1; } });
     });
     const zEnd = V.Z0 + (END - s);
     if (OWN) items.push({ z: zEnd, draw: () => { drawGoal(V, zEnd, 0.9); V.sprite(OWN, 0, zEnd + 0.4, 1.05); } });
@@ -567,17 +676,18 @@ export function agilityGame(body, ctx, done) {
     items.push({ z: V.Z0 - 0.001, draw: () => {
       if (!IM) return;
       const hy = groundY(s) + Math.sin(jump * Math.PI) * 0.55 * (jump > 0 ? 1 : 0);
-      V.shadow(sway, V.Z0, SIZE[ctx.type] * 0.55);
-      const h = SIZE[ctx.type] * (1 - Math.sin(duck * Math.PI) * 0.35);
-      const inTunnel = parts.some((p) => p.k === 'tunnel' && s > p.at && s < p.at + p.len);
+      const gy = groundY(s);
+      V.shadow(sway, V.Z0, SIZE[ctx.type] * 0.55 * (1 - (hy - gy) * 0.6), gy);   // 뛰면 그림자가 작아진다
+      const inTunnel = !!tunnelNow();
+      const h = SIZE[ctx.type] * (1 - Math.sin(duck * Math.PI) * 0.35) * (inTunnel ? 0.82 : 1);
       const ph = Math.abs(Math.sin(ft * Math.PI));
       const sq = jump > 0 ? 1 + Math.sin(jump * Math.PI) * 0.08 : 1 - 0.05 * ph;
-      V.spriteFx(IM[frameNo], sway, V.Z0, h, hy, inTunnel ? 0.55 : 1, sq, (frameNo ? 1 : -1) * 0.04 + sway * 0.4);
+      V.spriteFx(IM[frameNo], sway, V.Z0, h, hy, 1, sq, (frameNo ? 1 : -1) * 0.04 + sway * 0.4);
     } });
     items.sort((a, b) => b.z - a.z).forEach((it) => it.draw());
     V.drawParts(raw);
-    const inT = parts.some((p) => p.k === 'tunnel' && s > p.at && s < p.at + p.len);
-    V.vignette('rgba(20,40,70,A)', inT ? 0.75 : 0);
+    const camIn = parts.some((p) => p.k === 'tunnel' && s - V.Z0 * 0.6 > p.at && s - V.Z0 * 0.6 < p.at + p.len);
+    V.vignette('rgba(20,40,70,A)', camIn ? 0.45 : 0);
     V.vignette('rgba(230,60,60,A)', Math.max(0, 0.45 - (t - hitT) * 1.2));
     V.vignette('rgba(255,170,60,A)', combo >= 8 ? 0.22 : 0);
     V.end();

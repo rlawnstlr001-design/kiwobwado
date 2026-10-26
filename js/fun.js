@@ -3,7 +3,7 @@
 // ② 지금 일어나는 일(content/moments.json): 방을 보고 있으면 몇 분마다 하나 — 성격·단계에 따라 고른다
 // ③ 재주: 훈련(js/train.js)으로 배우는 재주 목록과 진도
 
-import { rng } from './engine.js?v=202610261252';
+import { rng } from './engine.js?v=202610261327';
 
 // 성격 — 아이마다 다르고 자라며 달라지기도 한다는 전제의 게임 설정(통계 아님)
 export const PERSONAS = {

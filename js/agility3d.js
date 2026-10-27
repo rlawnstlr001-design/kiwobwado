@@ -5,8 +5,8 @@
 // 좌표: x 오른쪽 · y 위 · 코스는 -z 방향(아이 위치 s m → z = -s)
 import * as THREE from 'three';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
-import { sfx } from './sound.js?v=202610271524';
-import { rng } from './engine.js?v=202610271524';
+import { sfx } from './sound.js?v=202610271549';
+import { rng } from './engine.js?v=202610271549';
 
 const SIZE = { small: 0.5, medium: 0.6, large: 0.7, short: 0.48, long: 0.5 };
 const KEY = { ArrowUp: 'up', ArrowDown: 'down', ArrowLeft: 'left', ArrowRight: 'right', KeyW: 'up', KeyS: 'down', KeyA: 'left', KeyD: 'right' };
@@ -26,7 +26,7 @@ const loadGLB = (src) => new Promise((res) => gltfLoader.load(src, res, undefine
 const texLoader = new THREE.TextureLoader();
 const loadTex = (src) => new Promise((res) => texLoader.load(src, (t) => { t.colorSpace = THREE.SRGBColorSpace; res(t); }, undefined, () => res(null)));
 let BACKS = null;
-const backs = (base) => (BACKS ??= fetch(`${base}art/sprite/backs.json?v=202610271524`).then((r) => (r.ok ? r.json() : {})).catch(() => ({})));
+const backs = (base) => (BACKS ??= fetch(`${base}art/sprite/backs.json?v=202610271549`).then((r) => (r.ok ? r.json() : {})).catch(() => ({})));
 async function backFrames(type, stage, base) {
   const have = await backs(base);
   const order = { baby: ['baby', 'teen', 'adult'], teen: ['teen', 'adult', 'baby'], adult: ['adult', 'teen', 'baby'] }[stage] ?? ['baby'];
@@ -258,8 +258,8 @@ export function agility3dGame(body, ctx, done, { base = '' } = {}) {
   let dog3 = null;
   // 우리 아이 3D(art/3d/pets/<성향_단계>.glb — 그림→Meshy 3D→tools/rig_pet.py로 시바 뼈대·동작, 키 1로 통일)가 있으면 그것, 없으면 강아지는 시바를 털색만 바꿔
   (async () => {
-    let g = await loadGLB(`${base}art/3d/pets/${ctx.type}_${ctx.stage}.glb?v=202610271524`), own = !!g;
-    if (!g && COAT[ctx.type]) g = await loadGLB(`${base}art/3d/shiba.glb?v=202610271524`);
+    let g = await loadGLB(`${base}art/3d/pets/${ctx.type}_${ctx.stage}.glb?v=202610271549`), own = !!g;
+    if (!g && COAT[ctx.type]) g = await loadGLB(`${base}art/3d/shiba.glb?v=202610271549`);
     return { g, own };
   })().then(({ g, own }) => {
     if (!g || over) return;
@@ -278,8 +278,10 @@ export function agility3dGame(body, ctx, done, { base = '' } = {}) {
     act.Gallop_Jump?.setLoop(THREE.LoopOnce, 1); if (act.Gallop_Jump) act.Gallop_Jump.clampWhenFinished = true;
     let cur = act.Idle; cur?.play();
     const to = (a, fade = 0.2) => { if (!a || a === cur) return; a.reset().play(); cur?.crossFadeTo(a, fade, false); cur = a; };
-    const bendBones = [['Torso3', 0.25], ['Neck1', 0.35], ['Neck2', 0.2], ['Head', 0.25], ['Back', -0.2], ['Tail1', -0.5]]
-      .map(([n, f]) => [model.getObjectByName(n), f]).filter(([b]) => b?.isBone);
+    // 몸 휘기 뼈와 쉬는 자세 회전(q0) — 동작에 키가 없는 뼈는 믹서가 되돌려 주지 않아, 매 프레임 q0로 되돌리지 않으면 회전이 쌓인다
+    // (10/27 사용자 "목돌아가고 난리도 아닌데?" — 목이 90°까지 돌아간 채 남았다)
+    const bendBones = [['Torso3', 0.15], ['Neck1', 0.2], ['Head', 0.15], ['Back', -0.12], ['Tail1', -0.3]]
+      .map(([n, f]) => [model.getObjectByName(n), f]).filter(([b]) => b?.isBone).map(([b, f]) => [b, f, b.quaternion.clone()]);
     dog3 = { holder, model, mixer, act, to, bend: bendBones, get cur() { return cur; } };
     pet.visible = false; blob.material.opacity = 0.35;
   });
@@ -347,7 +349,7 @@ export function agility3dGame(body, ctx, done, { base = '' } = {}) {
   });
   const onKey = (e) => { const d = KEY[e.code]; if (d) { e.preventDefault(); press(d); } };
   addEventListener('keydown', onKey);
-  el.__state = () => ({ s, next: checks.find((c) => !c.state) });   // 시험용
+  el.__state = () => ({ s, next: checks.find((c) => !c.state), heading, bend, dog: dog3 });   // 시험용(tools/lab_capture.js)
   const size = () => { const w = el.clientWidth, h = el.clientHeight; renderer.setSize(w, h, false); camera.aspect = w / h; camera.updateProjectionMatrix(); };
   addEventListener('resize', size); size();
 
@@ -418,6 +420,7 @@ export function agility3dGame(body, ctx, done, { base = '' } = {}) {
       else if (jump > 0.55 && act.Gallop_Jump) to(act.Gallop_Jump, 0.08);
       else if (jump <= 0.2) to(act.Gallop, 0.15);
       if (act.Gallop) act.Gallop.timeScale = 0.75 + speed() / 9;
+      for (const [b, , q0] of dog3.bend) b.quaternion.copy(q0);
       mixer.update(raw);
       // 몸 휘기: 동작을 입힌 뒤 머리·목은 가는 쪽으로, 엉덩이·꼬리는 반대로 세로축 기준 살짝 돌린다
       for (const [b, f] of dog3.bend) {

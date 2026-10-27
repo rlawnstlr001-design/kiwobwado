@@ -24,7 +24,7 @@
 <div id="stage"></div>
 <div class="pick" id="pick"><h1>장애물 경주 3D 시험판</h1><p>달릴 아이를 골라 주세요 · ↑ 허들·경사로 · ↓ 터널 · ←→ 위브 폴 (키보드·버튼·밀기)</p><div class="grid" id="grid"></div></div>
 <div class="res" id="res"><b id="res-score"></b><p id="res-note"></p><button class="btn btn-main" onclick="location.reload()">다시 하기</button></div>
-<script type="importmap">{ "imports": { "three": "https://unpkg.com/three@0.160.0/build/three.module.js" } }</script>
+<script type="importmap">{ "imports": { "three": "https://unpkg.com/three@0.160.0/build/three.module.js", "three/addons/": "https://unpkg.com/three@0.160.0/examples/jsm/" } }</script>
 <script type="module">
 import { agility3dGame } from '../../js/agility3d.js?v=dev';
 const NAMES = { small: '소형견', medium: '중형견', large: '대형견', short: '단모 고양이', long: '장모 고양이' }, ST = { baby: '아기', teen: '청소년', adult: '어른' };

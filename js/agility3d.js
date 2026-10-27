@@ -4,8 +4,9 @@
 //  아이·보호자는 우리 수채 그림(뒷모습 2걸음)을 3D 공간에 세운 판 — 그림체는 그대로, 공간·빛·그림자·카메라는 3D
 // 좌표: x 오른쪽 · y 위 · 코스는 -z 방향(아이 위치 s m → z = -s)
 import * as THREE from 'three';
-import { sfx } from './sound.js?v=202610270952';
-import { rng } from './engine.js?v=202610270952';
+import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
+import { sfx } from './sound.js?v=202610271151';
+import { rng } from './engine.js?v=202610271151';
 
 const SIZE = { small: 0.5, medium: 0.6, large: 0.7, short: 0.48, long: 0.5 };
 const KEY = { ArrowUp: 'up', ArrowDown: 'down', ArrowLeft: 'left', ArrowRight: 'right', KeyW: 'up', KeyS: 'down', KeyA: 'left', KeyD: 'right' };
@@ -14,12 +15,18 @@ const COLOR = { up: '#E8657A', down: '#4F8FC0', left: '#C98A2E', right: '#3F6B4F
 const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
 const shuffleR = (a, r) => { for (let i = a.length - 1; i > 0; i--) { const j = Math.floor(r() * (i + 1)); [a[i], a[j]] = [a[j], a[i]]; } return a; };
 const AH = 1.5, AW = 0.6, TR = 0.45;   // A자 경사로 꼭대기·반폭, 터널 반지름
+// 3D 강아지(10/27 사용자 "동물캐릭터랑 마지막 주인도 3d로"): Quaternius Shiba Inu(CC0, art/3d/shiba.glb — 동작 Gallop·Gallop_Jump·Idle 등)를 성향별 털색으로 칠한다.
+// 모델은 뼈대에 ×100 배율이 있어 세계 높이 ≈ 3.0(귀 끝) — 키 H m로 맞추려면 H/3.0배. 고양이·보호자 모델이 오기 전엔 그림 판으로 대신한다
+const COAT = { small: ['#E9DCC6', '#FFF7EA'], medium: ['#D69552', '#F7E4C8'], large: ['#E0B472', '#F4DFB6'] };
+const STAGE_K = { baby: 0.78, teen: 0.9, adult: 1 };
+const gltfLoader = new GLTFLoader();
+const loadGLB = (src) => new Promise((res) => gltfLoader.load(src, res, undefined, () => res(null)));
 
 // ---------- 그림 불러오기 ----------
 const texLoader = new THREE.TextureLoader();
 const loadTex = (src) => new Promise((res) => texLoader.load(src, (t) => { t.colorSpace = THREE.SRGBColorSpace; res(t); }, undefined, () => res(null)));
 let BACKS = null;
-const backs = (base) => (BACKS ??= fetch(`${base}art/sprite/backs.json?v=202610270952`).then((r) => (r.ok ? r.json() : {})).catch(() => ({})));
+const backs = (base) => (BACKS ??= fetch(`${base}art/sprite/backs.json?v=202610271151`).then((r) => (r.ok ? r.json() : {})).catch(() => ({})));
 async function backFrames(type, stage, base) {
   const have = await backs(base);
   const order = { baby: ['baby', 'teen', 'adult'], teen: ['teen', 'adult', 'baby'], adult: ['adult', 'teen', 'baby'] }[stage] ?? ['baby'];
@@ -247,6 +254,29 @@ export function agility3dGame(body, ctx, done, { base = '' } = {}) {
     if (ow) { ownerMat.map = ow; ownerMat.needsUpdate = true; const a = ow.image.width / ow.image.height; owner.scale.set(1.15 * a, 1.15, 1); owner.position.set(0, 0.575, -(END + 0.6)); owner.visible = true; }
   });
 
+  // 3D 강아지: 있으면 그림 판 대신
+  let dog3 = null;
+  if (COAT[ctx.type]) loadGLB(`${base}art/3d/shiba.glb`).then((g) => {
+    if (!g || over) return;
+    const model = g.scene, [main, light] = COAT[ctx.type];
+    model.traverse((o) => {
+      if (!o.isMesh) return;
+      o.castShadow = true; o.receiveShadow = true; o.frustumCulled = false;
+      const ms = Array.isArray(o.material) ? o.material : [o.material];
+      for (const m of ms) { if (m.name === 'Main') m.color.set(main); if (m.name === 'Main_Light') m.color.set(light); m.roughness = 0.9; m.metalness = 0; }
+    });
+    const k = (H * 1.25 * (STAGE_K[ctx.stage] ?? 1)) / 3.0;
+    const holder = new THREE.Group(); holder.add(model); model.scale.setScalar(k); scene.add(holder);
+    const mixer = new THREE.AnimationMixer(model);
+    const clip = (n) => THREE.AnimationClip.findByName(g.animations, n) ?? THREE.AnimationClip.findByName(g.animations, `AnimalArmature|${n}`);
+    const act = Object.fromEntries(['Gallop', 'Gallop_Jump', 'Idle', 'Idle_2', 'Jump_ToIdle', 'Walk'].map((n) => [n, clip(n) && mixer.clipAction(clip(n))]));
+    act.Gallop_Jump?.setLoop(THREE.LoopOnce, 1); if (act.Gallop_Jump) act.Gallop_Jump.clampWhenFinished = true;
+    let cur = act.Idle; cur?.play();
+    const to = (a, fade = 0.2) => { if (!a || a === cur) return; a.reset().play(); cur?.crossFadeTo(a, fade, false); cur = a; };
+    dog3 = { holder, model, mixer, act, to, get cur() { return cur; } };
+    pet.visible = false; blob.material.opacity = 0.35;
+  });
+
   // 화살표 표시(다음 3개) — 판정점 위에 떠 있는 동그란 표지
   const arrowMats = Object.fromEntries(Object.keys(ARROW).map((d) => [d, new THREE.SpriteMaterial({ map: arrowTex(d), transparent: true, depthTest: false })]));
   const arrows = [0, 1, 2].map(() => { const s = new THREE.Sprite(arrowMats.up.clone()); s.scale.set(0.42, 0.42, 1); s.renderOrder = 5; scene.add(s); return s; });
@@ -361,6 +391,18 @@ export function agility3dGame(body, ctx, done, { base = '' } = {}) {
     pet.scale.set(hgt * petAspect, hgt, 1);
     pet.position.set(sway, gy + hj + hgt / 2 + bob, -s);
     pet.rotation.set(0, Math.atan2(camPos.x - pet.position.x, camPos.z - pet.position.z), (frameNo ? 1 : -1) * 0.03 + (swayTo - sway) * 0.6);
+    if (dog3) {
+      const { holder, mixer, act, to } = dog3;
+      holder.position.set(sway, gy + hj, -s);
+      const slopeA = gy > 0 ? Math.atan2(AH, 3) * ((s - parts.find((p) => p.k === 'aframe' && s > p.at && s < p.at + p.len).at) / 6 < 0.5 ? 1 : -1) : 0;
+      holder.rotation.set(slopeA, Math.PI + (swayTo - sway) * 1.6 * (tp ? 0 : 1) + (tp ? -Math.cos(Math.PI * (s - tp.at) / tp.len) * tp.bend * 0.9 : 0), 0);
+      holder.scale.set(1, tp ? 0.82 : 1, 1);
+      if (!started || (ended && s >= END - 0.4)) to(act.Idle, 0.35);
+      else if (jump > 0.55 && act.Gallop_Jump) to(act.Gallop_Jump, 0.08);
+      else if (jump <= 0.2) to(act.Gallop, 0.15);
+      if (act.Gallop) act.Gallop.timeScale = 0.75 + speed() / 9;
+      mixer.update(raw);
+    }
     blob.position.set(sway, gy + 0.01, -s + 0.02); blob.scale.setScalar(H * 1.2 * (1 - hj * 0.6));
     if (gy > 0) { const u = (s - parts.find((p) => p.k === 'aframe' && s > p.at && s < p.at + p.len).at) / 6; blob.rotation.set(-Math.PI / 2 + (u < 0.5 ? 1 : -1) * Math.atan2(AH, 3), 0, 0); } else blob.rotation.set(-Math.PI / 2, 0, 0);
     // 터널: 아이가 안에 있으면 천을 반투명하게 — 안의 아이가 비친다

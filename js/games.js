@@ -1,8 +1,8 @@
 // 미니게임 — 코인 벌기(1코인 = 1,000원, 가격은 실제 평균값이라 "반려 생활비 = 이만큼의 노력"을 느끼게)
 // 반려 경주(봇 3마리와 원근 경주) · 장애물 경주(↑↓←→ 타이밍) — js/race.js(10/26, 산책 달리기 대체) · 사천성(반려용품 짝 맞추기) · 간식 맞추기(3개 맞추기)
 // 판마다 받는 코인은 앱(app.js)이 하루 한도 안에서 정한다
-import { C } from './content.js?v=202610271622';
-import { raceGame, agilityGame } from './race.js?v=202610271622';
+import { C } from './content.js?v=202610271729';
+import { raceGame, agilityGame } from './race.js?v=202610271729';
 
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 const shuffle = (a) => { for (let i = a.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [a[i], a[j]] = [a[j], a[i]]; } return a; };

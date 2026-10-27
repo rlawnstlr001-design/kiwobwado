@@ -5,8 +5,8 @@
 // 좌표: x 오른쪽 · y 위 · 코스는 -z 방향(아이 위치 s m → z = -s)
 import * as THREE from 'three';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
-import { sfx } from './sound.js?v=202610271447';
-import { rng } from './engine.js?v=202610271447';
+import { sfx } from './sound.js?v=202610271524';
+import { rng } from './engine.js?v=202610271524';
 
 const SIZE = { small: 0.5, medium: 0.6, large: 0.7, short: 0.48, long: 0.5 };
 const KEY = { ArrowUp: 'up', ArrowDown: 'down', ArrowLeft: 'left', ArrowRight: 'right', KeyW: 'up', KeyS: 'down', KeyA: 'left', KeyD: 'right' };
@@ -26,7 +26,7 @@ const loadGLB = (src) => new Promise((res) => gltfLoader.load(src, res, undefine
 const texLoader = new THREE.TextureLoader();
 const loadTex = (src) => new Promise((res) => texLoader.load(src, (t) => { t.colorSpace = THREE.SRGBColorSpace; res(t); }, undefined, () => res(null)));
 let BACKS = null;
-const backs = (base) => (BACKS ??= fetch(`${base}art/sprite/backs.json?v=202610271447`).then((r) => (r.ok ? r.json() : {})).catch(() => ({})));
+const backs = (base) => (BACKS ??= fetch(`${base}art/sprite/backs.json?v=202610271524`).then((r) => (r.ok ? r.json() : {})).catch(() => ({})));
 async function backFrames(type, stage, base) {
   const have = await backs(base);
   const order = { baby: ['baby', 'teen', 'adult'], teen: ['teen', 'adult', 'baby'], adult: ['adult', 'teen', 'baby'] }[stage] ?? ['baby'];
@@ -202,7 +202,7 @@ export function agility3dGame(body, ctx, done, { base = '' } = {}) {
       const g = new THREE.Group();
       const z0 = -(p.poles[0].at - 0.4), z1 = -(p.poles[p.poles.length - 1].at + 0.4);
       const rail = mesh(new THREE.BoxGeometry(0.08, 0.03, z0 - z1), std('#9AA3AD')); rail.position.set(0, 0.015, (z0 + z1) / 2); g.add(rail);
-      for (const q of p.poles) { const pl = mesh(new THREE.CylinderGeometry(0.028, 0.028, 1.0, 10), std('#ffffff', { map: poleT })); pl.position.set(0, 0.5, -q.at); g.add(pl); }
+      for (const q of p.poles) { const pl = mesh(new THREE.CylinderGeometry(0.028, 0.028, 1.0, 10), std('#ffffff', { map: poleT, transparent: true })); pl.position.set(0, 0.5, -q.at); g.add(pl); q.mesh = pl; }
       scene.add(g); p.obj = g;
     }
     if (p.k === 'tunnel') {
@@ -258,8 +258,8 @@ export function agility3dGame(body, ctx, done, { base = '' } = {}) {
   let dog3 = null;
   // 우리 아이 3D(art/3d/pets/<성향_단계>.glb — 그림→Meshy 3D→tools/rig_pet.py로 시바 뼈대·동작, 키 1로 통일)가 있으면 그것, 없으면 강아지는 시바를 털색만 바꿔
   (async () => {
-    let g = await loadGLB(`${base}art/3d/pets/${ctx.type}_${ctx.stage}.glb?v=202610271447`), own = !!g;
-    if (!g && COAT[ctx.type]) g = await loadGLB(`${base}art/3d/shiba.glb?v=202610271447`);
+    let g = await loadGLB(`${base}art/3d/pets/${ctx.type}_${ctx.stage}.glb?v=202610271524`), own = !!g;
+    if (!g && COAT[ctx.type]) g = await loadGLB(`${base}art/3d/shiba.glb?v=202610271524`);
     return { g, own };
   })().then(({ g, own }) => {
     if (!g || over) return;
@@ -278,7 +278,9 @@ export function agility3dGame(body, ctx, done, { base = '' } = {}) {
     act.Gallop_Jump?.setLoop(THREE.LoopOnce, 1); if (act.Gallop_Jump) act.Gallop_Jump.clampWhenFinished = true;
     let cur = act.Idle; cur?.play();
     const to = (a, fade = 0.2) => { if (!a || a === cur) return; a.reset().play(); cur?.crossFadeTo(a, fade, false); cur = a; };
-    dog3 = { holder, model, mixer, act, to, get cur() { return cur; } };
+    const bendBones = [['Torso3', 0.25], ['Neck1', 0.35], ['Neck2', 0.2], ['Head', 0.25], ['Back', -0.2], ['Tail1', -0.5]]
+      .map(([n, f]) => [model.getObjectByName(n), f]).filter(([b]) => b?.isBone);
+    dog3 = { holder, model, mixer, act, to, bend: bendBones, get cur() { return cur; } };
     pet.visible = false; blob.material.opacity = 0.35;
   });
 
@@ -309,10 +311,11 @@ export function agility3dGame(body, ctx, done, { base = '' } = {}) {
 
   // ---------- 상태·판정(race.js와 같음) ----------
   let t = 0, last = 0, raf = 0, over = false, started = false, s = 0, lives = 3, score = 0, combo = 0, maxCombo = 0, perfect = 0, good = 0, ended = false;
-  let frameNo = 0, ft = 0, jump = 0, duck = 0, sway = 0, swayTo = 0, slowUntil = 0, hitT = -9, shake = 0, lastCount = '', endT = 0;
+  let frameNo = 0, ft = 0, jump = 0, duck = 0, sway = 0, swayTo = 0, swayV = 0, swayA = 0, heading = 0, lean = 0, bend = 0, slowUntil = 0, hitT = -9, shake = 0, lastCount = '', endT = 0;
   const speed = () => 5.2 + Math.min(2.4, (s / END) * 2.4);
   const judge = (txt, cls) => { $judge.textContent = txt; $judge.className = `ag-judge on ${cls}`; clearTimeout(judge.t); judge.t = setTimeout(() => { $judge.className = 'ag-judge'; }, 650); };
   const petPos = () => new THREE.Vector3(sway, groundY(s), -s);
+  const _q = new THREE.Quaternion(), _ax = new THREE.Vector3();
   const act = (d, c) => {
     if (d === 'up' && c.k === 'hurdle') jump = 1;
     if (d === 'down' && c.k === 'tunnel') duck = 1;
@@ -386,8 +389,17 @@ export function agility3dGame(body, ctx, done, { base = '' } = {}) {
     }
     jump = Math.max(0, jump - dt * 1.9); duck = Math.max(0, duck - dt * 1.4);
     const inWeave = parts.some((p) => p.k === 'weave' && s > p.at - 1.5 && s < p.at + p.poles.length * 1.6);
-    sway += (swayTo - sway) * Math.min(1, dt * 10); if (!inWeave) swayTo *= Math.exp(-dt * 3);
-    const tp = tunnelAt(s); if (tp) { sway = tunnelX(tp, s); swayTo = sway; }
+    // 좌우 이동(10/27 사용자 "옆으로 가는게 부자연스러워"): 전엔 0.1초 만에 옆으로 미끄러지고 몸만 홱 돌았다.
+    // 이제 용수철(임계 감쇠)로 S자를 그리며 옮겨 가고, 몸은 실제 진행 방향(앞 속도·옆 속도)을 보고, 도는 쪽으로 기울고, 머리가 먼저 돈다.
+    if (!inWeave) swayTo *= Math.exp(-dt * 3);
+    const tp = tunnelAt(s);
+    if (tp) { const nx = tunnelX(tp, s); swayV = dt > 0 ? (nx - sway) / dt : 0; swayA = 0; sway = nx; swayTo = nx; }
+    else if (dt > 0) { const W = inWeave ? 15 : 8.5;   // 위브는 폴 간격(1.6m)이 짧아 더 빨리 옮겨야 폴을 안 뚫는다
+      swayA = W * W * (swayTo - sway) - 2 * W * swayV; swayV += swayA * dt; sway += swayV * dt; }
+    const fwd = started && !ended ? speed() : ended ? 3 : 0.001;
+    heading += (clamp(Math.atan2(swayV, Math.max(fwd, 1.5)) * 0.6, -0.42, 0.42) - heading) * Math.min(1, dt * 12);   // 몸통은 최대 24°만 — 더 돌면 트랙을 가로질러 뛰는 것처럼 보였다(실제 게임 화면 연속 프레임 확인)
+    lean += (clamp(-swayA * 0.012, -0.22, 0.22) - lean) * Math.min(1, dt * 10);
+    bend += (clamp((swayTo - sway) * 0.6 + swayV * 0.05, -0.32, 0.32) - bend) * Math.min(1, dt * 12);
     const gy = groundY(s), hj = jump > 0 ? Math.sin(jump * Math.PI) * 0.55 : 0;
 
     // 아이 판: 카메라 쪽을 보게(세로축만 돌림) + 걸음 출렁임·뛰면 늘어남·숙이면 납작
@@ -400,16 +412,24 @@ export function agility3dGame(body, ctx, done, { base = '' } = {}) {
       const { holder, mixer, act, to } = dog3;
       holder.position.set(sway, gy + hj, -s);
       const slopeA = gy > 0 ? Math.atan2(AH, 3) * ((s - parts.find((p) => p.k === 'aframe' && s > p.at && s < p.at + p.len).at) / 6 < 0.5 ? 1 : -1) : 0;
-      holder.rotation.set(slopeA, Math.PI + (swayTo - sway) * 1.6 * (tp ? 0 : 1) + (tp ? -Math.cos(Math.PI * (s - tp.at) / tp.len) * tp.bend * 0.9 : 0), 0);
+      holder.rotation.set(slopeA, Math.PI + heading, lean);
       holder.scale.set(1, tp ? 0.82 : 1, 1);
       if (!started || (ended && s >= END - 0.4)) to(act.Idle, 0.35);
       else if (jump > 0.55 && act.Gallop_Jump) to(act.Gallop_Jump, 0.08);
       else if (jump <= 0.2) to(act.Gallop, 0.15);
       if (act.Gallop) act.Gallop.timeScale = 0.75 + speed() / 9;
       mixer.update(raw);
+      // 몸 휘기: 동작을 입힌 뒤 머리·목은 가는 쪽으로, 엉덩이·꼬리는 반대로 세로축 기준 살짝 돌린다
+      for (const [b, f] of dog3.bend) {
+        b.getWorldQuaternion(_q); _ax.set(0, 1, 0).applyQuaternion(_q.invert());
+        b.rotateOnAxis(_ax, bend * f);
+        b.updateMatrixWorld(true);
+      }
     }
     blob.position.set(sway, gy + 0.01, -s + 0.02); blob.scale.setScalar(H * 1.2 * (1 - hj * 0.6));
     if (gy > 0) { const u = (s - parts.find((p) => p.k === 'aframe' && s > p.at && s < p.at + p.len).at) / 6; blob.rotation.set(-Math.PI / 2 + (u < 0.5 ? 1 : -1) * Math.atan2(AH, 3), 0, 0); } else blob.rotation.set(-Math.PI / 2, 0, 0);
+    // 위브: 아이가 지나간 폴은 카메라와 아이 사이에 끼어 화면을 가린다 — 흐리게
+    for (const p of parts) if (p.k === 'weave' && Math.abs(p.at - s) < 14) for (const q of p.poles) { const m = q.mesh.material, want = q.at < s - 0.1 ? 0.18 : 1; m.opacity += (want - m.opacity) * Math.min(1, raw * 10); m.depthWrite = m.opacity > 0.9; }
     // 터널: 아이가 안에 있으면 천을 반투명하게 — 안의 아이가 비친다
     for (const { p, mats } of tunnelMats) { const inside = s > p.at - 0.6 && s < p.at + p.len + 0.3; for (const m of mats) { m.opacity += ((inside ? 0.35 : 1) - m.opacity) * Math.min(1, raw * 8); m.depthWrite = m.opacity > 0.9; } }
 

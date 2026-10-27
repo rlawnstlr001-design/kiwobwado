@@ -1,0 +1,47 @@
+<!doctype html>
+<html lang="ko"><head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>장애물 경주 3D 시험 — 키워봐도될까</title>
+<!-- 10/27 장애물 경주 3D 시험판(js/agility3d.js). 앱에는 아직 안 들어간다 — 판정 뒤 games.js에 연결 -->
+<link rel="stylesheet" href="../../styles.css">
+<link rel="stylesheet" href="../../room.css">
+<style>
+  html, body { margin: 0; height: 100%; overflow: hidden; background: #BFE3F2; }
+  #stage { position: fixed; inset: 0; }
+  .ag3d::after { content: ''; position: absolute; inset: 0; pointer-events: none; z-index: 4;
+    box-shadow: inset 0 0 120px 40px rgba(230, 60, 60, var(--hit, 0)), inset 0 0 140px 30px rgba(255, 170, 60, var(--fire, 0)); }
+  .pick { position: fixed; inset: 0; z-index: 20; background: rgba(255, 253, 248, .96); display: grid; place-content: center; gap: 14px; text-align: center; font-family: Pretendard, -apple-system, 'Malgun Gothic', sans-serif; padding: 16px; }
+  .pick h1 { margin: 0; font-size: 22px; }
+  .pick p { margin: 0; color: #6E665C; font-size: 13px; }
+  .pick .grid { display: grid; grid-template-columns: repeat(5, minmax(0, 92px)); gap: 8px; justify-content: center; }
+  .pick button { border: 2px solid #2D2A26; background: #fff; border-radius: 12px; padding: 6px 4px; font: inherit; font-weight: 800; font-size: 12px; cursor: pointer; }
+  .pick button img { display: block; width: 100%; height: 64px; object-fit: contain; }
+  .res { position: fixed; inset: 0; z-index: 20; display: none; place-content: center; text-align: center; background: rgba(255, 253, 248, .92); font-family: Pretendard, sans-serif; gap: 10px; }
+  .res b { font-size: 34px; }
+</style>
+</head><body>
+<div id="stage"></div>
+<div class="pick" id="pick"><h1>장애물 경주 3D 시험판</h1><p>달릴 아이를 골라 주세요 · ↑ 허들·경사로 · ↓ 터널 · ←→ 위브 폴 (키보드·버튼·밀기)</p><div class="grid" id="grid"></div></div>
+<div class="res" id="res"><b id="res-score"></b><p id="res-note"></p><button class="btn btn-main" onclick="location.reload()">다시 하기</button></div>
+<script type="importmap">{ "imports": { "three": "https://unpkg.com/three@0.160.0/build/three.module.js" } }</script>
+<script type="module">
+import { agility3dGame } from '../../js/agility3d.js?v=dev';
+const NAMES = { small: '소형견', medium: '중형견', large: '대형견', short: '단모 고양이', long: '장모 고양이' }, ST = { baby: '아기', teen: '청소년', adult: '어른' };
+const grid = document.getElementById('grid');
+for (const t of Object.keys(NAMES)) for (const s of Object.keys(ST)) {
+  const b = document.createElement('button');
+  b.innerHTML = `<img src="../../art/sprite/${t}_${s}_idle.webp" alt="">${NAMES[t]} ${ST[s]}`;
+  b.onclick = () => {
+    document.getElementById('pick').remove();
+    const ctx = { type: t, stage: s, species: t === 'short' || t === 'long' ? 'cat' : 'dog', petName: '콩이' };
+    agility3dGame(document.getElementById('stage'), ctx, (score) => {
+      document.getElementById('res-score').textContent = `${score}점`;
+      document.getElementById('res-note').textContent = ctx.note || '';
+      document.getElementById('res').style.display = 'grid';
+    }, { base: '../../' });
+  };
+  grid.appendChild(b);
+}
+</script>
+</body></html>

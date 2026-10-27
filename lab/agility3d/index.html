@@ -26,7 +26,8 @@
 <div class="res" id="res"><b id="res-score"></b><p id="res-note"></p><button class="btn btn-main" onclick="location.reload()">다시 하기</button></div>
 <script type="importmap">{ "imports": { "three": "https://unpkg.com/three@0.160.0/build/three.module.js", "three/addons/": "https://unpkg.com/three@0.160.0/examples/jsm/" } }</script>
 <script type="module">
-import { agility3dGame } from '../../js/agility3d.js?v=dev';
+// 열 때마다 새 코드(시험판이라 자주 바뀐다 — 휴대폰이 옛 코드를 붙잡고 있던 10/27 문제)
+const { agility3dGame } = await import(`../../js/agility3d.js?t=${Date.now()}`);
 const NAMES = { small: '소형견', medium: '중형견', large: '대형견', short: '단모 고양이', long: '장모 고양이' }, ST = { baby: '아기', teen: '청소년', adult: '어른' };
 const grid = document.getElementById('grid');
 for (const t of Object.keys(NAMES)) for (const s of Object.keys(ST)) {

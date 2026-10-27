@@ -5,8 +5,8 @@
 // 좌표: x 오른쪽 · y 위 · 코스는 -z 방향(아이 위치 s m → z = -s)
 import * as THREE from 'three';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
-import { sfx } from './sound.js?v=202610271151';
-import { rng } from './engine.js?v=202610271151';
+import { sfx } from './sound.js?v=202610271246';
+import { rng } from './engine.js?v=202610271246';
 
 const SIZE = { small: 0.5, medium: 0.6, large: 0.7, short: 0.48, long: 0.5 };
 const KEY = { ArrowUp: 'up', ArrowDown: 'down', ArrowLeft: 'left', ArrowRight: 'right', KeyW: 'up', KeyS: 'down', KeyA: 'left', KeyD: 'right' };
@@ -26,7 +26,7 @@ const loadGLB = (src) => new Promise((res) => gltfLoader.load(src, res, undefine
 const texLoader = new THREE.TextureLoader();
 const loadTex = (src) => new Promise((res) => texLoader.load(src, (t) => { t.colorSpace = THREE.SRGBColorSpace; res(t); }, undefined, () => res(null)));
 let BACKS = null;
-const backs = (base) => (BACKS ??= fetch(`${base}art/sprite/backs.json?v=202610271151`).then((r) => (r.ok ? r.json() : {})).catch(() => ({})));
+const backs = (base) => (BACKS ??= fetch(`${base}art/sprite/backs.json?v=202610271246`).then((r) => (r.ok ? r.json() : {})).catch(() => ({})));
 async function backFrames(type, stage, base) {
   const have = await backs(base);
   const order = { baby: ['baby', 'teen', 'adult'], teen: ['teen', 'adult', 'baby'], adult: ['adult', 'teen', 'baby'] }[stage] ?? ['baby'];
@@ -256,16 +256,21 @@ export function agility3dGame(body, ctx, done, { base = '' } = {}) {
 
   // 3D 강아지: 있으면 그림 판 대신
   let dog3 = null;
-  if (COAT[ctx.type]) loadGLB(`${base}art/3d/shiba.glb`).then((g) => {
+  // 우리 아이 3D(art/3d/pets/<성향_단계>.glb — 그림→Meshy 3D→tools/rig_pet.py로 시바 뼈대·동작, 키 1로 통일)가 있으면 그것, 없으면 강아지는 시바를 털색만 바꿔
+  (async () => {
+    let g = await loadGLB(`${base}art/3d/pets/${ctx.type}_${ctx.stage}.glb`), own = !!g;
+    if (!g && COAT[ctx.type]) g = await loadGLB(`${base}art/3d/shiba.glb`);
+    return { g, own };
+  })().then(({ g, own }) => {
     if (!g || over) return;
-    const model = g.scene, [main, light] = COAT[ctx.type];
+    const model = g.scene, [main, light] = COAT[ctx.type] ?? ['#ffffff', '#ffffff'];
     model.traverse((o) => {
       if (!o.isMesh) return;
       o.castShadow = true; o.receiveShadow = true; o.frustumCulled = false;
       const ms = Array.isArray(o.material) ? o.material : [o.material];
-      for (const m of ms) { if (m.name === 'Main') m.color.set(main); if (m.name === 'Main_Light') m.color.set(light); m.roughness = 0.9; m.metalness = 0; }
+      for (const m of ms) { if (!own) { if (m.name === 'Main') m.color.set(main); if (m.name === 'Main_Light') m.color.set(light); } m.roughness = 0.9; m.metalness = 0; }
     });
-    const k = (H * 1.25 * (STAGE_K[ctx.stage] ?? 1)) / 3.0;
+    const k = own ? H * 1.3 : (H * 1.25 * (STAGE_K[ctx.stage] ?? 1)) / 3.0;
     const holder = new THREE.Group(); holder.add(model); model.scale.setScalar(k); scene.add(holder);
     const mixer = new THREE.AnimationMixer(model);
     const clip = (n) => THREE.AnimationClip.findByName(g.animations, n) ?? THREE.AnimationClip.findByName(g.animations, `AnimalArmature|${n}`);

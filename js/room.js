@@ -2,8 +2,8 @@
 // 아이가 숨 쉬고 돌아다니고, 방 안 물건(밥그릇·패드·현관)을 누르면 돌봄을 하고, 그림자 손으로 쓰다듬을 수 있다
 // 그림: art/room/room_wide.webp(방), art/sprite/<성향>_<단계>_<상태>.webp(배경 없는 아이), art/prop/*.webp(밥그릇·패드·화장실·장난감)
 
-import { mountRig, RIG } from './rig.js?v=202610271741';
-import { sfx, petLoop } from './sound.js?v=202610271741';
+import { mountRig, RIG } from './rig.js?v=202610271756';
+import { sfx, petLoop } from './sound.js?v=202610271756';
 
 // 그림자 손 — 만지는 자리에 따라 모양이 바뀐다(10/12 사용자 요청)
 // head: 위에서 손바닥을 얹어 머리를 쓰다듬기(손가락이 아래로) · chin: 아래에서 손가락을 구부려 턱 긁기 · body: 옆으로 눕힌 손으로 몸 쓸어 주기
@@ -98,7 +98,7 @@ let META = { sprite: {}, clip: {}, anim: {} };
 export async function loadAnim() {
   const get = (u) => fetch(u).then((r) => (r.ok ? r.json() : {})).catch(() => ({}));
   let meta;
-  [ANIM, CLIP, meta, LINK] = await Promise.all([get('art/anim/index.json?v=202610271741'), get('art/clip/index.json?v=202610271741'), get('art/meta.json?v=202610271741'), get('art/link/index.json?v=202610271741')]);
+  [ANIM, CLIP, meta, LINK] = await Promise.all([get('art/anim/index.json?v=202610271756'), get('art/clip/index.json?v=202610271756'), get('art/meta.json?v=202610271756'), get('art/link/index.json?v=202610271756')]);
   META = { sprite: {}, clip: {}, anim: {}, ...meta };
 }
 
@@ -112,8 +112,8 @@ let revertTimer = null;
 // 방을 살린다: 돌아다니기 + 쓰다듬기. onStroke(누적 쓰다듬은 정도)로 앱이 마음 점수를 올린다
 // shy: 데려온 뒤 적응(engine adaptOf) — 1이면 구석(CORNER)에 머물고 만지면 움찔, 0.5면 덜 돌아다니고 하트가 천천히 찬다
 // 그려 넣은 액세서리 레이어 목록(tools/make_wear.py) — 있으면 스티커 대신 아이별 레이어를 쓴다
-const LAYERS = fetch('art/wear/layers.json?v=202610271741').then((r) => (r.ok ? r.json() : {})).catch(() => ({}));
-const wearFor = (name, wear, L) => wear.map((w) => ((L[name] ?? []).includes(w.art) ? { src: `art/wear/${name}/${w.art}.webp?v=202610271741`, slot: w.slot, art: w.art, layer: true, pad: L._pad?.[name] ?? 0 } : w));
+const LAYERS = fetch('art/wear/layers.json?v=202610271756').then((r) => (r.ok ? r.json() : {})).catch(() => ({}));
+const wearFor = (name, wear, L) => wear.map((w) => ((L[name] ?? []).includes(w.art) ? { src: `art/wear/${name}/${w.art}.webp?v=202610271756`, slot: w.slot, art: w.art, layer: true, pad: L._pad?.[name] ?? 0 } : w));
 export function mountRoom({ type, stage, state, onStroke, canPet, onTip, wear = [], shy = 0 }) {
   clearInterval(wanderTimer);
   clearTimeout(revertTimer);
@@ -244,7 +244,7 @@ export function mountRoom({ type, stage, state, onStroke, canPet, onTip, wear = 
   // 연결 영상: 미리 받아 두고(Blob), 틀 때마다 새 주소를 만들어 첫 장면부터 다시 재생한다(같은 주소면 이어서 돈다)
   const blobs = {};
   if (LINK[name] && !REDUCE) for (const k of ['stand', 'sit', 'eatf', 'idle']) {
-    if (LINK[`${name}_${k}`]) fetch(`art/link/${name}_${k}.webp?v=202610271741`).then((r) => (r.ok ? r.blob() : null)).then((b) => {
+    if (LINK[`${name}_${k}`]) fetch(`art/link/${name}_${k}.webp?v=202610271756`).then((r) => (r.ok ? r.blob() : null)).then((b) => {
       if (!b) return;
       blobs[k] = b;
       // 반복 영상이 늦게 오면: 가만히 있는 중일 때 바로 바꿔 낀다

@@ -3,15 +3,15 @@
 // 너무 빨리(하기 전) 칭찬하거나 늦으면 점수 없음. 재주마다 TRICK_NEED점이면 배운 재주 — 배운 건 언제든 '재주 보기'
 // 근거: 보상(칭찬·간식) 기반 훈련 권장(avsab_training). 망설임·타이밍 값은 게임 설정이다.
 
-import { sfx } from './sound.js?v=202610271418';
-import { TRICKS, TRICK_NEED, TRAIN_MOD, nextTrick, learned, focusOf } from './fun.js?v=202610271418';
-import { josa } from './engine.js?v=202610271418';
+import { sfx } from './sound.js?v=202610271419';
+import { TRICKS, TRICK_NEED, TRAIN_MOD, nextTrick, learned, focusOf } from './fun.js?v=202610271419';
+import { josa } from './engine.js?v=202610271419';
 const eul = (w) => `'${w}'${josa(w, '을/를').slice(-1)}`;
 
 const ROUNDS = 5;
 // 재주 자세 그림 목록(tools/make_tricks.py → art/sprite/tricks.json). 없는 자세는 평소(앉은) 그림 + 말풍선
 let POSES = null;
-const loadPoses = () => (POSES ??= fetch('art/sprite/tricks.json?v=202610271418').then((r) => (r.ok ? r.json() : {})).catch(() => ({})));
+const loadPoses = () => (POSES ??= fetch('art/sprite/tricks.json?v=202610271419').then((r) => (r.ok ? r.json() : {})).catch(() => ({})));
 const loadImg = (src) => new Promise((res) => { const i = new Image(); i.onload = () => res(i); i.onerror = () => res(null); i.src = src; });
 
 export async function training(opts) {

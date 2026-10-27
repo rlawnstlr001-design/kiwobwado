@@ -9,8 +9,8 @@
 // 그림: 아이 뒷모습 art/sprite/<성향>_<단계>_back0·back1.webp(tools/make_tricks.py --back, 목록 backs.json — 없으면 같은 성향 다른 단계로),
 //       보호자 art/race/owner0~3.webp(tools/make_owners.py)
 
-import { sfx } from './sound.js?v=202610271729';
-import { rng } from './engine.js?v=202610271729';
+import { sfx } from './sound.js?v=202610271741';
+import { rng } from './engine.js?v=202610271741';
 
 const TYPES = ['small', 'medium', 'large', 'short', 'long'];
 const SIZE = { small: 0.5, medium: 0.6, large: 0.7, short: 0.48, long: 0.5 };     // 달릴 때 키(m) — 원근 크기 계산용
@@ -21,7 +21,7 @@ const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
 const shade = (hex, f) => { const n = parseInt(hex.slice(1), 16); const ch = (v) => Math.round(clamp(f > 1 ? v + (255 - v) * (f - 1) : v * f, 0, 255)); return `rgb(${ch(n >> 16)},${ch((n >> 8) & 255)},${ch(n & 255)})`; };
 const loadImg = (src) => new Promise((res) => { const i = new Image(); i.onload = () => res(i); i.onerror = () => res(null); i.src = src; });
 let BACKS = null;
-const backs = () => (BACKS ??= fetch('art/sprite/backs.json?v=202610271729').then((r) => (r.ok ? r.json() : {})).catch(() => ({})));
+const backs = () => (BACKS ??= fetch('art/sprite/backs.json?v=202610271741').then((r) => (r.ok ? r.json() : {})).catch(() => ({})));
 // 뒷모습 2장(없는 단계면 같은 성향의 가장 가까운 단계)
 async function backFrames(type, stage) {
   const have = await backs();

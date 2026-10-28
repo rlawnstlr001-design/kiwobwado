@@ -5,8 +5,8 @@
 // 좌표: x 오른쪽 · y 위 · 코스는 -z 방향(아이 위치 s m → z = -s)
 import * as THREE from 'three';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
-import { sfx } from './sound.js?v=202610271756';
-import { rng } from './engine.js?v=202610271756';
+import { sfx } from './sound.js?v=202610281852';
+import { rng } from './engine.js?v=202610281852';
 
 const SIZE = { small: 0.5, medium: 0.6, large: 0.7, short: 0.48, long: 0.5 };
 const KEY = { ArrowUp: 'up', ArrowDown: 'down', ArrowLeft: 'left', ArrowRight: 'right', KeyW: 'up', KeyS: 'down', KeyA: 'left', KeyD: 'right' };
@@ -26,7 +26,7 @@ const loadGLB = (src) => new Promise((res) => gltfLoader.load(src, res, undefine
 const texLoader = new THREE.TextureLoader();
 const loadTex = (src) => new Promise((res) => texLoader.load(src, (t) => { t.colorSpace = THREE.SRGBColorSpace; res(t); }, undefined, () => res(null)));
 let BACKS = null;
-const backs = (base) => (BACKS ??= fetch(`${base}art/sprite/backs.json?v=202610271756`).then((r) => (r.ok ? r.json() : {})).catch(() => ({})));
+const backs = (base) => (BACKS ??= fetch(`${base}art/sprite/backs.json?v=202610281852`).then((r) => (r.ok ? r.json() : {})).catch(() => ({})));
 async function backFrames(type, stage, base) {
   const have = await backs(base);
   const order = { baby: ['baby', 'teen', 'adult'], teen: ['teen', 'adult', 'baby'], adult: ['adult', 'teen', 'baby'] }[stage] ?? ['baby'];
@@ -258,8 +258,8 @@ export function agility3dGame(body, ctx, done, { base = '' } = {}) {
   let dog3 = null;
   // 우리 아이 3D(art/3d/pets/<성향_단계>.glb — 그림→Meshy 3D→tools/rig_pet.py로 시바 뼈대·동작, 키 1로 통일)가 있으면 그것, 없으면 강아지는 시바를 털색만 바꿔
   (async () => {
-    let g = await loadGLB(`${base}art/3d/pets/${ctx.type}_${ctx.stage}.glb?v=202610271756`), own = !!g;
-    if (!g && COAT[ctx.type]) g = await loadGLB(`${base}art/3d/shiba.glb?v=202610271756`);
+    let g = await loadGLB(`${base}art/3d/pets/${ctx.type}_${ctx.stage}.glb?v=202610281852`), own = !!g;
+    if (!g && COAT[ctx.type]) g = await loadGLB(`${base}art/3d/shiba.glb?v=202610281852`);
     return { g, own };
   })().then(({ g, own }) => {
     if (!g || over) return;
@@ -382,7 +382,7 @@ export function agility3dGame(body, ctx, done, { base = '' } = {}) {
       for (const c of checks) if (!c.state && c.at - s < -0.4) miss(c, '놓쳤어요!');
       if (lives <= 0) finish(false);
       else if (s >= END - 2.5) finish(true);
-    } else if (lives > 0 && s < END + 0.2) s += 3 * dt;   // 완주면 보호자 품까지
+    } else if (lives > 0 && s < END + 0.2) s += 1.4 * dt;   // 완주면 보호자 품까지 — 걸어서(우리 걷기 'Walk', 10/28)
     ft += dt * speed() * 0.9;
     if (ft >= 1) {
       ft = 0; frameNo ^= 1;
@@ -417,11 +417,13 @@ export function agility3dGame(body, ctx, done, { base = '' } = {}) {
       const slopeA = gy > 0 ? Math.atan2(AH, 3) * ((s - parts.find((p) => p.k === 'aframe' && s > p.at && s < p.at + p.len).at) / 6 < 0.5 ? 1 : -1) : 0;
       holder.rotation.set(slopeA, Math.PI + heading, lean);
       holder.scale.set(1, tp ? 0.82 : 1, 1);
-      if (!started || (ended && s >= END - 0.4)) to(act.Idle, 0.35);
+      if (!started || (ended && (lives <= 0 || s >= END + 0.15))) to(act.Idle, 0.35);
+      else if (ended && act.Walk) to(act.Walk, 0.3);
       else if (jump > 0.55 && act.Gallop_Jump) to(act.Gallop_Jump, 0.08);
       else if (jump <= 0.2) to(act.Dash ?? act.Run ?? act.Gallop, 0.15);   // 달릴 땐 우리 갤럽 'Dash'(로터리 갤럽 — 볼트 동물-걸음걸이)
       // 우리 아이 모델은 직접 만든 종종 달리기 'Run'(tools/rig_pet.py, 대각선 다리끼리) — 시바 갤럽은 뒷다리가 같이 차서 토끼처럼 보였다(10/27)
       if (act.Run) act.Run.timeScale = 1.45 + (speed() - 5.2) * 0.12;
+      if (act.Walk) act.Walk.timeScale = 1.3;
       if (act.Dash) act.Dash.timeScale = 1.6 + (speed() - 5.2) * 0.12;   // 한 바퀴 ≈ 0.36초(작은 개 갤럽 ≈ 3Hz)
       if (act.Gallop) act.Gallop.timeScale = 0.75 + speed() / 9;
       for (const [b, , q0] of dog3.bend) b.quaternion.copy(q0);

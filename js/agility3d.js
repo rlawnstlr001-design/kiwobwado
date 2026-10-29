@@ -5,8 +5,8 @@
 // 좌표: x 오른쪽 · y 위 · 코스는 -z 방향(아이 위치 s m → z = -s)
 import * as THREE from 'three';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
-import { sfx } from './sound.js?v=202610290934';
-import { rng } from './engine.js?v=202610290934';
+import { sfx } from './sound.js?v=202610291017';
+import { rng } from './engine.js?v=202610291017';
 
 const SIZE = { small: 0.5, medium: 0.6, large: 0.7, short: 0.48, long: 0.5 };
 const KEY = { ArrowUp: 'up', ArrowDown: 'down', ArrowLeft: 'left', ArrowRight: 'right', KeyW: 'up', KeyS: 'down', KeyA: 'left', KeyD: 'right' };
@@ -26,7 +26,7 @@ const loadGLB = (src) => new Promise((res) => gltfLoader.load(src, res, undefine
 const texLoader = new THREE.TextureLoader();
 const loadTex = (src) => new Promise((res) => texLoader.load(src, (t) => { t.colorSpace = THREE.SRGBColorSpace; res(t); }, undefined, () => res(null)));
 let BACKS = null;
-const backs = (base) => (BACKS ??= fetch(`${base}art/sprite/backs.json?v=202610290934`).then((r) => (r.ok ? r.json() : {})).catch(() => ({})));
+const backs = (base) => (BACKS ??= fetch(`${base}art/sprite/backs.json?v=202610291017`).then((r) => (r.ok ? r.json() : {})).catch(() => ({})));
 async function backFrames(type, stage, base) {
   const have = await backs(base);
   const order = { baby: ['baby', 'teen', 'adult'], teen: ['teen', 'adult', 'baby'], adult: ['adult', 'teen', 'baby'] }[stage] ?? ['baby'];
@@ -258,8 +258,8 @@ export function agility3dGame(body, ctx, done, { base = '' } = {}) {
   let dog3 = null;
   // 우리 아이 3D(art/3d/pets/<성향_단계>.glb — 그림→Meshy 3D→tools/rig_pet.py로 시바 뼈대·동작, 키 1로 통일)가 있으면 그것, 없으면 강아지는 시바를 털색만 바꿔
   (async () => {
-    let g = await loadGLB(`${base}art/3d/pets/${ctx.type}_${ctx.stage}.glb?v=202610290934`), own = !!g;
-    if (!g && COAT[ctx.type]) g = await loadGLB(`${base}art/3d/shiba.glb?v=202610290934`);
+    let g = await loadGLB(`${base}art/3d/pets/${ctx.type}_${ctx.stage}.glb?v=202610291017`), own = !!g;
+    if (!g && COAT[ctx.type]) g = await loadGLB(`${base}art/3d/shiba.glb?v=202610291017`);
     return { g, own };
   })().then(({ g, own }) => {
     if (!g || over) return;
@@ -274,9 +274,9 @@ export function agility3dGame(body, ctx, done, { base = '' } = {}) {
     const holder = new THREE.Group(); holder.add(model); model.scale.setScalar(k); scene.add(holder);
     const mixer = new THREE.AnimationMixer(model);
     const clip = (n) => THREE.AnimationClip.findByName(g.animations, n) ?? THREE.AnimationClip.findByName(g.animations, `AnimalArmature|${n}`);
-    const act = Object.fromEntries(['Leap', 'Dash', 'Run', 'Gallop', 'Gallop_Jump', 'Idle', 'Idle_2', 'Jump_ToIdle', 'Walk'].map((n) => [n, clip(n) && mixer.clipAction(clip(n))]));
+    const act = Object.fromEntries(['Sit', 'Down', 'Leap', 'Dash', 'Run', 'Gallop', 'Gallop_Jump', 'Idle', 'Idle_2', 'Jump_ToIdle', 'Walk'].map((n) => [n, clip(n) && mixer.clipAction(clip(n))]));
     act.Gallop_Jump?.setLoop(THREE.LoopOnce, 1); if (act.Gallop_Jump) act.Gallop_Jump.clampWhenFinished = true;
-    let cur = act.Idle; cur?.play();
+    let cur = act.Sit ?? act.Idle; cur?.play();   // 처음엔 앉아서
     const to = (a, fade = 0.2) => { if (!a || a === cur) return; a.reset().play(); cur?.crossFadeTo(a, fade, false); cur = a; };
     // 몸 휘기 뼈와 쉬는 자세 회전(q0) — 동작에 키가 없는 뼈는 믹서가 되돌려 주지 않아, 매 프레임 q0로 되돌리지 않으면 회전이 쌓인다
     // (10/27 사용자 "목돌아가고 난리도 아닌데?" — 목이 90°까지 돌아간 채 남았다)
@@ -364,7 +364,7 @@ export function agility3dGame(body, ctx, done, { base = '' } = {}) {
     const total = score + maxCombo * 10 + (clear ? 200 + lives * 50 : 0);
     ctx.note = clear ? `완주! 완벽 ${perfect} · 좋아요 ${good} · 최대 ${maxCombo}콤보` : `${checks.filter((c) => c.state).length}/${checks.length}에서 넘어졌어요`;
     if (clear) { sfx.fanfare(); sfx.cheer?.(); judge(`완주! 완벽 ${perfect} · 좋아요 ${good}`, 'perfect'); cheer = 1; confettiBurst(new THREE.Vector3(0, 0, -END)); }
-    else judge('넘어졌어요… 다음엔 끝까지!', 'miss');
+    else { judge('넘어졌어요… 다음엔 끝까지!', 'miss'); if (parts.some((p) => p.k === 'weave' && s > p.at - 1.5 && s < p.at + p.poles.length * 1.6)) swayTo = sway < 0 ? -0.5 : 0.5; }   // 위브 폴 위에 엎드리지 않게 옆으로
     setTimeout(() => { if (over) return; over = true; cleanup(); done(total); }, clear ? 3200 : 1600);
   };
 
@@ -417,7 +417,9 @@ export function agility3dGame(body, ctx, done, { base = '' } = {}) {
       const slopeA = gy > 0 ? Math.atan2(AH, 3) * ((s - parts.find((p) => p.k === 'aframe' && s > p.at && s < p.at + p.len).at) / 6 < 0.5 ? 1 : -1) : 0;
       holder.rotation.set(slopeA, Math.PI + heading, lean);
       holder.scale.set(1, tp ? 0.82 : 1, 1);
-      if (!started || (ended && (lives <= 0 || s >= END + 0.15))) to(act.Idle, 0.35);
+      // 출발 전엔 출발선에 앉아 기다리고, 완주하면 보호자 앞에 앉고, 넘어지면 엎드린다(우리 앉기·엎드리기, 10/29) — 시바 모델은 Idle
+      if (!started || (ended && s >= END + 0.15 && lives > 0)) to(act.Sit ?? act.Idle, 0.45);
+      else if (ended && lives <= 0) to(act.Down ?? act.Idle, 0.6);
       else if (ended && act.Walk) to(act.Walk, 0.3);
       else if (jump > 0.03 && act.Leap) {
         // 우리 점프 'Leap'(도약 → 정점 → 앞발 뻗기 → 착지, 10/29 — 볼트 동물-걸음걸이 '점프'): 높이 곡선(jump 1 → 0)과 같은 시간에 맞춰 직접 넘긴다

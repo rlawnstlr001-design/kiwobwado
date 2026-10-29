@@ -5,8 +5,8 @@
 // 좌표: x 오른쪽 · y 위 · 코스는 -z 방향(아이 위치 s m → z = -s)
 import * as THREE from 'three';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
-import { sfx } from './sound.js?v=202610291017';
-import { rng } from './engine.js?v=202610291017';
+import { sfx } from './sound.js?v=202610291228';
+import { rng } from './engine.js?v=202610291228';
 
 const SIZE = { small: 0.5, medium: 0.6, large: 0.7, short: 0.48, long: 0.5 };
 const KEY = { ArrowUp: 'up', ArrowDown: 'down', ArrowLeft: 'left', ArrowRight: 'right', KeyW: 'up', KeyS: 'down', KeyA: 'left', KeyD: 'right' };
@@ -26,7 +26,7 @@ const loadGLB = (src) => new Promise((res) => gltfLoader.load(src, res, undefine
 const texLoader = new THREE.TextureLoader();
 const loadTex = (src) => new Promise((res) => texLoader.load(src, (t) => { t.colorSpace = THREE.SRGBColorSpace; res(t); }, undefined, () => res(null)));
 let BACKS = null;
-const backs = (base) => (BACKS ??= fetch(`${base}art/sprite/backs.json?v=202610291017`).then((r) => (r.ok ? r.json() : {})).catch(() => ({})));
+const backs = (base) => (BACKS ??= fetch(`${base}art/sprite/backs.json?v=202610291228`).then((r) => (r.ok ? r.json() : {})).catch(() => ({})));
 async function backFrames(type, stage, base) {
   const have = await backs(base);
   const order = { baby: ['baby', 'teen', 'adult'], teen: ['teen', 'adult', 'baby'], adult: ['adult', 'teen', 'baby'] }[stage] ?? ['baby'];
@@ -242,6 +242,8 @@ export function agility3dGame(body, ctx, done, { base = '' } = {}) {
 
   // ---------- 아이·보호자(그림 판) ----------
   const H = SIZE[ctx.type] ?? 0.55;
+  // 점프 높이: 아기는 낮게(성장판이 닫히기 전 과한 점프는 조심하라는 권고 — 볼트 동물-걸음걸이 '강아지 vs 성견', 10/29)
+  const JH = { baby: 0.4, teen: 0.48 }[ctx.stage] ?? 0.55;
   const petMat = new THREE.MeshBasicMaterial({ transparent: true, alphaTest: 0.35, side: THREE.DoubleSide, toneMapped: false });   // 그림 색 그대로(3D 색 보정 제외)
   const pet = new THREE.Mesh(new THREE.PlaneGeometry(1, 1), petMat); pet.renderOrder = 2; scene.add(pet);
   const blob = new THREE.Mesh(new THREE.PlaneGeometry(1, 1), new THREE.MeshBasicMaterial({ map: roundTex('rgba(40,30,20,.45)', 'rgba(40,30,20,0)'), transparent: true, depthWrite: false }));
@@ -258,8 +260,8 @@ export function agility3dGame(body, ctx, done, { base = '' } = {}) {
   let dog3 = null;
   // 우리 아이 3D(art/3d/pets/<성향_단계>.glb — 그림→Meshy 3D→tools/rig_pet.py로 시바 뼈대·동작, 키 1로 통일)가 있으면 그것, 없으면 강아지는 시바를 털색만 바꿔
   (async () => {
-    let g = await loadGLB(`${base}art/3d/pets/${ctx.type}_${ctx.stage}.glb?v=202610291017`), own = !!g;
-    if (!g && COAT[ctx.type]) g = await loadGLB(`${base}art/3d/shiba.glb?v=202610291017`);
+    let g = await loadGLB(`${base}art/3d/pets/${ctx.type}_${ctx.stage}.glb?v=202610291228`), own = !!g;
+    if (!g && COAT[ctx.type]) g = await loadGLB(`${base}art/3d/shiba.glb?v=202610291228`);
     return { g, own };
   })().then(({ g, own }) => {
     if (!g || over) return;
@@ -402,7 +404,7 @@ export function agility3dGame(body, ctx, done, { base = '' } = {}) {
     heading += (clamp(Math.atan2(swayV, Math.max(fwd, 1.5)) * 0.6, -0.42, 0.42) - heading) * Math.min(1, dt * 12);   // 몸통은 최대 24°만 — 더 돌면 트랙을 가로질러 뛰는 것처럼 보였다(실제 게임 화면 연속 프레임 확인)
     lean += (clamp(-swayA * 0.012, -0.22, 0.22) - lean) * Math.min(1, dt * 10);
     bend += (clamp((swayTo - sway) * 0.6 + swayV * 0.05, -0.32, 0.32) - bend) * Math.min(1, dt * 12);
-    const gy = groundY(s), hj = jump > 0 ? Math.sin(jump * Math.PI) * 0.55 : 0;
+    const gy = groundY(s), hj = jump > 0 ? Math.sin(jump * Math.PI) * JH : 0;
 
     // 아이 판: 카메라 쪽을 보게(세로축만 돌림) + 걸음 출렁임·뛰면 늘어남·숙이면 납작
     const bob = Math.abs(Math.sin(ft * Math.PI)) * 0.03;

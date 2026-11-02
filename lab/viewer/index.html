@@ -70,7 +70,7 @@ async function load(src, x, tag) {
   const root = g.scene;
   // rig_pet.py가 키 1·바닥 0으로 맞춰 내보낸다 → 실제 아이 키 정도(0.35m)로 (Box3는 뼈대 배율 때문에 틀린 값을 준다)
   root.scale.setScalar(0.35); root.position.set(x, 0, 0);
-  root.rotation.y = Math.PI;   // 머리가 +z(카메라 쪽 기본 '앞')로
+  // 돌리지 않는다: 블렌더 −y(머리)가 glTF에선 +z, 블렌더 +x(왼쪽 다리 .L)는 +x — 보는 방향 버튼이 이 축에 맞춰져 있다
   root.traverse((o) => { if (o.isMesh) { o.castShadow = true; o.frustumCulled = false; } });
   scene.add(root);
   const mixer = new THREE.AnimationMixer(root), clips = {};

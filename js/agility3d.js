@@ -260,8 +260,8 @@ export function agility3dGame(body, ctx, done, { base = '' } = {}) {
   let dog3 = null;
   // 우리 아이 3D(art/3d/pets/<성향_단계>.glb — 그림→Meshy 3D→tools/rig_pet.py로 시바 뼈대·동작, 키 1로 통일)가 있으면 그것, 없으면 강아지는 시바를 털색만 바꿔
   (async () => {
-    let g = await loadGLB(`${base}art/3d/pets/${ctx.type}_${ctx.stage}.glb?v=202611021420`), own = !!g;
-    if (!g && COAT[ctx.type]) g = await loadGLB(`${base}art/3d/shiba.glb?v=202611021420`);
+    let g = await loadGLB(`${base}art/3d/pets/${ctx.type}_${ctx.stage}.glb?v=202611021400b`), own = !!g;
+    if (!g && COAT[ctx.type]) g = await loadGLB(`${base}art/3d/shiba.glb?v=202611021400b`);
     return { g, own };
   })().then(({ g, own }) => {
     if (!g || over) return;
@@ -429,9 +429,9 @@ export function agility3dGame(body, ctx, done, { base = '' } = {}) {
       } else if (jump > 0.55 && act.Gallop_Jump) to(act.Gallop_Jump, 0.08);
       else if (jump <= 0.2 || act.Leap) to(act.Dash ?? act.Run ?? act.Gallop, 0.12);   // 달릴 땐 우리 갤럽 'Dash'(로터리 갤럽 — 볼트 동물-걸음걸이)
       // 우리 아이 모델은 직접 만든 종종 달리기 'Run'(tools/rig_pet.py, 대각선 다리끼리) — 시바 갤럽은 뒷다리가 같이 차서 토끼처럼 보였다(10/27)
-      if (act.Run) act.Run.timeScale = 1.45 + (speed() - 5.2) * 0.12;
+      if (act.Run) act.Run.timeScale = 1.81 + (speed() - 5.2) * 0.15;   // 20프레임(11/2 16→20, 한 바퀴 시간 그대로)
       if (act.Walk) act.Walk.timeScale = 1.3;
-      if (act.Dash) act.Dash.timeScale = 1.6 + (speed() - 5.2) * 0.12;   // 한 바퀴 ≈ 0.36초(작은 개 갤럽 ≈ 3Hz)
+      if (act.Dash) act.Dash.timeScale = 2.4 + (speed() - 5.2) * 0.18;   // 한 바퀴 ≈ 0.36초(작은 개 갤럽 ≈ 3Hz) — 21프레임(11/2 14→21, 발 떼는 순간을 촘촘히)
       if (act.Gallop) act.Gallop.timeScale = 0.75 + speed() / 9;
       for (const [b, , q0] of dog3.bend) b.quaternion.copy(q0);
       mixer.update(raw);

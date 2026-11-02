@@ -32,7 +32,7 @@
   <div class="lbl">보조 표시</div>
   <div class="row"><button id="trail" class="on">발자취</button><button id="bones">뼈</button><button id="wire">격자</button></div>
   <div class="lbl">눈</div>
-  <div class="row"><button id="blink">눈 깜빡</button><button id="half">반쯤 감기</button></div>
+  <div class="row"><button id="blink">눈 깜빡</button><button id="half">반쯤 감기</button><button id="mouth">입꼬리 당김</button></div>
   <div class="note">마우스 왼쪽 끌기 = 돌리기 · 휠 = 확대 · 오른쪽 끌기 = 옮기기<br>발자취: 빨강 뒷발 · 파랑 앞발(왼쪽 다리)</div>
 </div>
 <div class="tag" id="tagA" style="display:none"></div><div class="tag" id="tagB" style="display:none"></div>
@@ -40,7 +40,7 @@
 <script type="module">
 import * as THREE from 'three';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
-import { makeBlinker } from '../../js/blink.js?v=202611021700';
+import { makeBlinker, makeMorph } from '../../js/blink.js?v=202611021730';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 
 const q = new URLSearchParams(location.search);
@@ -87,7 +87,7 @@ async function load(src, x, tag) {
     return { ln };
   });
   if (tag) { const el = document.getElementById(tag.id); el.textContent = tag.text; el.style.display = 'block'; el.style[tag.side] = '14px'; }
-  const pet = { root, mixer, clips, bonesHelper, paws, trails, action: null, blink: makeBlinker(root) };
+  const pet = { root, mixer, clips, bonesHelper, paws, trails, action: null, blink: makeBlinker(root), mouth: makeMorph(root, 'MouthBack') };
   pets.push(pet); return pet;
 }
 
@@ -109,7 +109,7 @@ function play(name) {
 }
 function step(dt) {
   for (const p of pets) {
-    p.mixer.update(dt); p.blink.update(Math.max(dt, 0));   // 깜빡임도 재생 속도를 따른다(0.2배면 천천히)
+    p.mixer.update(dt); p.blink.update(Math.max(dt, 0)); p.mouth.update(Math.abs(dt));   // 깜빡임도 재생 속도를 따른다(0.2배면 천천히)
   }
   const a = pets[0]?.action;
   if (a) document.getElementById('fr').textContent = `${Math.round(a.time * FPS)} / ${Math.round(a.getClip().duration * FPS)}`;
@@ -145,6 +145,7 @@ $('trail').onclick = (e) => { e.target.classList.toggle('on'); pets.forEach((p) 
 $('bones').onclick = (e) => { e.target.classList.toggle('on'); pets.forEach((p) => (p.bonesHelper.visible = e.target.classList.contains('on'))); };
 $('blink').onclick = () => pets.forEach((p) => p.blink.blink());
 $('half').onclick = (e) => { e.target.classList.toggle('on'); pets.forEach((p) => (p.blink.base = e.target.classList.contains('on') ? 0.5 : 0)); };
+$('mouth').onclick = (e) => { e.target.classList.toggle('on'); pets.forEach((p) => (p.mouth.target = e.target.classList.contains('on') ? 1 : 0)); };
 $('wire').onclick = (e) => { e.target.classList.toggle('on'); grid.visible = e.target.classList.contains('on'); };
 play(q.get('act') || 'Dash'); view(q.get('view') || '옆(왼쪽)');
 if (q.get('speed')) { speed = +q.get('speed'); $('spd').value = speed; $('spdv').textContent = speed.toFixed(2); }

@@ -8,7 +8,7 @@ import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import { sfx } from './sound.js?v=202610291228';
 import { rng } from './engine.js?v=202610291228';
 import { haptic } from './native.js?v=202611021450';
-import { makeBlinker } from './blink.js?v=202611021700';
+import { makeBlinker, makeMorph } from './blink.js?v=202611021730';
 
 const SIZE = { small: 0.5, medium: 0.6, large: 0.7, short: 0.48, long: 0.5 };
 const KEY = { ArrowUp: 'up', ArrowDown: 'down', ArrowLeft: 'left', ArrowRight: 'right', KeyW: 'up', KeyS: 'down', KeyA: 'left', KeyD: 'right' };
@@ -262,8 +262,8 @@ export function agility3dGame(body, ctx, done, { base = '' } = {}) {
   let dog3 = null;
   // 우리 아이 3D(art/3d/pets/<성향_단계>.glb — 그림→Meshy 3D→tools/rig_pet.py로 시바 뼈대·동작, 키 1로 통일)가 있으면 그것, 없으면 강아지는 시바를 털색만 바꿔
   (async () => {
-    let g = await loadGLB(`${base}art/3d/pets/${ctx.type}_${ctx.stage}.glb?v=202611021700`), own = !!g;
-    if (!g && COAT[ctx.type]) g = await loadGLB(`${base}art/3d/shiba.glb?v=202611021700`);
+    let g = await loadGLB(`${base}art/3d/pets/${ctx.type}_${ctx.stage}.glb?v=202611021730`), own = !!g;
+    if (!g && COAT[ctx.type]) g = await loadGLB(`${base}art/3d/shiba.glb?v=202611021730`);
     return { g, own };
   })().then(({ g, own }) => {
     if (!g || over) return;
@@ -286,7 +286,7 @@ export function agility3dGame(body, ctx, done, { base = '' } = {}) {
     // (10/27 사용자 "목돌아가고 난리도 아닌데?" — 목이 90°까지 돌아간 채 남았다)
     const bendBones = [['Torso3', 0.15], ['Neck1', 0.2], ['Head', 0.15], ['Back', -0.12], ['Tail1', -0.3]]
       .map(([n, f]) => [model.getObjectByName(n), f]).filter(([b]) => b?.isBone).map(([b, f]) => [b, f, b.quaternion.clone()]);
-    dog3 = { holder, model, mixer, act, to, bend: bendBones, blink: makeBlinker(model), get cur() { return cur; } };
+    dog3 = { holder, model, mixer, act, to, bend: bendBones, blink: makeBlinker(model), mouth: makeMorph(model, 'MouthBack', 3), get cur() { return cur; } };
     pet.visible = false; blob.material.opacity = 0.35;
   });
 
@@ -438,6 +438,7 @@ export function agility3dGame(body, ctx, done, { base = '' } = {}) {
       if (act.Gallop) act.Gallop.timeScale = 0.75 + speed() / 9;
       for (const [b, , q0] of dog3.bend) b.quaternion.copy(q0);
       mixer.update(raw); dog3.blink.update(raw);   // 눈 깜빡임(셰이프키 Blink — 없으면 아무것도 안 함)
+      dog3.mouth.target = ended && lives <= 0 ? 0.7 : 0; dog3.mouth.update(raw);   // 실패해 엎드리면 입꼬리를 뒤로(좌절 — 볼트 동물-몸짓언어)
       // 몸 휘기: 동작을 입힌 뒤 머리·목은 가는 쪽으로, 엉덩이·꼬리는 반대로 세로축 기준 살짝 돌린다
       for (const [b, f] of dog3.bend) {
         b.getWorldQuaternion(_q); _ax.set(0, 1, 0).applyQuaternion(_q.invert());

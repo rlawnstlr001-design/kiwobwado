@@ -390,6 +390,17 @@ body.playing { overflow: hidden; }
 .mg-body:has(.mgp) { padding: 0; align-items: stretch; }
 .kpg-root.mgp { flex: 1; width: 100%; height: 100%; --kpg-accent: #E8865A; --kpg-bg: #FFF7EC; }
 .mgp .kpg-title { visibility: hidden; }
+/* 경주 3D(js/race3d.js·agility3d.js): 실수하면 빨간 번쩍(--hit), 콤보·스퍼트면 주황 불꽃(--fire) */
+.ag3d::after, .r3d::after { content: ''; position: absolute; inset: 0; pointer-events: none; z-index: 4; box-shadow: inset 0 0 120px 40px rgba(230, 60, 60, var(--hit, 0)), inset 0 0 140px 30px rgba(255, 170, 60, var(--fire, 0)); }
+/* 게임 중엔 판이 화면을 꽉 채운다(11/2 사용자 "위에 불필요한 부분이 너무 커") — 위 막대(제목·코인)는 접고 닫기 버튼만 왼쪽 위에 띄운다.
+   코인은 결과 화면에서 보인다. 패키지 점수 칩은 한 줄로 작게 */
+.mg.in-game .mg-bar { position: absolute; z-index: 30; top: calc(env(safe-area-inset-top) + 6px); left: calc(env(safe-area-inset-left) + 6px); padding: 0; border: 0; background: none; }
+.mg.in-game .mg-bar > :not(.mg-x) { display: none; }
+.mg.in-game .mg-x { width: 34px; height: 34px; font-size: 14px; background: rgba(255, 255, 255, .85); box-shadow: 0 1px 4px rgba(0, 0, 0, .18); }
+.mg.in-game .mg-body:not(:has(.race2, .race, .ag, .mgp)) { padding-top: 46px; }
+.mgp .kpg-top { padding: 4px 8px 4px 48px; min-height: 42px; }
+.mgp .kpg-chip { flex-direction: row; align-items: baseline; gap: 4px; padding: 3px 10px; min-width: 0; }
+.mgp .kpg-chip b { font-size: 16px; }
 .race, .ag { position: absolute; inset: 0; overflow: hidden; touch-action: none; user-select: none; -webkit-user-select: none; }
 .race { cursor: pointer; background: #EAF4F2; }
 .race-cv { position: absolute; inset: 0; width: 100%; height: 100%; display: block; }

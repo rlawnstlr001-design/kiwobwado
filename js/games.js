@@ -4,10 +4,10 @@
 // 11/2 추가 4종(먹이 받기·높이 쌓기·카드 짝 맞추기·OX 퀴즈)은 다른 세션에서 만든 패키지(js/mg — README 참고)의 '판'만 빌려 쓴다:
 // 패키지 자체 결과 화면·보상 규칙·광고 2배·하루 횟수는 쓰지 않고, 점수 → 코인·결과 화면은 이 앱 규칙(1코인 = 1,000원, 하루 한도)을 따른다.
 // 패키지 클래스 접두어는 앱의 .mg-* 와 겹쳐 kpg- 로 바꿔 넣었다. 문제 은행(196KB)이 있어 게임을 고를 때 불러온다
-import { C } from './content.js?v=202611021917';
-import { raceGame, agilityGame } from './race.js?v=202611021917';
-import { sfx } from './sound.js?v=202611021917';
-import { haptic } from './native.js?v=202611021917';
+import { C } from './content.js?v=202611022158';
+import { raceGame, agilityGame } from './race.js?v=202611022158';
+import { sfx } from './sound.js?v=202611022158';
+import { haptic } from './native.js?v=202611022158';
 
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 const shuffle = (a) => { for (let i = a.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [a[i], a[j]] = [a[j], a[i]]; } return a; };
@@ -43,20 +43,20 @@ export function openGames(ctx) {
   root.querySelector('#mg-x').addEventListener('click', close);
 
   const menu = () => {
-    stop?.(); stop = null;
+    stop?.(); stop = null; root.classList.remove('in-game');
     root.querySelector('.mg-title').textContent = '미니게임';
     body.innerHTML = `<div class="mg-menu">${Object.entries(GAMES).map(([k, g]) => `<button class="mg-card" data-g="${k}"><span class="mg-ic">${g.icon}</span><b>${titleOf(k, ctx.species)}</b><small>${g.desc}</small><span class="mg-best">${ctx.best[k] ? `최고 ${ctx.best[k]}점` : '처음 해 봐요'}</span></button>`).join('')}</div>
       <p class="mg-note">1코인 = 1,000원. 펫샵·병원 가격은 실제 평균값 그대로예요. 하루에 벌 수 있는 코인은 ${ctx.cap}개까지 — 일할 수 있는 시간이 정해져 있듯이요.</p>`;
     body.onclick = (e) => { const b = e.target.closest('[data-g]'); if (b) play(b.dataset.g); };
   };
   const play = (k) => {
-    body.onclick = null;
+    body.onclick = null; root.classList.add('in-game');   // 게임 중엔 위 막대를 접어 판이 화면을 꽉 채운다(room.css .mg.in-game, 11/2 사용자)
     root.querySelector('.mg-title').textContent = titleOf(k, ctx.species);
-    const run = { race: raceGame, agility: agilityGame, run: runGame, shisen: shisenGame, match: matchGame, catch: pkgGame('catch'), stack: pkgGame('stack'), memory: pkgGame('memory'), quiz: pkgGame('quiz') }[k];
+    const run = { race: lazy3d('race', raceGame), agility: lazy3d('agility', agilityGame), run: runGame, shisen: shisenGame, match: matchGame, catch: pkgGame('catch'), stack: pkgGame('stack'), memory: pkgGame('memory'), quiz: pkgGame('quiz') }[k];
     stop = run(body, ctx, (score) => finish(k, score));
   };
   const finish = (k, score) => {
-    stop = null;
+    stop = null; root.classList.remove('in-game');
     const r = ctx.onReward(k, score);
     ctx.coins = r.coins; ctx.earned = r.earned; ctx.best[k] = Math.max(ctx.best[k] || 0, score);
     root.querySelector('#mg-coins').textContent = r.coins;
@@ -71,6 +71,21 @@ export function openGames(ctx) {
   };
   menu();
   return close;
+}
+
+// ---------- 경주 2종 3D(js/race3d.js·agility3d.js, 11/2 사용자 "아직 예전 2d야") ----------
+// three.js(1.2MB)·아이 3D는 게임을 고를 때 불러온다. WebGL이 없거나 불러오지 못하면 예전 2D 판(js/race.js)으로
+const webgl = () => { try { const c = document.createElement('canvas'); return !!(c.getContext('webgl2') || c.getContext('webgl')); } catch { return false; } };
+function lazy3d(kind, fallback) {
+  return (body, ctx, done) => {
+    if (!webgl()) return fallback(body, ctx, done);
+    let stop = null, dead = false;
+    body.innerHTML = '<p class="mg-note">경기장을 준비하고 있어요…</p>';
+    (kind === 'race' ? import('./race3d.js?v=202611022158').then((m) => m.race3dGame) : import('./agility3d.js?v=202611022158').then((m) => m.agility3dGame))
+      .then((game) => { if (!dead) stop = game(body, ctx, done); })
+      .catch((e) => { console.error(e); if (!dead) stop = fallback(body, ctx, done); });
+    return () => { dead = true; stop?.(); };
+  };
 }
 
 // ---------- 패키지 4종(js/mg) ----------
@@ -125,8 +140,8 @@ function pkgGame(id) {
     body.innerHTML = `<div class="kpg-root mgp"><div class="kpg-top"><div class="kpg-title"></div><div class="kpg-hud"></div></div><div class="kpg-stage"></div></div>`;
     const stage = body.querySelector('.kpg-stage'), hudBox = body.querySelector('.kpg-hud');
     const [dir, name] = PKG[id];
-    Promise.all([import(`./mg/games/${dir}/game.js?v=202611021917`), import('./mg/core/styles.js?v=202611021917'), import('./mg/core/strings.js?v=202611021917'), import('./mg/core/rewards.js?v=202611021917'),
-      id === 'quiz' ? import('./mg/games/quiz/questions.ko.js?v=202611021917') : {}]).then(([g, st, strs, rw, qs]) => {
+    Promise.all([import(`./mg/games/${dir}/game.js?v=202611022158`), import('./mg/core/styles.js?v=202611022158'), import('./mg/core/strings.js?v=202611022158'), import('./mg/core/rewards.js?v=202611022158'),
+      id === 'quiz' ? import('./mg/games/quiz/questions.ko.js?v=202611022158') : {}]).then(([g, st, strs, rw, qs]) => {
       if (dead) return;
       const def = g[name]; st.injectStyles(document);
       let lastHud = '';

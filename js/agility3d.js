@@ -4,68 +4,23 @@
 //  아이·보호자는 우리 수채 그림(뒷모습 2걸음)을 3D 공간에 세운 판 — 그림체는 그대로, 공간·빛·그림자·카메라는 3D
 // 좌표: x 오른쪽 · y 위 · 코스는 -z 방향(아이 위치 s m → z = -s)
 import * as THREE from 'three';
-import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
-import { sfx } from './sound.js?v=202611021917';
-import { rng } from './engine.js?v=202611021917';
-import { haptic } from './native.js?v=202611021917';
-import { makeBlinker } from './blink.js?v=202611021917';
+import { sfx } from './sound.js?v=202611022158';
+import { rng } from './engine.js?v=202611022158';
+import { haptic } from './native.js?v=202611022158';
+import { SIZE, STAGE_K, clamp, shuffleR, canvasTex, stripeTex, roundTex, makeStage, std, mesh, buildArena, loadPet3d, loadOwners, backFrames, loadTex, SHIRT } from './arena3d.js?v=202611022158';
 
-const SIZE = { small: 0.5, medium: 0.6, large: 0.7, short: 0.48, long: 0.5 };
 const KEY = { ArrowUp: 'up', ArrowDown: 'down', ArrowLeft: 'left', ArrowRight: 'right', KeyW: 'up', KeyS: 'down', KeyA: 'left', KeyD: 'right' };
 const ARROW = { up: '↑', down: '↓', left: '←', right: '→' };
 const COLOR = { up: '#E8657A', down: '#4F8FC0', left: '#C98A2E', right: '#3F6B4F' };
-const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
-const shuffleR = (a, r) => { for (let i = a.length - 1; i > 0; i--) { const j = Math.floor(r() * (i + 1)); [a[i], a[j]] = [a[j], a[i]]; } return a; };
 const AH = 1.5, AW = 0.6, TR = 0.45;   // A자 경사로 꼭대기·반폭, 터널 반지름
-// 3D 강아지(10/27 사용자 "동물캐릭터랑 마지막 주인도 3d로"): Quaternius Shiba Inu(CC0, art/3d/shiba.glb — 동작 Gallop·Gallop_Jump·Idle 등)를 성향별 털색으로 칠한다.
-// 모델은 뼈대에 ×100 배율이 있어 세계 높이 ≈ 3.0(귀 끝) — 키 H m로 맞추려면 H/3.0배. 고양이·보호자 모델이 오기 전엔 그림 판으로 대신한다
-const COAT = { small: ['#E9DCC6', '#FFF7EA'], medium: ['#D69552', '#F7E4C8'], large: ['#E0B472', '#F4DFB6'] };
-const STAGE_K = { baby: 0.78, teen: 0.9, adult: 1 };
-const gltfLoader = new GLTFLoader();
-const loadGLB = (src) => new Promise((res) => gltfLoader.load(src, res, undefined, () => res(null)));
-
-// ---------- 그림 불러오기 ----------
-const texLoader = new THREE.TextureLoader();
-const loadTex = (src) => new Promise((res) => texLoader.load(src, (t) => { t.colorSpace = THREE.SRGBColorSpace; res(t); }, undefined, () => res(null)));
-let BACKS = null;
-const backs = (base) => (BACKS ??= fetch(`${base}art/sprite/backs.json?v=202611021917`).then((r) => (r.ok ? r.json() : {})).catch(() => ({})));
-async function backFrames(type, stage, base) {
-  const have = await backs(base);
-  const order = { baby: ['baby', 'teen', 'adult'], teen: ['teen', 'adult', 'baby'], adult: ['adult', 'teen', 'baby'] }[stage] ?? ['baby'];
-  const st = order.find((s) => have[`${type}_${s}`]) ?? stage;
-  const fr = await Promise.all([loadTex(`${base}art/sprite/${type}_${st}_back0.webp`), loadTex(`${base}art/sprite/${type}_${st}_back1.webp`)]);
-  if (fr[0] && fr[1]) return fr;
-  const idle = await loadTex(`${base}art/sprite/${type}_${stage}_idle.webp`);
-  return [idle, idle];
-}
+// 경기장·아이 3D·보호자 3D는 js/arena3d.js(반려 경주 3D와 같이 쓴다, 11/2)
 
 // ---------- 캔버스로 만드는 무늬 ----------
-function canvasTex(w, h, draw, repeat) {
-  const c = document.createElement('canvas'); c.width = w; c.height = h;
-  draw(c.getContext('2d'), w, h);
-  const t = new THREE.CanvasTexture(c); t.colorSpace = THREE.SRGBColorSpace; t.anisotropy = 4;
-  if (repeat) { t.wrapS = t.wrapT = THREE.RepeatWrapping; }
-  return t;
-}
-const stripeTex = (a, b, n = 6, vertical = false) => canvasTex(64, 64, (g, w, h) => {
-  for (let i = 0; i < n; i++) { g.fillStyle = i % 2 ? b : a; if (vertical) g.fillRect(0, (h * i) / n, w, h / n + 1); else g.fillRect((w * i) / n, 0, w / n + 1, h); }
-}, true);
-const roundTex = (inner, outer) => canvasTex(64, 64, (g) => {
-  const gr = g.createRadialGradient(32, 32, 0, 32, 32, 32); gr.addColorStop(0, inner); gr.addColorStop(1, outer);
-  g.fillStyle = gr; g.fillRect(0, 0, 64, 64);
-});
 const arrowTex = (dir) => canvasTex(128, 128, (g) => {
   g.fillStyle = COLOR[dir]; g.beginPath(); g.arc(64, 64, 54, 0, Math.PI * 2); g.fill();
   g.lineWidth = 9; g.strokeStyle = '#fff'; g.stroke();
   g.fillStyle = '#fff'; g.font = '900 78px sans-serif'; g.textAlign = 'center'; g.textBaseline = 'middle'; g.fillText(ARROW[dir], 64, 70);
 });
-const boardTex = (bg) => canvasTex(256, 64, (g, w, h) => {
-  g.fillStyle = bg; g.fillRect(0, 0, w, h);
-  g.fillStyle = 'rgba(255,255,255,.85)'; g.fillRect(0, 0, w, 6); g.fillRect(0, h - 6, w, 6);
-  g.font = '40px sans-serif'; g.textAlign = 'center'; g.textBaseline = 'middle';
-  for (let i = 0; i < 3; i++) g.fillText('🐾', w * (i + 0.5) / 3, h / 2 + 2);
-});
-
 // ---------- 게임 ----------
 export function agility3dGame(body, ctx, done, { base = '' } = {}) {
   const r = rng(`agility:${Date.now()}`);
@@ -101,90 +56,10 @@ export function agility3dGame(body, ctx, done, { base = '' } = {}) {
   const $life = $('#ag-life'), $score = $('#ag-score'), $combo = $('#ag-combo'), $bar = $('#ag-bar'), $judge = $('#ag-judge'), $count = $('#ag-count');
 
   // ---------- 3D 무대 ----------
-  const renderer = new THREE.WebGLRenderer({ canvas: cv, antialias: true });
-  renderer.setPixelRatio(Math.min(2, devicePixelRatio || 1));
-  renderer.shadowMap.enabled = true; renderer.shadowMap.type = THREE.PCFSoftShadowMap;
-  renderer.outputColorSpace = THREE.SRGBColorSpace;
-  renderer.toneMapping = THREE.ACESFilmicToneMapping; renderer.toneMappingExposure = 1.05;
-  const scene = new THREE.Scene();
-  const SKY = new THREE.Color('#BFE3F2');
-  scene.background = SKY; scene.fog = new THREE.Fog('#DDF0F4', 35, 150);
-  const camera = new THREE.PerspectiveCamera(55, 1, 0.1, 400);
-  scene.add(new THREE.HemisphereLight('#EAF6FF', '#7FA35E', 1.15));
-  const sun = new THREE.DirectionalLight('#FFF4DE', 2.1);
-  sun.castShadow = true; sun.shadow.mapSize.set(1024, 1024);
-  Object.assign(sun.shadow.camera, { left: -12, right: 12, top: 12, bottom: -12, near: 1, far: 60 });
-  sun.shadow.bias = -0.0005;
-  scene.add(sun, sun.target);
-  const std = (color, extra = {}) => new THREE.MeshStandardMaterial({ color, roughness: 0.85, metalness: 0, ...extra });
-  const mesh = (geo, mat, { cast = true, recv = true } = {}) => { const m = new THREE.Mesh(geo, mat); m.castShadow = cast; m.receiveShadow = recv; return m; };
+  const { renderer, scene, camera, sun } = makeStage(cv);
 
-  // 땅: 깎은 잔디 줄무늬 + 코스 흰 선
-  const LEN = END + 60;
-  const grassT = stripeTex('#86BE63', '#77B055', 2, true); grassT.repeat.set(1, LEN / 6);
-  const ground = mesh(new THREE.PlaneGeometry(80, LEN + 80), std('#ffffff', { map: grassT }), { cast: false });
-  ground.rotation.x = -Math.PI / 2; ground.position.set(0, 0, -(LEN / 2) + 20); scene.add(ground);
-  for (const x of [-1.27, 1.27]) { const l = mesh(new THREE.PlaneGeometry(0.06, LEN), std('#FFFFFF'), { cast: false }); l.rotation.x = -Math.PI / 2; l.position.set(x, 0.005, -(LEN / 2) + 10); scene.add(l); }
-  // 출발선
-  { const l = mesh(new THREE.PlaneGeometry(2.6, 0.12), std('#FFFFFF'), { cast: false }); l.rotation.x = -Math.PI / 2; l.position.set(0, 0.006, 0); scene.add(l); }
-
-  // 펜스: 광고판 같은 색 판(두께 있는 상자) — 양쪽, 2.4m마다
-  const boards = ['#E8657A', '#4F8FC0', '#F2A93B', '#3F6B4F'].map((c) => std('#ffffff', { map: boardTex(c) }));
-  const boardSide = std('#E9E4DA');
-  const bGeo = new THREE.BoxGeometry(0.1, 0.6, 2.3);
-  for (let s = -12, i = 0; s < LEN; s += 2.4, i++) for (const side of [-1, 1]) {
-    const m = mesh(bGeo, [boards[i % 4], boards[i % 4], boardSide, boardSide, boardSide, boardSide]);
-    m.position.set(side * 2.75, 0.3, -s);   // 옆면(±x)에 광고판 무늬 — 코스 쪽에서 보인다
-    scene.add(m);
-  }
-
-  // 관중석(오른쪽): 계단 + 관중(캡슐, 색 다양) — 콤보·완주 때 들썩인다
-  const STAND_X = 6.5, rows = 4;
-  for (let s = -8; s < LEN; s += 14) for (let k = 0; k < rows; k++) {
-    const st = mesh(new THREE.BoxGeometry(1.1, 0.45 * (k + 1), 13.6), std(k % 2 ? '#D8D2C6' : '#E9E4DA'));
-    st.position.set(STAND_X + k * 1.1, 0.225 * (k + 1), -(s + 6.8)); scene.add(st);
-  }
-  const crowdN = Math.floor(LEN / 0.7) * rows;
-  const crowd = new THREE.InstancedMesh(new THREE.CapsuleGeometry(0.17, 0.32, 3, 8), std('#ffffff'), crowdN);
-  crowd.castShadow = true; crowd.receiveShadow = true;
-  const shirt = ['#E8657A', '#4F8FC0', '#F2D24B', '#3F6B4F', '#B98AD9', '#F2A93B', '#FFFFFF', '#6FC1B6'].map((c) => new THREE.Color(c));
-  const crowdBase = [], dm = new THREE.Object3D();
-  for (let i = 0, n = 0; n < crowdN; i++) for (let k = 0; k < rows && n < crowdN; k++, n++) {
-    const z = -(-8 + i * 0.7 + (r() - 0.5) * 0.25), x = STAND_X + k * 1.1 + (r() - 0.5) * 0.3, y = 0.45 * (k + 1) + 0.33;
-    crowdBase.push([x, y, z, r() * 6]);
-    dm.position.set(x, y, z); dm.updateMatrix(); crowd.setMatrixAt(n, dm.matrix); crowd.setColorAt(n, shirt[Math.floor(r() * shirt.length)]);
-  }
-  scene.add(crowd);
-  let cheer = 0;   // 0~1 들썩임
-
-  // 왼쪽: 나무(낮은 다각형)·언덕, 멀리 구름
-  const trunk = std('#8A5A30'), leaf = [std('#3F8A4A', { flatShading: true }), std('#5FA055', { flatShading: true }), std('#2F7044', { flatShading: true })];
-  for (let s = -10; s < LEN + 20; s += 4.5 + r() * 3) {
-    const x = -4.2 - r() * 6, z = -s, h = 1.6 + r() * 1.4;
-    const t = mesh(new THREE.CylinderGeometry(0.1, 0.14, h * 0.4, 6), trunk); t.position.set(x, h * 0.2, z); scene.add(t);
-    const round = r() < 0.5;
-    const c = mesh(round ? new THREE.IcosahedronGeometry(h * 0.38, 0) : new THREE.ConeGeometry(h * 0.35, h * 0.8, 7), leaf[Math.floor(r() * 3)]);
-    c.position.set(x, h * (round ? 0.62 : 0.75), z); scene.add(c);
-  }
-  for (let i = 0; i < 9; i++) {
-    const hill = mesh(new THREE.SphereGeometry(18 + r() * 14, 16, 10), std(i % 2 ? '#9BC77F' : '#8DBB72', { flatShading: true }), { cast: false });
-    hill.scale.y = 0.35; hill.position.set((i % 2 ? 1 : -1) * (30 + r() * 25), -2, -(i * 30 + r() * 20)); scene.add(hill);
-  }
-  const cloudM = new THREE.MeshLambertMaterial({ color: '#FFFFFF', emissive: '#FFFFFF', emissiveIntensity: 0.35 });
-  const clouds = [];
-  for (let i = 0; i < 10; i++) {
-    const g = new THREE.Group();
-    for (let j = 0; j < 4; j++) { const b = new THREE.Mesh(new THREE.SphereGeometry(2 + r() * 1.5, 10, 8), cloudM); b.position.set(j * 2.2 - 3, r() * 0.8, r()); g.add(b); }
-    g.position.set((r() - 0.5) * 120, 22 + r() * 10, -(r() * LEN) - 20); scene.add(g); clouds.push(g);
-  }
-  // 깃발(코스 양옆 12m마다): 기둥 + 삼각 깃발
-  const flagCol = ['#E8657A', '#F2D24B', '#4F8FC0', '#FFFFFF'].map((c) => std(c, { side: THREE.DoubleSide }));
-  const flags = [];
-  for (let s = 6, i = 0; s < LEN; s += 12, i++) for (const side of [-1, 1]) {
-    const pole = mesh(new THREE.CylinderGeometry(0.03, 0.03, 2.2, 6), std('#7A5A3A')); pole.position.set(side * 3.1, 1.1, -s); scene.add(pole);
-    const fg = new THREE.BufferGeometry().setFromPoints([new THREE.Vector3(0, 0, 0), new THREE.Vector3(0, -0.4, 0), new THREE.Vector3(0.6, -0.2, 0)]); fg.computeVertexNormals();
-    const f = mesh(fg, flagCol[i % 4], { recv: false }); f.position.set(side * 3.1, 2.15, -s); f.rotation.y = side < 0 ? 0 : Math.PI; scene.add(f); flags.push(f);
-  }
+  const arena = buildArena(scene, { half: 1.27, lanes: 1, end: END, r });
+  const shirt = SHIRT.map((c) => new THREE.Color(c));
 
   // ---------- 장애물 ----------
   const barT = stripeTex('#E8657A', '#FFFFFF', 6); const poleT = stripeTex('#F2A93B', '#FFFFFF', 6, true);
@@ -234,14 +109,6 @@ export function agility3dGame(body, ctx, done, { base = '' } = {}) {
       for (const side of [-1, 1]) { const leg = mesh(new THREE.BoxGeometry(0.06, AH * 0.9, 0.06), railM); leg.position.set(side * AW, AH * 0.45, -(p.at + run)); scene.add(leg); }
     }
   }
-  // 결승 아치 + 현수막
-  const goal = new THREE.Group(); goal.position.z = -END;
-  for (const side of [-1, 1]) { const post = mesh(new THREE.CylinderGeometry(0.08, 0.08, 2.6, 10), std('#7A5A3A')); post.position.set(side * 1.45, 1.3, 0); goal.add(post); }
-  const banner = mesh(new THREE.BoxGeometry(3.1, 0.55, 0.06), [std('#E8657A'), std('#E8657A'), std('#E8657A'), std('#E8657A'),
-    std('#ffffff', { map: canvasTex(512, 96, (g, w, h) => { g.fillStyle = '#E8657A'; g.fillRect(0, 0, w, h); g.fillStyle = '#fff'; g.font = '900 64px Pretendard, sans-serif'; g.textAlign = 'center'; g.textBaseline = 'middle'; g.fillText('GOAL!', w / 2, h / 2 + 4); }) }),
-    std('#E8657A')]);
-  banner.position.set(0, 2.45, 0); goal.add(banner); scene.add(goal);
-
   // ---------- 아이·보호자(그림 판) ----------
   const H = SIZE[ctx.type] ?? 0.55;
   // 점프 높이: 아기는 낮게(성장판이 닫히기 전 과한 점프는 조심하라는 권고 — 볼트 동물-걸음걸이 '강아지 vs 성견', 10/29)
@@ -251,44 +118,25 @@ export function agility3dGame(body, ctx, done, { base = '' } = {}) {
   const blob = new THREE.Mesh(new THREE.PlaneGeometry(1, 1), new THREE.MeshBasicMaterial({ map: roundTex('rgba(40,30,20,.45)', 'rgba(40,30,20,0)'), transparent: true, depthWrite: false }));
   blob.rotation.x = -Math.PI / 2; scene.add(blob);
   let IM = null, petAspect = 1;
+  // 보호자: 3D(art/3d/owner.glb — 팔 벌려 기다리다 아이가 오면 무릎 꿇고 안아 준다, 11/2 사용자) · 못 불러오면 그림 판
   const ownerMat = new THREE.MeshBasicMaterial({ transparent: true, alphaTest: 0.35, toneMapped: false });
   const owner = new THREE.Mesh(new THREE.PlaneGeometry(1, 1), ownerMat); owner.visible = false; scene.add(owner);
-  Promise.all([backFrames(ctx.type, ctx.stage, base), loadTex(`${base}art/race/owner${Math.floor(r() * 4)}.webp`)]).then(([fr, ow]) => {
-    IM = fr; petAspect = fr[0].image.width / fr[0].image.height; petMat.map = fr[0]; petMat.needsUpdate = true;
+  let owner3 = null, hugged = false, petTried = false;
+  const PET_STOP = END + 0.2;   // 완주한 아이가 앉는 곳
+  backFrames(ctx.type, ctx.stage, base).then((fr) => { IM = fr; petAspect = fr[0].image.width / fr[0].image.height; petMat.map = fr[0]; petMat.needsUpdate = true; });
+  loadOwners(scene, base, 1, r).then(async ([o]) => {
+    if (over) return;
+    if (o) { owner3 = o; return; }
+    const ow = await loadTex(`${base}art/race/owner${Math.floor(r() * 4)}.webp`);
     if (ow) { ownerMat.map = ow; ownerMat.needsUpdate = true; const a = ow.image.width / ow.image.height; owner.scale.set(1.15 * a, 1.15, 1); owner.position.set(0, 0.575, -(END + 0.6)); owner.visible = true; }
   });
 
-  // 3D 강아지: 있으면 그림 판 대신
+  // 우리 아이 3D(js/arena3d.js loadPet3d) — 있으면 그림 판 대신
   let dog3 = null;
-  // 우리 아이 3D(art/3d/pets/<성향_단계>.glb — 그림→Meshy 3D→tools/rig_pet.py로 시바 뼈대·동작, 키 1로 통일)가 있으면 그것, 없으면 강아지는 시바를 털색만 바꿔
-  (async () => {
-    let g = await loadGLB(`${base}art/3d/pets/${ctx.type}_${ctx.stage}.glb?v=202611021917`), own = !!g;
-    if (!g && COAT[ctx.type]) g = await loadGLB(`${base}art/3d/shiba.glb?v=202611021917`);
-    return { g, own };
-  })().then(({ g, own }) => {
-    if (!g || over) return;
-    const model = g.scene, [main, light] = COAT[ctx.type] ?? ['#ffffff', '#ffffff'], mats = [];
-    model.traverse((o) => {
-      if (!o.isMesh) return;
-      o.castShadow = true; o.receiveShadow = true; o.frustumCulled = false;
-      const ms = Array.isArray(o.material) ? o.material : [o.material];
-      for (const m of ms) { if (!own) { if (m.name === 'Main') m.color.set(main); if (m.name === 'Main_Light') m.color.set(light); } m.roughness = 0.9; m.metalness = 0; m.transparent = true; mats.push(m); }
-    });
-    // 우리 3D는 키 1로 통일돼 있다 — 아기 크기(H×1.3, 10/29에 맞춘 값)를 기준으로 단계만큼 키운다(11/2 15마리 전부 3D)
-    const k = own ? H * 1.3 * (STAGE_K[ctx.stage] ?? 1) / STAGE_K.baby : (H * 1.25 * (STAGE_K[ctx.stage] ?? 1)) / 3.0;
-    const holder = new THREE.Group(); holder.add(model); model.scale.setScalar(k); scene.add(holder);
-    const mixer = new THREE.AnimationMixer(model);
-    const clip = (n) => THREE.AnimationClip.findByName(g.animations, n) ?? THREE.AnimationClip.findByName(g.animations, `AnimalArmature|${n}`);
-    const act = Object.fromEntries(['Sit', 'Down', 'Leap', 'Dash', 'Run', 'Gallop', 'Gallop_Jump', 'Idle', 'Idle_2', 'Jump_ToIdle', 'Walk'].map((n) => [n, clip(n) && mixer.clipAction(clip(n))]));
-    act.Gallop_Jump?.setLoop(THREE.LoopOnce, 1); if (act.Gallop_Jump) act.Gallop_Jump.clampWhenFinished = true;
-    let cur = act.Sit ?? act.Idle; cur?.play();   // 처음엔 앉아서
-    const to = (a, fade = 0.2) => { if (!a || a === cur) return; a.reset().play(); cur?.crossFadeTo(a, fade, false); cur = a; };
-    // 몸 휘기 뼈와 쉬는 자세 회전(q0) — 동작에 키가 없는 뼈는 믹서가 되돌려 주지 않아, 매 프레임 q0로 되돌리지 않으면 회전이 쌓인다
-    // (10/27 사용자 "목돌아가고 난리도 아닌데?" — 목이 90°까지 돌아간 채 남았다)
-    const bendBones = [['Torso3', 0.15], ['Neck1', 0.2], ['Head', 0.15], ['Back', -0.12], ['Tail1', -0.3]]
-      .map(([n, f]) => [model.getObjectByName(n), f]).filter(([b]) => b?.isBone).map(([b, f]) => [b, f, b.quaternion.clone()]);
-    dog3 = { holder, model, mixer, act, to, bend: bendBones, blink: makeBlinker(model), mats, get cur() { return cur; } };
-    pet.visible = false; blob.material.opacity = 0.35;
+  loadPet3d(scene, base, ctx.type, ctx.stage).then((d) => {
+    petTried = true;
+    if (!d || over) return;
+    dog3 = d; pet.visible = false; blob.material.opacity = 0.35;
   });
 
   // 화살표 표시(다음 3개) — 판정점 위에 떠 있는 동그란 표지
@@ -341,7 +189,7 @@ export function agility3dGame(body, ctx, done, { base = '' } = {}) {
     combo++; maxCombo = Math.max(maxCombo, combo);
     const err = Math.abs(dm - 0.8);
     const pp = petPos().add(new THREE.Vector3(0, H * 0.6, 0));
-    if (err < 0.5) { perfect++; score += 100 + combo * 5; judge(combo >= 5 ? `완벽! ×${combo}` : '완벽!', 'perfect'); sfx.coin(); slowUntil = t + 0.12; shake = Math.max(shake, 0.12); emit(pp, 14, { tex: sparkT, speed: 1.6, up: 1.2, life: 0.5, size: 0.09, grav: -1 }); cheer = Math.min(1, cheer + 0.25); }
+    if (err < 0.5) { perfect++; score += 100 + combo * 5; judge(combo >= 5 ? `완벽! ×${combo}` : '완벽!', 'perfect'); sfx.coin(); slowUntil = t + 0.12; shake = Math.max(shake, 0.12); emit(pp, 14, { tex: sparkT, speed: 1.6, up: 1.2, life: 0.5, size: 0.09, grav: -1 }); arena.cheer += 0.25; }
     else { good++; score += 60 + combo * 3; judge('좋아요', 'good'); sfx.pop(); emit(pp, 6, { tex: sparkT, speed: 1, up: 0.8, life: 0.4, size: 0.07, grav: -1 }); }
   };
   el.querySelector('#ag-pad').addEventListener('pointerdown', (e) => { const b = e.target.closest('[data-d]'); if (b) { e.preventDefault(); e.stopPropagation(); b.classList.add('on'); setTimeout(() => b.classList.remove('on'), 90); press(b.dataset.d); } });
@@ -369,9 +217,9 @@ export function agility3dGame(body, ctx, done, { base = '' } = {}) {
     ended = true; endT = t;
     const total = score + maxCombo * 10 + (clear ? 200 + lives * 50 : 0);
     ctx.note = clear ? `완주! 완벽 ${perfect} · 좋아요 ${good} · 최대 ${maxCombo}콤보` : `${checks.filter((c) => c.state).length}/${checks.length}에서 넘어졌어요`;
-    if (clear) { sfx.fanfare(); sfx.cheer?.(); judge(`완주! 완벽 ${perfect} · 좋아요 ${good}`, 'perfect'); cheer = 1; confettiBurst(new THREE.Vector3(0, 0, -END)); }
+    if (clear) { sfx.fanfare(); sfx.cheer?.(); judge(`완주! 완벽 ${perfect} · 좋아요 ${good}`, 'perfect'); arena.cheer = 1; confettiBurst(new THREE.Vector3(0, 0, -END)); }
     else { judge('넘어졌어요… 다음엔 끝까지!', 'miss'); if (parts.some((p) => p.k === 'weave' && s > p.at - 1.5 && s < p.at + p.poles.length * 1.6)) swayTo = sway < 0 ? -0.5 : 0.5; }   // 위브 폴 위에 엎드리지 않게 옆으로
-    setTimeout(() => { if (over) return; over = true; cleanup(); done(total); }, clear ? 3200 : 1600);
+    setTimeout(() => { if (over) return; over = true; cleanup(); done(total); }, clear ? 4200 : 1600);   // 완주: 걸어가 안기는 데까지 본다
   };
 
   const frame = (ts) => {
@@ -379,16 +227,16 @@ export function agility3dGame(body, ctx, done, { base = '' } = {}) {
     last = ts;
     const dt = raw * (t < slowUntil ? 0.4 : 1);
     t += dt;
-    if (!started) {
+    if (!started) {   // 3D 아이를 기다린다(느린 폰은 8초까지)
       const left = Math.ceil(3 - t), txt = left > 0 ? String(left) : '출발!';
       if (txt !== lastCount) { lastCount = txt; $count.textContent = txt; $count.classList.remove('pop'); void $count.offsetWidth; $count.classList.add('pop'); if (left > 0) sfx.tap(); }
-      if (t >= 3 && IM) { started = true; t = 0; sfx.fanfare(); setTimeout(() => $count.remove(), 600); }
+      if (t >= 3 && IM && (petTried || t > 8)) { started = true; t = 0; sfx.fanfare(); setTimeout(() => $count.remove(), 600); }
     } else if (!ended) {
       s += speed() * dt;
       for (const c of checks) if (!c.state && c.at - s < -0.4) miss(c, '놓쳤어요!');
       if (lives <= 0) finish(false);
       else if (s >= END - 2.5) finish(true);
-    } else if (lives > 0 && s < END + 0.2) s += 1.4 * dt;   // 완주면 보호자 품까지 — 걸어서(우리 걷기 'Walk', 10/28)
+    } else if (lives > 0 && s < PET_STOP) s = Math.min(PET_STOP, s + 1.4 * dt);   // 완주면 보호자 품까지 — 걸어서(우리 걷기 'Walk', 10/28)
     ft += dt * speed() * 0.9;
     if (ft >= 1) {
       ft = 0; frameNo ^= 1;
@@ -417,34 +265,31 @@ export function agility3dGame(body, ctx, done, { base = '' } = {}) {
     pet.position.set(sway, gy + hj + hgt / 2 + bob, -s);
     pet.rotation.set(0, Math.atan2(camPos.x - pet.position.x, camPos.z - pet.position.z), (frameNo ? 1 : -1) * 0.03 + (swayTo - sway) * 0.6);
     if (dog3) {
-      const { holder, mixer, act, to } = dog3;
+      const { holder, act, to } = dog3;
       const ra = dog3.cur === act.Dash || dog3.cur === act.Run ? dog3.cur : null, rc = ra ? ra.time / ra.getClip().duration : 0;
       holder.position.set(sway, gy + hj + (rc ? Math.abs(Math.sin(rc * Math.PI * 2)) * H * 0.05 : 0), -s);   // 종종 달리기는 한 바퀴에 두 번 들썩
       const slopeA = gy > 0 ? Math.atan2(AH, 3) * ((s - parts.find((p) => p.k === 'aframe' && s > p.at && s < p.at + p.len).at) / 6 < 0.5 ? 1 : -1) : 0;
       holder.rotation.set(slopeA, Math.PI + heading, lean);
       holder.scale.set(1, tp ? 0.82 : 1, 1);
       // 출발 전엔 출발선에 앉아 기다리고, 완주하면 보호자 앞에 앉고, 넘어지면 엎드린다(우리 앉기·엎드리기, 10/29) — 시바 모델은 Idle
-      if (!started || (ended && s >= END + 0.15 && lives > 0)) to(act.Sit ?? act.Idle, 0.45);
+      if (!started || (ended && s >= PET_STOP - 0.05 && lives > 0)) to(act.Sit ?? act.Idle, 0.45);
       else if (ended && lives <= 0) to(act.Down ?? act.Idle, 0.6);
       else if (ended && act.Walk) to(act.Walk, 0.3);
       else if (jump > 0.03 && act.Leap) {
         // 우리 점프 'Leap'(도약 → 정점 → 앞발 뻗기 → 착지, 10/29 — 볼트 동물-걸음걸이 '점프'): 높이 곡선(jump 1 → 0)과 같은 시간에 맞춰 직접 넘긴다
         to(act.Leap, 0.06); act.Leap.timeScale = 0; act.Leap.time = (1 - jump) * act.Leap.getClip().duration;
-      } else if (jump > 0.55 && act.Gallop_Jump) to(act.Gallop_Jump, 0.08);
-      else if (jump <= 0.2 || act.Leap) to(act.Dash ?? act.Run ?? act.Gallop, 0.12);   // 달릴 땐 우리 갤럽 'Dash'(로터리 갤럽 — 볼트 동물-걸음걸이)
-      // 우리 아이 모델은 직접 만든 종종 달리기 'Run'(tools/rig_pet.py, 대각선 다리끼리) — 시바 갤럽은 뒷다리가 같이 차서 토끼처럼 보였다(10/27)
+      } else to(act.Dash ?? act.Run, 0.12);   // 달릴 땐 우리 갤럽 'Dash'(로터리 갤럽 — 볼트 동물-걸음걸이)
       if (act.Run) act.Run.timeScale = 1.81 + (speed() - 5.2) * 0.15;   // 20프레임(11/2 16→20, 한 바퀴 시간 그대로)
       if (act.Walk) act.Walk.timeScale = 1.3;
       if (act.Dash) act.Dash.timeScale = 2.4 + (speed() - 5.2) * 0.18;   // 한 바퀴 ≈ 0.36초(작은 개 갤럽 ≈ 3Hz) — 21프레임(11/2 14→21, 발 떼는 순간을 촘촘히)
-      if (act.Gallop) act.Gallop.timeScale = 0.75 + speed() / 9;
-      for (const [b, , q0] of dog3.bend) b.quaternion.copy(q0);
-      mixer.update(raw); dog3.blink.update(raw);   // 눈 깜빡임(셰이프키 Blink — 없으면 아무것도 안 함)
-      // 몸 휘기: 동작을 입힌 뒤 머리·목은 가는 쪽으로, 엉덩이·꼬리는 반대로 세로축 기준 살짝 돌린다
-      for (const [b, f] of dog3.bend) {
-        b.getWorldQuaternion(_q); _ax.set(0, 1, 0).applyQuaternion(_q.invert());
-        b.rotateOnAxis(_ax, bend * f);
-        b.updateMatrixWorld(true);
-      }
+      dog3.update(raw, bend);   // 동작 → 눈 깜빡임 → 몸 휘기(머리·목은 가는 쪽, 엉덩이·꼬리는 반대)
+      if (ended && lives > 0) holder.rotation.set(0, Math.PI, 0);   // 보호자 쪽을 똑바로
+    }
+    // 보호자: 앉은 아이 가슴이 무릎 꿇은 보호자 팔 안에 오게(아이 키에 비례) — 아이가 1m 앞까지 오면 무릎 꿇고 안는다
+    if (owner3) {
+      owner3.holder.position.set(0, 0, -(PET_STOP + 0.25 + 0.38 * (dog3?.height ?? H * 1.3)));   // 앉은 아이 목 앞 ≈ 0.35×키
+      if (ended && lives > 0 && !hugged && s > PET_STOP - 1) { hugged = true; owner3.to(owner3.act.Hug, 0.25); }
+      owner3.update(raw, clamp((0.95 - (dog3?.height ?? 0.8)) * 1.1, 0, 0.45));   // 작은 아이면 더 숙여 안는다
     }
     blob.position.set(sway, gy + 0.01, -s + 0.02); blob.scale.setScalar(H * 1.2 * (1 - hj * 0.6));
     if (gy > 0) { const u = (s - parts.find((p) => p.k === 'aframe' && s > p.at && s < p.at + p.len).at) / 6; blob.rotation.set(-Math.PI / 2 + (u < 0.5 ? 1 : -1) * Math.atan2(AH, 3), 0, 0); } else blob.rotation.set(-Math.PI / 2, 0, 0);
@@ -457,7 +302,7 @@ export function agility3dGame(body, ctx, done, { base = '' } = {}) {
       const size = H * (STAGE_K[ctx.stage] ?? 1) / STAGE_K.baby, low = Math.min(1, Math.max(0.3, 1.25 - 1.1 * size));
       const near = parts.some((p) => { const end = p.at + (p.len ?? (p.poles ? p.poles[p.poles.length - 1].at - p.at : 0.3)); return s > p.at - 5 && s < end + 0.3; });   // 3.5m면 대형견이 4m 앞 허들을 이미 가렸다
       const want = near && started && !ended ? low : 1;
-      for (const m of dog3.mats) { m.opacity += (want - m.opacity) * Math.min(1, raw * 6); m.depthWrite = m.opacity > 0.95; }
+      dog3.fade(want, raw);
     }
     for (const { p, mats } of tunnelMats) { const inside = s > p.at - 0.6 && s < p.at + p.len + 0.3; for (const m of mats) { m.opacity += ((inside ? 0.35 : 1) - m.opacity) * Math.min(1, raw * 8); m.depthWrite = m.opacity > 0.9; } }
 
@@ -469,9 +314,11 @@ export function agility3dGame(body, ctx, done, { base = '' } = {}) {
       wantLook.set(0, 0.4, -14 + 10 * e);
       camPos.copy(wantPos); camLook.copy(wantLook);
     } else if (ended && lives > 0) {
-      const k = clamp((t - endT) / 1.8, 0, 1);
-      wantPos.set(Math.sin(k * 2.4) * 3.2, 1.0 + gy, -s - Math.sin(k * 1.6) * 3.4 + (1 - k) * 3.4);
-      wantLook.set(sway, 0.5, -s - 0.3);
+      // 아이 뒤에서 결승 아치 너머 옆으로 돌아, 보호자 어깨 너머로 아이 얼굴이 보이게(안기는 모습, 11/2 — 아치 앞에선 기둥이 가렸다)
+      const k = clamp((t - endT) / 2.2, 0, 1), e = k * k * (3 - 2 * k), mid = -(PET_STOP + 0.25);
+      const ph = 2.2 * e, rr = 1.5 + 0.45 * (dog3?.height ?? 0.8);   // 아이·보호자 둘레를 돈다(뒤 → 옆 → 보호자 어깨 너머) — 결승 아치 기둥(±2.3m) 안쪽으로
+      wantPos.set(sway * (1 - e) + Math.sin(ph) * rr, 1.0 + 0.2 * e, mid + Math.cos(ph) * rr);
+      wantLook.set(sway * (1 - e), 0.55, mid);
       lerpV(camPos, wantPos, raw * 3); lerpV(camLook, wantLook, raw * 4);
     } else {
       const dist = 2.1 - spN * 0.25 - (combo >= 8 ? 0.15 : 0);   // 아이 바로 뒤 — 화면 아래쪽에 크게
@@ -501,15 +348,7 @@ export function agility3dGame(body, ctx, done, { base = '' } = {}) {
       a.position.set(x, y + Math.sin(t * 5 + i) * 0.04, -c.at);
     });
     // 관중 들썩임 · 깃발 펄럭 · 구름
-    cheer = Math.max(combo >= 8 ? 0.5 : 0, cheer - raw * 0.4);
-    for (let i = 0; i < crowdBase.length; i++) {
-      const [x, y, z, ph] = crowdBase[i];
-      if (Math.abs(z + s) > 40) continue;
-      dm.position.set(x, y + Math.max(0, Math.sin(t * 9 + ph)) * 0.18 * cheer, z); dm.rotation.z = Math.sin(t * 4 + ph) * 0.08 * cheer; dm.updateMatrix(); crowd.setMatrixAt(i, dm.matrix);
-    }
-    crowd.instanceMatrix.needsUpdate = true;
-    flags.forEach((f, i) => { f.rotation.x = Math.sin(t * 3 + i) * 0.25; });
-    clouds.forEach((c, i) => { c.position.x += raw * (0.3 + (i % 3) * 0.1); });
+    arena.update(t, raw, s, combo >= 8 ? 0.5 : 0);
     // 입자
     for (let i = parts3.length - 1; i >= 0; i--) {
       const q = parts3[i]; q.t += raw;

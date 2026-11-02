@@ -31,21 +31,3 @@ export function makeBlinker(root, { rate = 6.5 } = {}) {
   };
 }
 
-// 얼굴 셰이프키 하나를 목표값으로 부드럽게 옮긴다(약 0.3초) — 'MouthBack' = 입꼬리 당김(DogFACS AU12, 좌절·긴장 때 늘었다 — Bremhorst 2019·2021)
-export function makeMorph(root, name, speed = 6) {
-  const ms = [];
-  root.traverse((o) => {
-    const i = o.isMesh ? o.morphTargetDictionary?.[name] : undefined;
-    if (i !== undefined) ms.push([o, i]);
-  });
-  let v = 0;
-  return {
-    has: ms.length > 0,
-    target: 0,
-    update(dt) {
-      if (!ms.length) return;
-      v += (this.target - v) * Math.min(1, dt * speed);
-      for (const [o, i] of ms) o.morphTargetInfluences[i] = v;
-    },
-  };
-}

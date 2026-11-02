@@ -8,7 +8,7 @@ import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import { sfx } from './sound.js?v=202610291228';
 import { rng } from './engine.js?v=202610291228';
 import { haptic } from './native.js?v=202611021450';
-import { makeBlinker, makeMorph } from './blink.js?v=202611021730';
+import { makeBlinker } from './blink.js?v=202611021900';
 
 const SIZE = { small: 0.5, medium: 0.6, large: 0.7, short: 0.48, long: 0.5 };
 const KEY = { ArrowUp: 'up', ArrowDown: 'down', ArrowLeft: 'left', ArrowRight: 'right', KeyW: 'up', KeyS: 'down', KeyA: 'left', KeyD: 'right' };
@@ -262,17 +262,17 @@ export function agility3dGame(body, ctx, done, { base = '' } = {}) {
   let dog3 = null;
   // 우리 아이 3D(art/3d/pets/<성향_단계>.glb — 그림→Meshy 3D→tools/rig_pet.py로 시바 뼈대·동작, 키 1로 통일)가 있으면 그것, 없으면 강아지는 시바를 털색만 바꿔
   (async () => {
-    let g = await loadGLB(`${base}art/3d/pets/${ctx.type}_${ctx.stage}.glb?v=202611021830`), own = !!g;
-    if (!g && COAT[ctx.type]) g = await loadGLB(`${base}art/3d/shiba.glb?v=202611021830`);
+    let g = await loadGLB(`${base}art/3d/pets/${ctx.type}_${ctx.stage}.glb?v=202611021900`), own = !!g;
+    if (!g && COAT[ctx.type]) g = await loadGLB(`${base}art/3d/shiba.glb?v=202611021900`);
     return { g, own };
   })().then(({ g, own }) => {
     if (!g || over) return;
-    const model = g.scene, [main, light] = COAT[ctx.type] ?? ['#ffffff', '#ffffff'];
+    const model = g.scene, [main, light] = COAT[ctx.type] ?? ['#ffffff', '#ffffff'], mats = [];
     model.traverse((o) => {
       if (!o.isMesh) return;
       o.castShadow = true; o.receiveShadow = true; o.frustumCulled = false;
       const ms = Array.isArray(o.material) ? o.material : [o.material];
-      for (const m of ms) { if (!own) { if (m.name === 'Main') m.color.set(main); if (m.name === 'Main_Light') m.color.set(light); } m.roughness = 0.9; m.metalness = 0; }
+      for (const m of ms) { if (!own) { if (m.name === 'Main') m.color.set(main); if (m.name === 'Main_Light') m.color.set(light); } m.roughness = 0.9; m.metalness = 0; m.transparent = true; mats.push(m); }
     });
     // 우리 3D는 키 1로 통일돼 있다 — 아기 크기(H×1.3, 10/29에 맞춘 값)를 기준으로 단계만큼 키운다(11/2 15마리 전부 3D)
     const k = own ? H * 1.3 * (STAGE_K[ctx.stage] ?? 1) / STAGE_K.baby : (H * 1.25 * (STAGE_K[ctx.stage] ?? 1)) / 3.0;
@@ -287,7 +287,7 @@ export function agility3dGame(body, ctx, done, { base = '' } = {}) {
     // (10/27 사용자 "목돌아가고 난리도 아닌데?" — 목이 90°까지 돌아간 채 남았다)
     const bendBones = [['Torso3', 0.15], ['Neck1', 0.2], ['Head', 0.15], ['Back', -0.12], ['Tail1', -0.3]]
       .map(([n, f]) => [model.getObjectByName(n), f]).filter(([b]) => b?.isBone).map(([b, f]) => [b, f, b.quaternion.clone()]);
-    dog3 = { holder, model, mixer, act, to, bend: bendBones, blink: makeBlinker(model), mouth: makeMorph(model, 'MouthBack', 3), get cur() { return cur; } };
+    dog3 = { holder, model, mixer, act, to, bend: bendBones, blink: makeBlinker(model), mats, get cur() { return cur; } };
     pet.visible = false; blob.material.opacity = 0.35;
   });
 
@@ -439,7 +439,6 @@ export function agility3dGame(body, ctx, done, { base = '' } = {}) {
       if (act.Gallop) act.Gallop.timeScale = 0.75 + speed() / 9;
       for (const [b, , q0] of dog3.bend) b.quaternion.copy(q0);
       mixer.update(raw); dog3.blink.update(raw);   // 눈 깜빡임(셰이프키 Blink — 없으면 아무것도 안 함)
-      dog3.mouth.target = ended && lives <= 0 ? 0.7 : 0; dog3.mouth.update(raw);   // 실패해 엎드리면 입꼬리를 뒤로(좌절 — 볼트 동물-몸짓언어)
       // 몸 휘기: 동작을 입힌 뒤 머리·목은 가는 쪽으로, 엉덩이·꼬리는 반대로 세로축 기준 살짝 돌린다
       for (const [b, f] of dog3.bend) {
         b.getWorldQuaternion(_q); _ax.set(0, 1, 0).applyQuaternion(_q.invert());
@@ -452,6 +451,14 @@ export function agility3dGame(body, ctx, done, { base = '' } = {}) {
     // 위브: 아이가 지나간 폴은 카메라와 아이 사이에 끼어 화면을 가린다 — 흐리게
     for (const p of parts) if (p.k === 'weave' && Math.abs(p.at - s) < 14) for (const q of p.poles) { const m = q.mesh.material, want = q.at < s - 0.1 ? 0.18 : 1; m.opacity += (want - m.opacity) * Math.min(1, raw * 10); m.depthWrite = m.opacity > 0.9; }
     // 터널: 아이가 안에 있으면 천을 반투명하게 — 안의 아이가 비친다
+    // 장애물 앞 5m부터 지나갈 때까지 아이를 반투명하게(11/2 사용자 "대형견이 너무 커서 앞에 있는 장애물이 잘 안보여") — 뒤에서 따라가는 카메라라 큰 아이일수록 더 가린다:
+    // 화면 속 크기(성향 키 × 단계)에 맞춰 대형견 성견 약 30% ~ 소형견·고양이 아기 약 70%까지만 흐리게
+    if (dog3) {
+      const size = H * (STAGE_K[ctx.stage] ?? 1) / STAGE_K.baby, low = Math.min(1, Math.max(0.3, 1.25 - 1.1 * size));
+      const near = parts.some((p) => { const end = p.at + (p.len ?? (p.poles ? p.poles[p.poles.length - 1].at - p.at : 0.3)); return s > p.at - 5 && s < end + 0.3; });   // 3.5m면 대형견이 4m 앞 허들을 이미 가렸다
+      const want = near && started && !ended ? low : 1;
+      for (const m of dog3.mats) { m.opacity += (want - m.opacity) * Math.min(1, raw * 6); m.depthWrite = m.opacity > 0.95; }
+    }
     for (const { p, mats } of tunnelMats) { const inside = s > p.at - 0.6 && s < p.at + p.len + 0.3; for (const m of mats) { m.opacity += ((inside ? 0.35 : 1) - m.opacity) * Math.min(1, raw * 8); m.depthWrite = m.opacity > 0.9; } }
 
     // 카메라: 출발 전엔 코스 위에서 내려오며 훑고, 달릴 땐 뒤에서 따라가며 경사로·점프 높이를 같이 오른다. 끝나면 앞으로 돌아 보호자와 함께

@@ -7,6 +7,7 @@ import * as THREE from 'three';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import { sfx } from './sound.js?v=202610291228';
 import { rng } from './engine.js?v=202610291228';
+import { haptic } from './native.js?v=202611021450';
 
 const SIZE = { small: 0.5, medium: 0.6, large: 0.7, short: 0.48, long: 0.5 };
 const KEY = { ArrowUp: 'up', ArrowDown: 'down', ArrowLeft: 'left', ArrowRight: 'right', KeyW: 'up', KeyS: 'down', KeyA: 'left', KeyD: 'right' };
@@ -328,6 +329,7 @@ export function agility3dGame(body, ctx, done, { base = '' } = {}) {
   const miss = (c, why) => { c.state = 'miss'; combo = 0; lives--; judge(why, 'miss'); sfx.tap(); shake = 0.6; hitT = t; };
   const press = (d) => {
     if (!started || over || ended) return;
+    haptic('tap');   // 버튼·밀기마다 가벼운 톡(11/2 사용자 "강도 너무 강하게 말고 타격감만")
     const c = checks.find((q) => !q.state);
     if (!c) return;
     const dm = c.at - s;

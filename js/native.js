@@ -38,8 +38,11 @@ export async function shareImage(blob, name, text) {
 const CARE_BASE = 7000; // 돌봄 알림 id 7000~7099
 let lastKey = '';
 
+// kind: 'tap' = 버튼 타격감(11/2 사용자 "버튼누르면 진동… 강도 너무 강하게 말고 타격감만") — 앱은 시스템 '가벼운 충격' 햅틱(짧고 또렷한 톡),
+//   웹은 10ms(안드로이드 크롬만, iOS 사파리는 진동 없음) / 'light' 14ms / 그 밖 = 두 번 울림
 export function haptic(kind = 'light') {
-  if (!isApp) { try { navigator.vibrate?.(kind === 'light' ? 12 : [20, 40, 30]); } catch { /* 미지원 */ } return; }
+  if (!isApp) { try { navigator.vibrate?.(kind === 'tap' ? 10 : kind === 'light' ? 12 : [20, 40, 30]); } catch { /* 미지원 */ } return; }
+  if (kind === 'tap') { Haptics.impact({ style: 'LIGHT' }).catch(() => {}); return; }
   Haptics.vibrate({ duration: kind === 'light' ? 14 : 40 }).catch(() => {});
 }
 

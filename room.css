@@ -386,6 +386,10 @@ body.playing { overflow: hidden; }
 /* ---------- 반려 경주(js/race.js) ---------- */
 @media (max-width: 760px) { .mg-menu { grid-template-columns: repeat(2, minmax(0, 220px)); } }
 .mg-body:has(.race), .mg-body:has(.ag) { padding: 0; }
+/* 패키지 미니게임 4종(js/mg, 11/2) — 판이 미니게임 몸통을 꽉 채우고, 제목은 위 막대에 있으니 숨긴다. 색은 앱 주황 계열로 */
+.mg-body:has(.mgp) { padding: 0; align-items: stretch; }
+.kpg-root.mgp { flex: 1; width: 100%; height: 100%; --kpg-accent: #E8865A; --kpg-bg: #FFF7EC; }
+.mgp .kpg-title { visibility: hidden; }
 .race, .ag { position: absolute; inset: 0; overflow: hidden; touch-action: none; user-select: none; -webkit-user-select: none; }
 .race { cursor: pointer; background: #EAF4F2; }
 .race-cv { position: absolute; inset: 0; width: 100%; height: 100%; display: block; }

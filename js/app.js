@@ -1,19 +1,19 @@
 // 키워봐도될까 — 내 생활 그대로 30일 키워 보고 반려 준비도를 확인하는 입양 전 체험
-import * as db from './db.js?v=202610291228';
-import * as E from './engine.js?v=202610291228';
-import { C, loadContent, eventById, lessonById, foodById, momentById } from './content.js?v=202610291228';
-import { track } from './track.js?v=202610291228';
-import { roomHTML, mountRoom, timeOfDay, loadAnim, clipInfo } from './room.js?v=202610291228';
-import { openGames, GAMES, titleOf } from './games.js?v=202610291228';
-import * as K from './care.js?v=202610291228';
-import { openShop, openVet, openTreats } from './shop.js?v=202610291228';
-import { isApp, initNative, scheduleCare, exactAlarm, shareImage, saveWidget, widgetCount } from './native.js?v=202610291228';
-import { makeCard } from './card.js?v=202610291228';
-import { runGuide } from './guide.js?v=202610291228';
-import { handCare } from './handcare.js?v=202610291228';
-import { sfx, ambient, stopAmbient, soundOn, setSound } from './sound.js?v=202610291228';
-import * as F from './fun.js?v=202610291228';
-import { training } from './train.js?v=202610291228';
+import * as db from './db.js?v=202611021904';
+import * as E from './engine.js?v=202611021904';
+import { C, loadContent, eventById, lessonById, foodById, momentById } from './content.js?v=202611021904';
+import { track } from './track.js?v=202611021904';
+import { roomHTML, mountRoom, timeOfDay, loadAnim, clipInfo } from './room.js?v=202611021904';
+import { openGames, GAMES, titleOf } from './games.js?v=202611021904';
+import * as K from './care.js?v=202611021904';
+import { openShop, openVet, openTreats } from './shop.js?v=202611021904';
+import { isApp, initNative, scheduleCare, exactAlarm, shareImage, saveWidget, widgetCount } from './native.js?v=202611021904';
+import { makeCard } from './card.js?v=202611021904';
+import { runGuide } from './guide.js?v=202611021904';
+import { handCare } from './handcare.js?v=202611021904';
+import { sfx, ambient, stopAmbient, soundOn, setSound } from './sound.js?v=202611021904';
+import * as F from './fun.js?v=202611021904';
+import { training } from './train.js?v=202611021904';
 
 const $ = (s, el = document) => el.querySelector(s);
 const view = $('#view');
@@ -861,14 +861,18 @@ function openMiniGames() {
     onReward: (game, score) => {
       const k = todayKey();
       const earned = S.earned[k] || 0;
-      const given = Math.max(0, Math.min(GAMES[game].coins(score), COIN_CAP - earned));
+      // 하루 횟수가 정해진 게임(OX 퀴즈 — 같은 날엔 같은 문제)은 첫 판만 코인
+      const plays = ((S.plays ??= {})[k] ??= {}); plays[game] = (plays[game] || 0) + 1;
+      if (Object.keys(S.plays).length > 7) for (const d of Object.keys(S.plays).sort().slice(0, -7)) delete S.plays[d];
+      const once = GAMES[game].daily && plays[game] > GAMES[game].daily;
+      const given = once ? 0 : Math.max(0, Math.min(GAMES[game].coins(score), COIN_CAP - earned));
       S.coins += given;
       S.earned[k] = earned + given;
       S.best[game] = Math.max(S.best[game] || 0, score);
       if (given) { S.coinLog.push({ day: dayNow(), game, score, coins: given }); sfx.coin(); }
       save();
       track('game_end');
-      return { given, earned: S.earned[k], coins: S.coins };
+      return { given, earned: S.earned[k], coins: S.coins, why: once ? '코인은 하루 첫 판만 — 점수는 기록돼요' : '' };
     },
     onClose: () => route(),
   });

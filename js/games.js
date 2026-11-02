@@ -1,8 +1,11 @@
 // 미니게임 — 코인 벌기(1코인 = 1,000원, 가격은 실제 평균값이라 "반려 생활비 = 이만큼의 노력"을 느끼게)
 // 반려 경주(봇 3마리와 원근 경주) · 장애물 경주(↑↓←→ 타이밍) — js/race.js(10/26, 산책 달리기 대체) · 사천성(반려용품 짝 맞추기) · 간식 맞추기(3개 맞추기)
 // 판마다 받는 코인은 앱(app.js)이 하루 한도 안에서 정한다
-import { C } from './content.js?v=202610291228';
-import { raceGame, agilityGame } from './race.js?v=202610291228';
+// 11/2 추가 4종(먹이 받기·높이 쌓기·카드 짝 맞추기·OX 퀴즈)은 다른 세션에서 만든 패키지(js/mg — README 참고)의 '판'만 빌려 쓴다:
+// 패키지 자체 결과 화면·보상 규칙·광고 2배·하루 횟수는 쓰지 않고, 점수 → 코인·결과 화면은 이 앱 규칙(1코인 = 1,000원, 하루 한도)을 따른다.
+// 패키지 클래스 접두어는 앱의 .mg-* 와 겹쳐 kpg- 로 바꿔 넣었다. 문제 은행(196KB)이 있어 게임을 고를 때 불러온다
+import { C } from './content.js?v=202611021904';
+import { raceGame, agilityGame } from './race.js?v=202611021904';
 
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 const shuffle = (a) => { for (let i = a.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [a[i], a[j]] = [a[j], a[i]]; } return a; };
@@ -16,6 +19,10 @@ export const GAMES = {
   agility: { title: '장애물 경주', icon: '🚧', desc: '어질리티 코스! 허들·터널·위브 폴·A자 경사로를 ↑↓←→ 타이밍에 맞춰 통과해요.', coins: (s) => Math.min(15, Math.floor(s / 430)) },
   shisen: { title: '사천성', icon: '🧸', desc: '같은 반려용품 두 개를 두 번 이하로 꺾이는 길로 이어 없애요.', coins: (s) => Math.min(15, Math.floor(s / 13)) },
   match: { title: '간식 맞추기', icon: '🥕', desc: '이웃한 간식을 바꿔 같은 것 3개를 한 줄로 맞춰요.', coins: (s) => Math.min(15, Math.floor(s / 80)) },
+  catch: { title: '먹이 받기', icon: '🧺', desc: '좌우로 끌어 먹어도 되는 음식을 받아요. 먹으면 안 되는 음식은 피하기 — 45초, 목숨 3개.', coins: (s) => Math.min(15, Math.floor(s / 5)) },
+  stack: { title: '높이 쌓기', icon: '🧱', desc: '움직이는 블록을 톡 눌러 떨어뜨려 쌓아요. 딱 맞추면 퍼펙트!', coins: (s) => Math.min(15, Math.floor(s / 3)) },
+  memory: { title: '카드 짝 맞추기', icon: '🃏', desc: '카드 16장을 뒤집어 같은 반려용품 짝을 찾아요 — 60초.', coins: (s) => Math.min(15, Math.floor(s / 10)) },
+  quiz: { title: '오늘의 OX 퀴즈', icon: '⭕', desc: '하루 5문제, 문제마다 12초. 코인은 하루 첫 판만 받아요.', coins: (s) => s * 2, daily: 1 },
 };
 
 let root = null;
@@ -43,7 +50,7 @@ export function openGames(ctx) {
   const play = (k) => {
     body.onclick = null;
     root.querySelector('.mg-title').textContent = titleOf(k, ctx.species);
-    const run = { race: raceGame, agility: agilityGame, run: runGame, shisen: shisenGame, match: matchGame }[k];
+    const run = { race: raceGame, agility: agilityGame, run: runGame, shisen: shisenGame, match: matchGame, catch: pkgGame('catch'), stack: pkgGame('stack'), memory: pkgGame('memory'), quiz: pkgGame('quiz') }[k];
     stop = run(body, ctx, (score) => finish(k, score));
   };
   const finish = (k, score) => {
@@ -55,13 +62,67 @@ export function openGames(ctx) {
     const raw = GAMES[k].coins(score);
     const note = ctx.note; ctx.note = null;   // 경주: '2등 · 12.34초', 장애물: '완주 · 완벽 18'
     body.innerHTML = `<div class="mg-end"><p class="mg-k">${titleOf(k, ctx.species)}</p>${note ? `<p class="mg-place">${note}</p>` : ''}<p class="mg-score">${score}점</p>
-      <p class="mg-got"><i class="ci"></i> +${r.given}${r.given < raw ? ` <small>(오늘 한도 ${ctx.cap}개를 다 채웠어요 — 점수는 기록돼요)</small>` : ''}</p>
+      <p class="mg-got"><i class="ci"></i> +${r.given}${r.why ? ` <small>(${r.why})</small>` : r.given < raw ? ` <small>(오늘 한도 ${ctx.cap}개를 다 채웠어요 — 점수는 기록돼요)</small>` : ''}</p>
       <p class="mg-sub">= 실제라면 ${(r.given * 1000).toLocaleString('ko-KR')}원어치</p>
       <div class="mg-btns"><button class="btn btn-main" data-again>다시 하기</button><button class="btn" data-menu>다른 게임</button></div></div>`;
     body.onclick = (e) => { if (e.target.closest('[data-again]')) play(k); if (e.target.closest('[data-menu]')) menu(); };
   };
   menu();
   return close;
+}
+
+// ---------- 패키지 4종(js/mg) ----------
+// 패키지 runner.js의 '설명 → 결과 → 보상' 흐름은 빼고 def.create(무대, ctx)만 부른다. ctx.end(결과) → 이 앱 결과 화면(finish)
+const PKG = { catch: ['catch', 'catchGame'], stack: ['stack', 'stackGame'], memory: ['memory', 'memoryGame'], quiz: ['quiz', 'quizGame'] };
+const MEM_PAIRS = ['🎾', '🧸', '🥣', '🎀', '🐾', '🧶', '🛁', '🦴'];   // 사천성과 같은 반려용품(오래된 기기에서도 보이는 이모지)
+function pkgSkin(id, ctx) {
+  if (id === 'catch') {   // 이 동물이 먹어도 되는 음식을 받고, 먹으면 안 되는 음식(foods.json 'no') 하나를 피한다 — 산책 달리기와 같은 자료
+    const foods = C.foods.items.filter((f) => f.emoji);
+    const good = foods.filter((f) => f[ctx.species] === 'ok').map((f) => f.emoji);
+    const bad = foods.filter((f) => f[ctx.species] === 'no');
+    const b = pick(bad);
+    ctx.note = null; ctx.pkgBad = b;
+    if (good.length < 3) good.push(...['🐟', '🍗', '🥚'].filter((e) => !good.includes(e)));   // 고양이는 foods.json 'ok'가 적다 — 생선·익힌 닭고기·익힌 달걀로 채운다
+    return { food: good, bomb: b?.emoji ?? '💣' };
+  }
+  if (id === 'memory') return { pairs: MEM_PAIRS };
+  return {};
+}
+function pkgGame(id) {
+  return (body, ctx, done) => {
+    let inst = null, dead = false;
+    body.innerHTML = `<div class="kpg-root mgp"><div class="kpg-top"><div class="kpg-title"></div><div class="kpg-hud"></div></div><div class="kpg-stage"></div></div>`;
+    const stage = body.querySelector('.kpg-stage'), hudBox = body.querySelector('.kpg-hud');
+    const [dir, name] = PKG[id];
+    Promise.all([import(`./mg/games/${dir}/game.js?v=202611021904`), import('./mg/core/styles.js?v=202611021904'), import('./mg/core/strings.js?v=202611021904'), import('./mg/core/rewards.js?v=202611021904')]).then(([g, st, strs, rw]) => {
+      if (dead) return;
+      const def = g[name]; st.injectStyles(document);
+      let lastHud = '';
+      const gctx = {
+        strings: strs.STRINGS_KO, skin: { ...def.defaultSkin, ...pkgSkin(id, ctx) }, character: ctx.pet?.src || '🐶', haptics: true,
+        seed: Date.now() >>> 0, day: rw.dateKey(),
+        hud(items) {
+          const key = items.map((i) => `${i.label}:${i.value}`).join('|');
+          if (key === lastHud) return;
+          lastHud = key; hudBox.innerHTML = items.map((i) => `<div class="kpg-chip"><b>${i.value}</b><small>${i.label}</small></div>`).join('');
+        },
+        end(result) {
+          if (dead) return;
+          dead = true;
+          const b = ctx.pkgBad;   // 패키지 문구는 '폭탄'이라 먹이 받기만 이 앱 말로
+          ctx.note = id === 'catch' ? `받은 먹이 ${result.caught}개${result.bombsHit ? ` · ${b?.name ?? '먹으면 안 되는 음식'}을 ${result.bombsHit}번 먹었어요${b?.why ? ` — ${b.why}` : ''}` : ''}`
+            : (def.describe?.(result, strs.STRINGS_KO) ?? '');
+          setTimeout(() => done(result.score), 450);
+        },
+        float(text, x, y, color = 'var(--kpg-text)') {
+          const f = document.createElement('div'); f.className = 'kpg-float'; f.textContent = text;
+          Object.assign(f.style, { left: `${x}px`, top: `${y}px`, color }); stage.appendChild(f); setTimeout(() => f.remove(), 850);
+        },
+      };
+      inst = def.create(stage, gctx); inst.start();
+    }).catch((e) => { console.error(e); body.innerHTML = '<p class="mg-note">게임을 불러오지 못했어요. 잠시 뒤 다시 해 주세요.</p>'; });
+    return () => { dead = true; inst?.destroy(); };
+  };
 }
 
 // ---------- 산책 달리기 ----------

@@ -49,7 +49,7 @@ const q = new URLSearchParams(location.search);
 // 아이 15마리(성향 × 단계) — ?pet=small_teen 또는 목록에서 고른다(11/2). ?a=로 파일을 직접 줘도 된다
 const TYPES = { small: '소형견', medium: '중형견', large: '대형견', short: '단모 고양이', long: '장모 고양이' }, STAGES = { baby: '아기', teen: '청소년', adult: '성체' };
 const PET = q.get('pet') || 'medium_baby';
-const SRC_A = q.get('a') || `../../art/3d/pets/${PET}.glb?v=${q.get('v') || '202611021900'}`, SRC_B = q.get('b');
+const SRC_A = q.get('a') || `../../art/3d/pets/${PET}.glb?v=${q.get('v') || '202611022000'}`, SRC_B = q.get('b');
 const ORDER = ['Sit', 'Down', 'Walk', 'Run', 'Dash', 'Leap'];
 const KO = { Sit: '앉기', Down: '엎드리기', Walk: '걷기', Run: '트롯', Dash: '질주', Leap: '점프' };
 const FPS = 24;   // 블렌더 장면 프레임 수 — '한 칸'이 블렌더 1프레임

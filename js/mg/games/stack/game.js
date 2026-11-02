@@ -13,6 +13,7 @@ export const stackGame = {
   describe: (r) => `퍼펙트 ${r.perfects}번 · 최대 콤보 ${r.maxCombo}`,
 
   create(stage, ctx) {
+    const fx = (name, v) => (ctx.fx ? ctx.fx(name) : vibrate(ctx.haptics, v));   // 앱이 넘긴 효과음·진동(키워봐도될까 11/2), 없으면 웹 진동만
     const S = ctx.strings;
     const skin = ctx.skin;
     const view = createCanvas(stage);
@@ -35,10 +36,10 @@ export const stackGame = {
       if (ev.type === 'perfect') {
         const { W, blockH, baseY } = metrics();
         ctx.float(`${S.perfect}${ev.combo > 1 ? ` ×${ev.combo}` : ''}`, (ev.block.l + ev.block.w / 2) * W, levelY(n, baseY, blockH) - 20, '#ff8a3d');
-        vibrate(ctx.haptics, 15);
-      }
+        fx('perfect', 15);
+      } else if (ev.type !== 'miss') fx('drop');
       if (ev.type === 'miss') {
-        vibrate(ctx.haptics, [60, 40, 60]);
+        fx('miss', [60, 40, 60]);
         gameOverAt = performance.now();
       }
       landed = 1;
@@ -59,11 +60,29 @@ export const stackGame = {
     // i층 블록의 윗면 y (카메라 반영)
     const levelY = (i, baseY, blockH) => baseY - (i - cam) * blockH;
 
-    function drawBlock(g, b, i, y, W, blockH) {
-      g.fillStyle = color(i);
-      g.fillRect(b.l * W, y, b.w * W, blockH);
-      g.fillStyle = shade(i);
-      g.fillRect(b.l * W, y + blockH * 0.78, b.w * W, blockH * 0.22);
+    // 캣타워 층(키워봐도될까 11/2 사용자 "캣타워로 바꾸자"): 위 50% = 카펫 받침(둥근 모서리), 아래 50% = 가운데 스크래처 기둥(사이잘 줄무늬).
+    // 바닥(0층)은 넓은 받침판. 잘려 떨어지는 조각은 받침만. skin.tower = false면 원래 색 블록
+    function drawBlock(g, b, i, y, W, blockH, piece = false) {
+      if (skin.tower === false) {
+        g.fillStyle = color(i); g.fillRect(b.l * W, y, b.w * W, blockH);
+        g.fillStyle = shade(i); g.fillRect(b.l * W, y + blockH * 0.78, b.w * W, blockH * 0.22);
+        return;
+      }
+      const x = b.l * W, w = b.w * W, padH = i === 0 ? blockH : blockH * 0.5, r = Math.min(8, padH / 2, w / 2);
+      if (i > 0 && !piece) {   // 기둥: 받침 아래, 아래층 받침까지
+        const pw = Math.max(10, Math.min(w * 0.32, blockH * 1.1)), px = x + w / 2 - pw / 2, py = y + padH, ph = blockH - padH;
+        g.fillStyle = '#C9A26B'; g.fillRect(px, py, pw, ph);
+        g.save(); g.beginPath(); g.rect(px, py, pw, ph); g.clip();
+        g.strokeStyle = 'rgba(120,84,40,.45)'; g.lineWidth = 1.2;
+        for (let k = -ph; k < pw; k += 5) { g.beginPath(); g.moveTo(px + k, py + ph); g.lineTo(px + k + ph, py); g.stroke(); }   // 사이잘 줄(기둥 안만)
+        g.restore();
+        g.fillStyle = 'rgba(0,0,0,.12)'; g.fillRect(px + pw * 0.72, py, pw * 0.28, ph);
+      }
+      const pal = skin.pads || ['#E9DDCB', '#B9C7D6', '#E3C4B3', '#C8D3B8'];
+      g.fillStyle = i === 0 ? '#A98767' : pal[i % pal.length];
+      g.beginPath(); g.roundRect(x, y, w, padH, r); g.fill();
+      g.fillStyle = 'rgba(0,0,0,.13)'; g.fillRect(x + r / 2, y + padH * 0.72, w - r, padH * 0.28);   // 받침 옆면 그늘
+      g.fillStyle = 'rgba(255,255,255,.35)'; g.fillRect(x + r, y + 2, w - 2 * r, Math.max(1.5, padH * 0.12));   // 카펫 윗면 빛
     }
 
     function draw(dt) {
@@ -93,7 +112,7 @@ export const stackGame = {
         f.vy += 1600 * dt;
         f.y += f.vy * dt;
         g.globalAlpha = Math.max(0, 1 - f.y / H);
-        drawBlock(g, f, f.color, levelY(f.level, baseY, blockH) + f.y, W, blockH);
+        drawBlock(g, f, f.color, levelY(f.level, baseY, blockH) + f.y, W, blockH, true);
         g.globalAlpha = 1;
       }
       while (falling.length && falling[0].y > H) falling.shift();
@@ -111,7 +130,7 @@ export const stackGame = {
         g.fillStyle = 'rgba(43,33,24,.55)';
         g.font = '700 16px sans-serif';
         g.textAlign = 'center';
-        g.fillText('화면을 눌러 떨어뜨리기', W / 2, H * 0.3);
+        g.fillText(skin.hint || '화면을 눌러 떨어뜨리기', W / 2, H * 0.3);
       }
     }
 

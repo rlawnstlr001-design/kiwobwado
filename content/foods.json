@@ -27,12 +27,16 @@
     { "id": "nuts", "name": "견과류(아몬드·호두 등)", "emoji": "🌰", "dog": "avoid", "cat": "avoid", "why": "지방이 많음", "symptom": "구토·설사·췌장염", "src": ["aspca_food"] },
     { "id": "avocado", "name": "아보카도", "emoji": "🥑", "dog": "low", "cat": "low", "why": "퍼신(새·토끼·말에게 위험)", "symptom": "개·고양이는 위험이 낮다고 알려져 있어요.", "note": "그렇다고 일부러 줄 이유는 없어요.", "src": ["aspca_food", "merck_food"] },
     { "id": "apple", "name": "사과(씨·심 빼고)", "emoji": "🍎", "dog": "ok", "cat": null, "why": "", "symptom": "", "note": "씨와 심은 꼭 빼고 작게.", "src": ["akc_fruit"] },
-    { "id": "blueberry", "name": "블루베리", "emoji": null, "dog": "ok", "cat": null, "why": "", "symptom": "", "note": "소량.", "src": ["akc_fruit"] },
-    { "id": "watermelon", "name": "수박(껍질·씨 빼고)", "emoji": "🍉", "dog": "ok", "cat": null, "why": "", "symptom": "", "note": "껍질·씨는 장을 막을 수 있어요.", "src": ["akc_fruit"] },
-    { "id": "carrot", "name": "당근", "emoji": "🥕", "dog": "ok", "cat": null, "why": "", "symptom": "", "note": "익히거나 잘게.", "src": ["akc_fruit"] },
+    { "id": "blueberry", "name": "블루베리", "emoji": null, "dog": "ok", "cat": "ok", "why": "", "symptom": "", "note": "소량. / 고양이: 씻어서 한 주 4~5알 정도", "src": ["akc_fruit", "petmd_catfood", "rc_catfood"] },
+    { "id": "watermelon", "name": "수박(껍질·씨 빼고)", "emoji": "🍉", "dog": "ok", "cat": "small", "why": "", "symptom": "", "note": "껍질·씨는 장을 막을 수 있어요. / 고양이: 당이 많아 사방 1cm 한 조각을 한 주 1~2번", "src": ["akc_fruit", "petmd_catfood", "rc_catfood"] },
+    { "id": "carrot", "name": "당근", "emoji": "🥕", "dog": "ok", "cat": "small", "why": "", "symptom": "", "note": "익히거나 잘게. / 고양이: 익힌 것만, 양념 없이", "src": ["akc_fruit", "petmd_catfood", "rc_catfood"] },
     { "id": "greenbean", "name": "그린빈", "emoji": null, "dog": "ok", "cat": null, "why": "", "symptom": "", "note": "양념 없이.", "src": ["akc_fruit"] },
-    { "id": "pea", "name": "완두", "emoji": null, "dog": "ok", "cat": null, "why": "", "symptom": "", "note": "통조림(소금) 말고 생·냉동.", "src": ["akc_fruit"] },
-    { "id": "celery", "name": "셀러리", "emoji": null, "dog": "ok", "cat": null, "why": "", "symptom": "", "note": "잘게 썰어서.", "src": ["akc_fruit"] }
+    { "id": "pea", "name": "완두", "emoji": null, "dog": "ok", "cat": "small", "why": "", "symptom": "", "note": "통조림(소금) 말고 생·냉동. / 고양이: 익혀서 양념 없이, 3~4알을 한 주 1~2번", "src": ["akc_fruit", "petmd_catfood", "rc_catfood"] },
+    { "id": "celery", "name": "셀러리", "emoji": null, "dog": "ok", "cat": null, "why": "", "symptom": "", "note": "잘게 썰어서.", "src": ["akc_fruit"] },
+    { "id": "cookedpoultry", "name": "익힌 닭·칠면조 살코기(뼈·껍질·양념 없이)", "emoji": "🍗", "dog": null, "cat": "ok", "why": "", "symptom": "", "note": "삶거나 구운 것(튀김 X). 사방 2.5cm 한 조각이면 큰 간식", "src": ["petmd_catfood", "rc_catfood"] },
+    { "id": "cookedfish", "name": "익힌 생선 살(가시·껍질 빼고)", "emoji": "🐟", "dog": null, "cat": "ok", "why": "", "symptom": "", "note": "완전히 익혀서, 양념·기름 없이 조금만. 날생선은 안 돼요", "src": ["petmd_catfood", "rc_catfood"] },
+    { "id": "cookedegg", "name": "익힌 달걀(스크램블·삶은 것)", "emoji": "🍳", "dog": null, "cat": "small", "why": "", "symptom": "", "note": "날달걀은 안 돼요. 출처가 사료 회사 자료 하나뿐이라 소량만", "src": ["rc_catfood"] },
+    { "id": "pumpkin", "name": "호박 퓌레(익힌 것, 설탕·향신료 없이)", "emoji": "🎃", "dog": null, "cat": "small", "why": "", "symptom": "", "note": "1큰술을 한 주 몇 번. 날호박은 안 돼요", "src": ["petmd_catfood", "rc_catfood"] }
   ],
-  "cat_note": "고양이에게 줘도 되는 사람 음식 목록은 공신력 있는 자료를 찾지 못했어요. 고양이는 고양이용 간식으로 주세요."
+  "cat_note": "고양이에게 줄 수 있는 사람 음식은 수의사가 쓴 PetMD 자료(2023)와 사료 회사 자료를 따랐어요. 고양이는 육식동물이라 고양이용 간식이 기본이고, 사람 음식은 익히고 양념 없이 조금만 주세요."
 }

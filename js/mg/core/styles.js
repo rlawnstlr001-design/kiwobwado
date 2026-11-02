@@ -46,6 +46,9 @@ const CSS = `
 .kpg-tile-in{position:absolute;inset:0;transition:transform .28s ease;transform-style:preserve-3d}
 .kpg-tile.is-up .kpg-tile-in,.kpg-tile.is-matched .kpg-tile-in{transform:rotateY(180deg)}
 .kpg-face{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;border-radius:12px;backface-visibility:hidden;-webkit-backface-visibility:hidden;font-size:clamp(26px,9vw,42px)}
+.kpg-fcard{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;padding:4px;text-align:center;line-height:1.15}
+.kpg-ficon{font-size:clamp(22px,6.5vw,34px)}
+.kpg-ftext{font-size:clamp(10px,2.6vw,13px);font-weight:700;color:var(--kpg-text);word-break:keep-all}
 .kpg-back{background:var(--kpg-accent);box-shadow:inset 0 -4px 0 rgba(0,0,0,.12)}
 .kpg-back::after{content:"?";color:#fff;font-weight:900;font-size:.7em;opacity:.85}
 .kpg-front{background:var(--kpg-surface);transform:rotateY(180deg);box-shadow:0 1px 0 var(--kpg-line)}

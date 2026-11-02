@@ -10,10 +10,23 @@ export const memoryGame = {
   describe: (r) => `${r.matches}쌍 · ${r.moves}번 시도${r.won ? ` · 시간 보너스 +${r.timeBonus}` : ''}`,
 
   create(stage, ctx) {
+    const fx = (name, v) => (ctx.fx ? ctx.fx(name) : vibrate(ctx.haptics, v));   // 앱이 넘긴 효과음·진동(키워봐도될까 11/2), 없으면 웹 진동만
     const S = ctx.strings;
     const pairs = ctx.skin.pairs.slice(0, MEMORY_CONFIG.pairs);
     if (pairs.length < MEMORY_CONFIG.pairs) throw new Error(`짝 그림이 ${MEMORY_CONFIG.pairs}개 필요`);
-    const sprites = pairs.map((p) => makeSprite(p));
+    // 짝 그림은 이모지·그림 주소, 또는 {a, b}(서로 다른 두 면 — 예: 위험 음식 ↔ 그 이유, 키워봐도될까 11/2). a·b = 문자열 또는 {icon, text}
+    const sprites = pairs.map((p) => (typeof p === 'object' ? null : makeSprite(p)));
+    const seenPair = new Set();
+    const faceOf = (pair) => {
+      const p = pairs[pair];
+      if (typeof p !== 'object') return spriteNode(sprites[pair]);
+      const side = seenPair.has(pair) ? p.b : p.a; seenPair.add(pair);
+      const f = typeof side === 'object' ? side : { text: side };
+      const box = el('div', 'kpg-fcard');
+      if (f.icon) box.appendChild(el('span', 'kpg-ficon', f.icon));
+      if (f.text) box.appendChild(el('span', 'kpg-ftext', f.text));
+      return box;
+    };
     const state = createMemoryState(ctx.seed, MEMORY_CONFIG);
 
     const grid = el('div', 'kpg-grid');
@@ -24,7 +37,7 @@ export const memoryGame = {
       const inner = el('div', 'kpg-tile-in');
       const back = el('div', 'kpg-face kpg-back');
       const front = el('div', 'kpg-face kpg-front');
-      front.appendChild(spriteNode(sprites[card.pair]));
+      front.appendChild(faceOf(card.pair));
       inner.append(back, front);
       tile.appendChild(inner);
       tile.addEventListener('pointerdown', (e) => {
@@ -59,8 +72,8 @@ export const memoryGame = {
         const r = tiles[ev.indexes[1]].getBoundingClientRect();
         const s = stage.getBoundingClientRect();
         ctx.float(`+${MEMORY_CONFIG.matchPoints}`, r.left - s.left + r.width / 2, r.top - s.top, '#2fa36b');
-        vibrate(ctx.haptics, 20);
-      }
+        fx(ev.type === 'win' ? 'win' : 'match', 20);
+      } else fx(ev.type === 'mismatch' ? 'mismatch' : 'flip');
       render(ev.type === 'mismatch' ? ev.indexes : []);
       if (ev.type === 'win') finish();
     }

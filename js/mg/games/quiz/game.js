@@ -10,6 +10,7 @@ export const quizGame = {
   describe: (r) => `${r.total}문제 중 ${r.correct}개 정답`,
 
   create(stage, ctx) {
+    const fx = (name, v) => (ctx.fx ? ctx.fx(name) : vibrate(ctx.haptics, v));   // 앱이 넘긴 효과음·진동(키워봐도될까 11/2), 없으면 웹 진동만
     const S = ctx.strings;
     const state = createQuizState(ctx.skin.questions, ctx.day, QUIZ_CONFIG);
 
@@ -60,7 +61,7 @@ export const quizGame = {
       nextBtn.style.width = '100%';
       reveal.append(head, el('p', '', q.exp || ''), nextBtn);
       reveal.hidden = false;
-      vibrate(ctx.haptics, good ? 20 : [40, 30, 40]);
+      fx(good ? 'correct' : 'wrong', good ? 20 : [40, 30, 40]);
     }
 
     function choose(choice) {

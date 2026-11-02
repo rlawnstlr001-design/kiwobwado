@@ -4,8 +4,10 @@
 // 11/2 추가 4종(먹이 받기·높이 쌓기·카드 짝 맞추기·OX 퀴즈)은 다른 세션에서 만든 패키지(js/mg — README 참고)의 '판'만 빌려 쓴다:
 // 패키지 자체 결과 화면·보상 규칙·광고 2배·하루 횟수는 쓰지 않고, 점수 → 코인·결과 화면은 이 앱 규칙(1코인 = 1,000원, 하루 한도)을 따른다.
 // 패키지 클래스 접두어는 앱의 .mg-* 와 겹쳐 kpg- 로 바꿔 넣었다. 문제 은행(196KB)이 있어 게임을 고를 때 불러온다
-import { C } from './content.js?v=202611021904';
-import { raceGame, agilityGame } from './race.js?v=202611021904';
+import { C } from './content.js?v=202611021917';
+import { raceGame, agilityGame } from './race.js?v=202611021917';
+import { sfx } from './sound.js?v=202611021917';
+import { haptic } from './native.js?v=202611021917';
 
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 const shuffle = (a) => { for (let i = a.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [a[i], a[j]] = [a[j], a[i]]; } return a; };
@@ -20,9 +22,9 @@ export const GAMES = {
   shisen: { title: '사천성', icon: '🧸', desc: '같은 반려용품 두 개를 두 번 이하로 꺾이는 길로 이어 없애요.', coins: (s) => Math.min(15, Math.floor(s / 13)) },
   match: { title: '간식 맞추기', icon: '🥕', desc: '이웃한 간식을 바꿔 같은 것 3개를 한 줄로 맞춰요.', coins: (s) => Math.min(15, Math.floor(s / 80)) },
   catch: { title: '먹이 받기', icon: '🧺', desc: '좌우로 끌어 먹어도 되는 음식을 받아요. 먹으면 안 되는 음식은 피하기 — 45초, 목숨 3개.', coins: (s) => Math.min(15, Math.floor(s / 5)) },
-  stack: { title: '높이 쌓기', icon: '🧱', desc: '움직이는 블록을 톡 눌러 떨어뜨려 쌓아요. 딱 맞추면 퍼펙트!', coins: (s) => Math.min(15, Math.floor(s / 3)) },
-  memory: { title: '카드 짝 맞추기', icon: '🃏', desc: '카드 16장을 뒤집어 같은 반려용품 짝을 찾아요 — 60초.', coins: (s) => Math.min(15, Math.floor(s / 10)) },
-  quiz: { title: '오늘의 OX 퀴즈', icon: '⭕', desc: '하루 5문제, 문제마다 12초. 코인은 하루 첫 판만 받아요.', coins: (s) => s * 2, daily: 1 },
+  stack: { title: '캣타워 쌓기', icon: '🐈', desc: '좌우로 움직이는 캣타워 층을 톡 눌러 쌓아요. 아래층에 딱 맞추면 퍼펙트!', coins: (s) => Math.min(15, Math.floor(s / 3)) },
+  memory: { title: '위험 음식 짝 맞추기', icon: '🃏', desc: '먹으면 안 되는 음식과 그 이유를 짝지어요 — 카드 16장, 60초.', coins: (s) => Math.min(15, Math.floor(s / 10)) },
+  quiz: { title: '동물 OX 퀴즈', icon: '⭕', desc: '동물·반려동물 5문제, 문제마다 12초. 풀 때마다 새 문제가 나와요.', coins: (s) => s * 2 },
 };
 
 let root = null;
@@ -74,32 +76,63 @@ export function openGames(ctx) {
 // ---------- 패키지 4종(js/mg) ----------
 // 패키지 runner.js의 '설명 → 결과 → 보상' 흐름은 빼고 def.create(무대, ctx)만 부른다. ctx.end(결과) → 이 앱 결과 화면(finish)
 const PKG = { catch: ['catch', 'catchGame'], stack: ['stack', 'stackGame'], memory: ['memory', 'memoryGame'], quiz: ['quiz', 'quizGame'] };
-const MEM_PAIRS = ['🎾', '🧸', '🥣', '🎀', '🐾', '🧶', '🛁', '🦴'];   // 사천성과 같은 반려용품(오래된 기기에서도 보이는 이모지)
-function pkgSkin(id, ctx) {
-  if (id === 'catch') {   // 이 동물이 먹어도 되는 음식을 받고, 먹으면 안 되는 음식(foods.json 'no') 하나를 피한다 — 산책 달리기와 같은 자료
-    const foods = C.foods.items.filter((f) => f.emoji);
-    const good = foods.filter((f) => f[ctx.species] === 'ok').map((f) => f.emoji);
-    const bad = foods.filter((f) => f[ctx.species] === 'no');
-    const b = pick(bad);
+const QUIZ_CATS = ['동물', '포유류', '새', '바다·파충류', '곤충·작은 생물', '반려동물'];   // 11/2 사용자 "동물·반려 분야로 좁히자"(528문제)
+const QUIZ_SEEN = 'kiwo:quizSeen';
+// 매번 다른 문제(사용자 "문제는 매번 다르게"): 안 본 문제에서 무작위 5개, 다 보면 처음부터. 본 문제는 기기에 저장(문제 문장 앞 24자로)
+function quizPick(bank) {
+  const pool = bank.filter((q) => QUIZ_CATS.includes(q.cat));
+  let seen = [];
+  try { seen = JSON.parse(localStorage.getItem(QUIZ_SEEN) || '[]'); } catch { /* 저장소 없음 */ }
+  const key = (q) => q.q.slice(0, 24); const seenSet = new Set(seen);
+  let fresh = pool.filter((q) => !seenSet.has(key(q)));
+  if (fresh.length < 5) { seen = []; fresh = pool; }
+  const out = shuffle([...fresh]).slice(0, 5);
+  try { localStorage.setItem(QUIZ_SEEN, JSON.stringify([...seen, ...out.map(key)])); } catch { /* 저장소 없음 */ }
+  return out;
+}
+const shortWhy = (w) => (w || '').split('(')[0].trim();
+function pkgSkin(id, ctx, mods) {
+  const foods = C.foods.items.filter((f) => f.emoji);
+  if (id === 'catch') {   // 이 동물이 먹어도 되는 음식을 받고, 먹으면 안 되는 음식(no) 하나를 피한다
+    // 받을 음식 = ok, 또는 small 중 주의 사유(why)가 없는 것(고양이 간식 자료는 '소량'뿐) — 우유(small, 유당)처럼 사유가 있는 건 빼고
+    const good = [...new Set(foods.filter((f) => f[ctx.species] === 'ok' || (f[ctx.species] === 'small' && !f.why)).map((f) => f.emoji))];
+    const b = pick(foods.filter((f) => f[ctx.species] === 'no' && !good.includes(f.emoji)));   // 같은 그림(🐟 생선 살 ↔ 🐟 생선 가시)은 피할 음식으로 안 고른다
     ctx.note = null; ctx.pkgBad = b;
-    if (good.length < 3) good.push(...['🐟', '🍗', '🥚'].filter((e) => !good.includes(e)));   // 고양이는 foods.json 'ok'가 적다 — 생선·익힌 닭고기·익힌 달걀로 채운다
-    return { food: good, bomb: b?.emoji ?? '💣' };
+    return good.length >= 2 ? { food: good, bomb: b?.emoji ?? '💣' } : { bomb: b?.emoji ?? '💣' };
   }
-  if (id === 'memory') return { pairs: MEM_PAIRS };
+  if (id === 'memory') {   // 위험 음식 ↔ 그 이유(11/2 사용자 "3번 바꿔줘" — 같은 그림 찾기 대신 공부형). 같은 그림은 한 번만
+    const bad = shuffle(foods.filter((f) => f[ctx.species] === 'no' && f.why)); const used = new Set(); const pairs = [];
+    for (const f of bad) {   // 같은 그림·비슷한 이유(초콜릿 '테오브로민·카페인' ↔ 코코아 '테오브로민이 가장 진함')는 한 판에 하나만
+      const wk = shortWhy(f.why).slice(0, 4);
+      if (used.has(f.emoji) || used.has(wk)) continue; used.add(f.emoji); used.add(wk); pairs.push({ a: { icon: f.emoji, text: f.name.split('(')[0].split('·')[0] }, b: { icon: '⚠️', text: shortWhy(f.why) } }); if (pairs.length === 8) break;
+    }
+    return pairs.length === 8 ? { pairs } : {};
+  }
+  if (id === 'quiz') return { questions: quizPick(mods.QUESTIONS_KO) };
+  if (id === 'stack') return { hint: '화면을 눌러 캣타워 층 올리기' };
   return {};
 }
+// 효과음·진동(11/2 사용자 "효과음과 진동 넣어줘"): 앱 효과음(sound.js)과 앱 진동(native.js — 앱은 시스템 '가벼운 충격', 웹은 짧은 진동)
+const FX = {
+  catch: () => { sfx.pop(); haptic('tap'); }, gold: () => { sfx.coin(); haptic('tap'); }, heart: () => { sfx.ding(); haptic('tap'); }, bomb: () => { sfx.door(); haptic('bad'); },
+  drop: () => { sfx.tap(); haptic('tap'); }, perfect: () => { sfx.ding(); haptic('tap'); }, miss: () => { sfx.door(); haptic('bad'); },
+  flip: () => sfx.tap(), match: () => { sfx.coin(); haptic('tap'); }, mismatch: () => haptic('light'), win: () => { sfx.fanfare(); haptic('tap'); },
+  correct: () => { sfx.ding(); haptic('tap'); }, wrong: () => { sfx.door(); haptic('bad'); },
+};
 function pkgGame(id) {
   return (body, ctx, done) => {
     let inst = null, dead = false;
     body.innerHTML = `<div class="kpg-root mgp"><div class="kpg-top"><div class="kpg-title"></div><div class="kpg-hud"></div></div><div class="kpg-stage"></div></div>`;
     const stage = body.querySelector('.kpg-stage'), hudBox = body.querySelector('.kpg-hud');
     const [dir, name] = PKG[id];
-    Promise.all([import(`./mg/games/${dir}/game.js?v=202611021904`), import('./mg/core/styles.js?v=202611021904'), import('./mg/core/strings.js?v=202611021904'), import('./mg/core/rewards.js?v=202611021904')]).then(([g, st, strs, rw]) => {
+    Promise.all([import(`./mg/games/${dir}/game.js?v=202611021917`), import('./mg/core/styles.js?v=202611021917'), import('./mg/core/strings.js?v=202611021917'), import('./mg/core/rewards.js?v=202611021917'),
+      id === 'quiz' ? import('./mg/games/quiz/questions.ko.js?v=202611021917') : {}]).then(([g, st, strs, rw, qs]) => {
       if (dead) return;
       const def = g[name]; st.injectStyles(document);
       let lastHud = '';
       const gctx = {
-        strings: strs.STRINGS_KO, skin: { ...def.defaultSkin, ...pkgSkin(id, ctx) }, character: ctx.pet?.src || '🐶', haptics: true,
+        strings: strs.STRINGS_KO, skin: { ...def.defaultSkin, ...pkgSkin(id, ctx, qs) }, character: ctx.pet?.src || '🐶', haptics: true,
+        fx: (n) => { try { FX[n]?.(); } catch { /* 소리 없음 */ } },
         seed: Date.now() >>> 0, day: rw.dateKey(),
         hud(items) {
           const key = items.map((i) => `${i.label}:${i.value}`).join('|');

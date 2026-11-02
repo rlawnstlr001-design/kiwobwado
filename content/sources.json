@@ -559,5 +559,19 @@
   "year": "",
   "grade": "A",
   "url": "https://www.aspca.org/pet-care/cat-care/common-cat-behavior-issues/litter-box-problems"
+ },
+ "petmd_catfood": {
+  "title": "What Human Food Can Cats Eat?",
+  "org": "PetMD (수의사 Sandra C. Mitchell, DVM)",
+  "year": "2023",
+  "grade": "B",
+  "url": "https://www.petmd.com/cat/nutrition/what-human-foods-can-cats-eat"
+ },
+ "rc_catfood": {
+  "title": "Human foods cats can eat",
+  "org": "Royal Canin(사료 회사)",
+  "year": "",
+  "grade": "C",
+  "url": "https://www.royalcanin.com/us/cats/health-and-wellbeing/human-foods-cats-can-eat"
  }
 }

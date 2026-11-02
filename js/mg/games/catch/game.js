@@ -17,6 +17,7 @@ export const catchGame = {
   describe: (r) => `받은 먹이 ${r.caught}개 · 폭탄 ${r.bombsHit}번`,
 
   create(stage, ctx) {
+    const fx = (name, v) => (ctx.fx ? ctx.fx(name) : vibrate(ctx.haptics, v));   // 앱이 넘긴 효과음·진동(키워봐도될까 11/2), 없으면 웹 진동만
     const cfg = CATCH_CONFIG;
     const S = ctx.strings;
     const skin = ctx.skin;
@@ -102,12 +103,12 @@ export const catchGame = {
       for (const ev of events) {
         const x = ev.x * view.width;
         const y = ev.y * view.height - 30;
-        if (ev.type === 'catch') ctx.float(`+${ev.value}`, x, y, ev.kind === 'gold' ? '#d99500' : '#2fa36b');
-        if (ev.type === 'heart') ctx.float('+♥', x, y, '#e5484d');
+        if (ev.type === 'catch') { ctx.float(`+${ev.value}`, x, y, ev.kind === 'gold' ? '#d99500' : '#2fa36b'); fx(ev.kind === 'gold' ? 'gold' : 'catch'); }
+        if (ev.type === 'heart') { ctx.float('+♥', x, y, '#e5484d'); fx('heart'); }
         if (ev.type === 'bomb') {
           flash = 1;
           ctx.float('−♥', x, y, '#e5484d');
-          vibrate(ctx.haptics, 120);
+          fx('bomb', 120);
         }
       }
       draw();

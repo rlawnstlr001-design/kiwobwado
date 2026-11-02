@@ -262,8 +262,8 @@ export function agility3dGame(body, ctx, done, { base = '' } = {}) {
   let dog3 = null;
   // 우리 아이 3D(art/3d/pets/<성향_단계>.glb — 그림→Meshy 3D→tools/rig_pet.py로 시바 뼈대·동작, 키 1로 통일)가 있으면 그것, 없으면 강아지는 시바를 털색만 바꿔
   (async () => {
-    let g = await loadGLB(`${base}art/3d/pets/${ctx.type}_${ctx.stage}.glb?v=202611021730`), own = !!g;
-    if (!g && COAT[ctx.type]) g = await loadGLB(`${base}art/3d/shiba.glb?v=202611021730`);
+    let g = await loadGLB(`${base}art/3d/pets/${ctx.type}_${ctx.stage}.glb?v=202611021830`), own = !!g;
+    if (!g && COAT[ctx.type]) g = await loadGLB(`${base}art/3d/shiba.glb?v=202611021830`);
     return { g, own };
   })().then(({ g, own }) => {
     if (!g || over) return;
@@ -274,7 +274,8 @@ export function agility3dGame(body, ctx, done, { base = '' } = {}) {
       const ms = Array.isArray(o.material) ? o.material : [o.material];
       for (const m of ms) { if (!own) { if (m.name === 'Main') m.color.set(main); if (m.name === 'Main_Light') m.color.set(light); } m.roughness = 0.9; m.metalness = 0; }
     });
-    const k = own ? H * 1.3 : (H * 1.25 * (STAGE_K[ctx.stage] ?? 1)) / 3.0;
+    // 우리 3D는 키 1로 통일돼 있다 — 아기 크기(H×1.3, 10/29에 맞춘 값)를 기준으로 단계만큼 키운다(11/2 15마리 전부 3D)
+    const k = own ? H * 1.3 * (STAGE_K[ctx.stage] ?? 1) / STAGE_K.baby : (H * 1.25 * (STAGE_K[ctx.stage] ?? 1)) / 3.0;
     const holder = new THREE.Group(); holder.add(model); model.scale.setScalar(k); scene.add(holder);
     const mixer = new THREE.AnimationMixer(model);
     const clip = (n) => THREE.AnimationClip.findByName(g.animations, n) ?? THREE.AnimationClip.findByName(g.animations, `AnimalArmature|${n}`);

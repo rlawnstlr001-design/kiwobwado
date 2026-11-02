@@ -15,6 +15,7 @@
   .lbl { color: var(--sub); font-size: 12px; width: 100%; margin-top: 4px; }
   button { border: 1px solid var(--line); background: #fff; border-radius: 9px; padding: 5px 9px; font: inherit; cursor: pointer; }
   button.on { background: var(--accent); border-color: var(--accent); color: #fff; font-weight: 700; }
+  select { border: 1px solid var(--line); background: #fff; border-radius: 9px; padding: 5px 9px; font: inherit; width: 100%; }
   input[type=range] { flex: 1; }
   .note { color: var(--sub); font-size: 11px; line-height: 1.5; margin-top: 6px; }
   .tag { position: fixed; bottom: 14px; padding: 4px 10px; border-radius: 8px; background: rgba(255,255,255,.9); border: 1px solid var(--line); font-size: 12px; }
@@ -23,6 +24,7 @@
 <div id="stage"></div>
 <div class="panel">
   <h1>3D 아이 동작 확인</h1>
+  <div class="lbl">아이</div><div class="row"><select id="pet"></select></div>
   <div class="lbl">동작</div><div class="row" id="acts"></div>
   <div class="lbl">속도 <b id="spdv">0.5</b>배</div>
   <div class="row"><input type="range" id="spd" min="0.05" max="1.5" step="0.05" value="0.5"></div>
@@ -44,7 +46,10 @@ import { makeBlinker, makeMorph } from '../../js/blink.js?v=202611021730';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 
 const q = new URLSearchParams(location.search);
-const SRC_A = q.get('a') || '../../art/3d/pets/medium_baby.glb', SRC_B = q.get('b');
+// 아이 15마리(성향 × 단계) — ?pet=small_teen 또는 목록에서 고른다(11/2). ?a=로 파일을 직접 줘도 된다
+const TYPES = { small: '소형견', medium: '중형견', large: '대형견', short: '단모 고양이', long: '장모 고양이' }, STAGES = { baby: '아기', teen: '청소년', adult: '성체' };
+const PET = q.get('pet') || 'medium_baby';
+const SRC_A = q.get('a') || `../../art/3d/pets/${PET}.glb?v=${q.get('v') || '202611021830'}`, SRC_B = q.get('b');
 const ORDER = ['Sit', 'Down', 'Walk', 'Run', 'Dash', 'Leap'];
 const KO = { Sit: '앉기', Down: '엎드리기', Walk: '걷기', Run: '트롯', Dash: '질주', Leap: '점프' };
 const FPS = 24;   // 블렌더 장면 프레임 수 — '한 칸'이 블렌더 1프레임
@@ -128,6 +133,10 @@ function view(name) {
 
 await load(SRC_A, 0, SRC_B ? { id: 'tagA', text: '지금', side: 'left' } : null);
 if (SRC_B) await load(SRC_B, 0.6, { id: 'tagB', text: '비교: ' + SRC_B.split('/').pop(), side: 'right' });
+for (const t of Object.keys(TYPES)) for (const st of Object.keys(STAGES)) {
+  const o = document.createElement('option'); o.value = `${t}_${st}`; o.textContent = `${TYPES[t]} ${STAGES[st]}`; o.selected = o.value === PET; document.getElementById('pet').appendChild(o);
+}
+document.getElementById('pet').onchange = (e) => { q.set('pet', e.target.value); q.delete('a'); location.search = q.toString(); };
 const names = ORDER.filter((n) => pets[0].clips[n]).concat(Object.keys(pets[0].clips).filter((n) => !ORDER.includes(n)));
 for (const n of names) {
   const b = document.createElement('button'); b.textContent = KO[n] || n; b.dataset.n = n; b.onclick = () => play(n);

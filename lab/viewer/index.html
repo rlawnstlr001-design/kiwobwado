@@ -113,8 +113,12 @@ function step(dt) {
 }
 
 const VIEWS = { '옆(왼쪽)': [1, 0.15, 0], '옆(오른쪽)': [-1, 0.15, 0], '앞': [0, 0.2, 1], '뒤(게임)': [0, 0.45, -1], '위': [0, 1, 0.01], '비스듬히': [0.8, 0.45, 0.8] };
+// 비교 모델은 늘 화면 오른쪽에 — 보는 방향마다 '화면 오른쪽'이 다른 축이다(옆에서 보면 x로 놓은 둘이 겹쳤다)
+const SIDE_OF = { '옆(왼쪽)': [0, 0, -0.75], '옆(오른쪽)': [0, 0, 0.75], '앞': [0.6, 0, 0], '뒤(게임)': [-0.6, 0, 0], '위': [0.6, 0, 0], '비스듬히': [0.5, 0, -0.5] };
 function view(name) {
-  const d = new THREE.Vector3(...VIEWS[name]).normalize(), c = new THREE.Vector3(SRC_B ? 0.3 : 0, 0.17, 0);
+  const off = new THREE.Vector3(...SIDE_OF[name]);
+  if (pets[1]) { pets[1].root.position.copy(off); play(cur); }   // 발자취를 새 자리에서 다시 그린다
+  const d = new THREE.Vector3(...VIEWS[name]).normalize(), c = new THREE.Vector3(0, 0.17, 0).addScaledVector(off, SRC_B ? 0.5 : 0);
   cam.position.copy(c).addScaledVector(d, SRC_B ? 1.6 : 1.1); ctl.target.copy(c); ctl.update();
   document.querySelectorAll('#views button').forEach((b) => b.classList.toggle('on', b.textContent === name));
 }

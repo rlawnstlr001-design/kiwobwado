@@ -1,0 +1,151 @@
+<!doctype html>
+<html lang="ko"><head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>3D 아이 동작 확인</title>
+<!-- 11/2 사용자 "휴대폰으로는 뒷모습만 보니까 잘 안보여 앞으로 결과는 이 컴퓨터에서 확인할수 있게끔 보여줘"
+     PC에서 아무 각도로 돌려 보며 동작을 고르고·느리게·한 프레임씩 본다. ?b=<다른 glb> 를 붙이면 왼쪽(지금)·오른쪽(비교) 나란히. -->
+<style>
+  :root { --bg: #EEF3F1; --ink: #2D2A26; --sub: #6E665C; --card: #fff; --line: #D9D3C7; --accent: #E2733D; }
+  html, body { margin: 0; height: 100%; overflow: hidden; background: var(--bg); color: var(--ink); font-family: Pretendard, -apple-system, 'Malgun Gothic', sans-serif; }
+  #stage { position: fixed; inset: 0; }
+  .panel { position: fixed; left: 12px; top: 12px; width: 280px; max-width: calc(100vw - 24px); background: var(--card); border: 1px solid var(--line); border-radius: 14px; padding: 12px; box-shadow: 0 6px 24px rgba(0,0,0,.08); font-size: 13px; }
+  .panel h1 { font-size: 15px; margin: 0 0 8px; }
+  .row { display: flex; flex-wrap: wrap; gap: 6px; margin: 6px 0; align-items: center; }
+  .lbl { color: var(--sub); font-size: 12px; width: 100%; margin-top: 4px; }
+  button { border: 1px solid var(--line); background: #fff; border-radius: 9px; padding: 5px 9px; font: inherit; cursor: pointer; }
+  button.on { background: var(--accent); border-color: var(--accent); color: #fff; font-weight: 700; }
+  input[type=range] { flex: 1; }
+  .note { color: var(--sub); font-size: 11px; line-height: 1.5; margin-top: 6px; }
+  .tag { position: fixed; bottom: 14px; padding: 4px 10px; border-radius: 8px; background: rgba(255,255,255,.9); border: 1px solid var(--line); font-size: 12px; }
+</style>
+</head><body>
+<div id="stage"></div>
+<div class="panel">
+  <h1>3D 아이 동작 확인</h1>
+  <div class="lbl">동작</div><div class="row" id="acts"></div>
+  <div class="lbl">속도 <b id="spdv">0.5</b>배</div>
+  <div class="row"><input type="range" id="spd" min="0.05" max="1.5" step="0.05" value="0.5"></div>
+  <div class="row"><button id="play">⏸ 멈춤</button><button id="prev">◀ 한 칸</button><button id="next">한 칸 ▶</button><span id="fr"></span></div>
+  <div class="lbl">보는 방향</div>
+  <div class="row" id="views"></div>
+  <div class="lbl">보조 표시</div>
+  <div class="row"><button id="trail" class="on">발자취</button><button id="bones">뼈</button><button id="wire">격자</button></div>
+  <div class="note">마우스 왼쪽 끌기 = 돌리기 · 휠 = 확대 · 오른쪽 끌기 = 옮기기<br>발자취: 빨강 뒷발 · 파랑 앞발(왼쪽 다리)</div>
+</div>
+<div class="tag" id="tagA" style="display:none"></div><div class="tag" id="tagB" style="display:none"></div>
+<script type="importmap">{ "imports": { "three": "https://unpkg.com/three@0.160.0/build/three.module.js", "three/addons/": "https://unpkg.com/three@0.160.0/examples/jsm/" } }</script>
+<script type="module">
+import * as THREE from 'three';
+import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
+import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+
+const q = new URLSearchParams(location.search);
+const SRC_A = q.get('a') || '../../art/3d/pets/medium_baby.glb', SRC_B = q.get('b');
+const ORDER = ['Sit', 'Down', 'Walk', 'Run', 'Dash', 'Leap'];
+const KO = { Sit: '앉기', Down: '엎드리기', Walk: '걷기', Run: '트롯', Dash: '질주', Leap: '점프' };
+const FPS = 24;   // 블렌더 장면 프레임 수 — '한 칸'이 블렌더 1프레임
+
+const renderer = new THREE.WebGLRenderer({ antialias: true });
+renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
+renderer.shadowMap.enabled = true;
+document.getElementById('stage').appendChild(renderer.domElement);
+const scene = new THREE.Scene(); scene.background = new THREE.Color(0xEEF3F1);
+const cam = new THREE.PerspectiveCamera(35, 1, 0.01, 100);
+const ctl = new OrbitControls(cam, renderer.domElement); ctl.enableDamping = true;
+scene.add(new THREE.HemisphereLight(0xffffff, 0xb7c7a8, 1.6));
+const sun = new THREE.DirectionalLight(0xffffff, 1.6); sun.position.set(2, 4, 3); sun.castShadow = true;
+sun.shadow.mapSize.set(2048, 2048); Object.assign(sun.shadow.camera, { left: -2, right: 2, top: 2, bottom: -2 }); scene.add(sun);
+const ground = new THREE.Mesh(new THREE.PlaneGeometry(20, 20), new THREE.MeshStandardMaterial({ color: 0xA9C99A }));
+ground.rotation.x = -Math.PI / 2; ground.receiveShadow = true; scene.add(ground);
+const grid = new THREE.GridHelper(4, 40, 0x6E8F5E, 0x8FB07E); grid.position.y = 0.001; grid.visible = false; scene.add(grid);
+
+function resize() { renderer.setSize(innerWidth, innerHeight); cam.aspect = innerWidth / innerHeight; cam.updateProjectionMatrix(); }
+addEventListener('resize', resize); resize();
+
+const loader = new GLTFLoader();
+const pets = [];
+async function load(src, x, tag) {
+  const g = await loader.loadAsync(src + (src.includes('?') ? '' : `?t=${Date.now()}`));
+  const root = g.scene;
+  // rig_pet.py가 키 1·바닥 0으로 맞춰 내보낸다 → 실제 아이 키 정도(0.35m)로 (Box3는 뼈대 배율 때문에 틀린 값을 준다)
+  root.scale.setScalar(0.35); root.position.set(x, 0, 0);
+  root.rotation.y = Math.PI;   // 머리가 +z(카메라 쪽 기본 '앞')로
+  root.traverse((o) => { if (o.isMesh) { o.castShadow = true; o.frustumCulled = false; } });
+  scene.add(root);
+  const mixer = new THREE.AnimationMixer(root), clips = {};
+  for (const c of g.animations) clips[c.name.split('|').pop()] = c;
+  const bonesHelper = new THREE.SkeletonHelper(root); bonesHelper.visible = false; scene.add(bonesHelper);
+  const find = (p) => { let b = null; root.traverse((o) => { if (!b && o.isBone && o.name.startsWith(p)) b = o; }); return b; };
+  const paws = [find('IKBackLegL'), find('IKFrontLegL')].filter(Boolean);
+  const trails = paws.map((_, i) => {
+    const geo = new THREE.BufferGeometry(); geo.setAttribute('position', new THREE.BufferAttribute(new Float32Array(3 * 121), 3));
+    const ln = new THREE.Line(geo, new THREE.LineBasicMaterial({ color: i ? 0x2F6FD6 : 0xD64035, depthTest: false })); ln.frustumCulled = false; ln.renderOrder = 9; scene.add(ln);
+    return { ln };
+  });
+  if (tag) { const el = document.getElementById(tag.id); el.textContent = tag.text; el.style.display = 'block'; el.style[tag.side] = '14px'; }
+  const pet = { root, mixer, clips, bonesHelper, paws, trails, action: null };
+  pets.push(pet); return pet;
+}
+
+let cur = 'Sit', paused = false, speed = 0.5;
+function play(name) {
+  cur = name;
+  for (const p of pets) {
+    const c = p.clips[name]; if (!c) continue;
+    p.mixer.stopAllAction(); p.action = p.mixer.clipAction(c); p.action.reset().play();
+    // 발자취 = 한 동작 동안 발이 지나간 길 전체(블렌더 Motion Paths와 같은 것) — 미리 120칸 돌려 그려 둔다
+    p.trails.forEach((t, i) => {
+      const arr = t.ln.geometry.attributes.position.array, v = new THREE.Vector3();
+      for (let k = 0; k <= 120; k++) { p.mixer.setTime(c.duration * k / 120); p.root.updateMatrixWorld(true); p.paws[i].getWorldPosition(v); arr.set([v.x, v.y, v.z], 3 * k); }
+      t.ln.geometry.attributes.position.needsUpdate = true; t.ln.geometry.setDrawRange(0, 121);
+    });
+    p.mixer.setTime(0);
+  }
+  document.querySelectorAll('#acts button').forEach((b) => b.classList.toggle('on', b.dataset.n === name));
+}
+function step(dt) {
+  for (const p of pets) {
+    p.mixer.update(dt);
+  }
+  const a = pets[0]?.action;
+  if (a) document.getElementById('fr').textContent = `${Math.round(a.time * FPS)} / ${Math.round(a.getClip().duration * FPS)}`;
+}
+
+const VIEWS = { '옆(왼쪽)': [1, 0.15, 0], '옆(오른쪽)': [-1, 0.15, 0], '앞': [0, 0.2, 1], '뒤(게임)': [0, 0.45, -1], '위': [0, 1, 0.01], '비스듬히': [0.8, 0.45, 0.8] };
+function view(name) {
+  const d = new THREE.Vector3(...VIEWS[name]).normalize(), c = new THREE.Vector3(SRC_B ? 0.3 : 0, 0.17, 0);
+  cam.position.copy(c).addScaledVector(d, SRC_B ? 1.6 : 1.1); ctl.target.copy(c); ctl.update();
+  document.querySelectorAll('#views button').forEach((b) => b.classList.toggle('on', b.textContent === name));
+}
+
+await load(SRC_A, 0, SRC_B ? { id: 'tagA', text: '지금', side: 'left' } : null);
+if (SRC_B) await load(SRC_B, 0.6, { id: 'tagB', text: '비교: ' + SRC_B.split('/').pop(), side: 'right' });
+const names = ORDER.filter((n) => pets[0].clips[n]).concat(Object.keys(pets[0].clips).filter((n) => !ORDER.includes(n)));
+for (const n of names) {
+  const b = document.createElement('button'); b.textContent = KO[n] || n; b.dataset.n = n; b.onclick = () => play(n);
+  document.getElementById('acts').appendChild(b);
+}
+for (const n of Object.keys(VIEWS)) {
+  const b = document.createElement('button'); b.textContent = n; b.onclick = () => view(n); document.getElementById('views').appendChild(b);
+}
+const $ = (id) => document.getElementById(id);
+$('spd').oninput = (e) => { speed = +e.target.value; $('spdv').textContent = speed.toFixed(2); };
+$('play').onclick = () => { paused = !paused; $('play').textContent = paused ? '▶ 재생' : '⏸ 멈춤'; };
+$('next').onclick = () => { paused = true; $('play').textContent = '▶ 재생'; step(1 / FPS); };
+$('prev').onclick = () => { paused = true; $('play').textContent = '▶ 재생'; step(-1 / FPS); };
+$('trail').onclick = (e) => { e.target.classList.toggle('on'); pets.forEach((p) => p.trails.forEach((t) => (t.ln.visible = e.target.classList.contains('on')))); };
+$('bones').onclick = (e) => { e.target.classList.toggle('on'); pets.forEach((p) => (p.bonesHelper.visible = e.target.classList.contains('on'))); };
+$('wire').onclick = (e) => { e.target.classList.toggle('on'); grid.visible = e.target.classList.contains('on'); };
+play(q.get('act') || 'Dash'); view(q.get('view') || '옆(왼쪽)');
+if (q.get('speed')) { speed = +q.get('speed'); $('spd').value = speed; $('spdv').textContent = speed.toFixed(2); }
+
+const clock = new THREE.Clock();
+window.__viewer = { pets, play, view, step, setPaused: (v) => (paused = v) };
+renderer.setAnimationLoop(() => {
+  const dt = clock.getDelta();
+  if (!paused) step(dt * speed);
+  ctl.update(); renderer.render(scene, cam);
+});
+</script>
+</body></html>

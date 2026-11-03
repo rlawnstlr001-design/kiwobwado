@@ -1,20 +1,20 @@
 // 키워봐도될까 — 내 생활 그대로 30일 키워 보고 반려 준비도를 확인하는 입양 전 체험
-import * as db from './db.js?v=202611031004';
-import * as E from './engine.js?v=202611031004';
-import { C, loadContent, eventById, lessonById, foodById, momentById } from './content.js?v=202611031004';
-import { track } from './track.js?v=202611031004';
-import { roomHTML, mountRoom, timeOfDay, loadAnim, clipInfo } from './room.js?v=202611031004';
-import { openGames, GAMES, titleOf } from './games.js?v=202611031004';
-import * as K from './care.js?v=202611031004';
-import { openShop, openVet, openTreats } from './shop.js?v=202611031004';
-import * as M from './money.js?v=202611031004';
-import { isApp, initNative, scheduleCare, exactAlarm, shareImage, saveWidget, widgetCount } from './native.js?v=202611031004';
-import { makeCard } from './card.js?v=202611031004';
-import { runGuide } from './guide.js?v=202611031004';
-import { handCare } from './handcare.js?v=202611031004';
-import { sfx, ambient, stopAmbient, soundOn, setSound } from './sound.js?v=202611031004';
-import * as F from './fun.js?v=202611031004';
-import { training } from './train.js?v=202611031004';
+import * as db from './db.js?v=202611031012';
+import * as E from './engine.js?v=202611031012';
+import { C, loadContent, eventById, lessonById, foodById, momentById } from './content.js?v=202611031012';
+import { track } from './track.js?v=202611031012';
+import { roomHTML, mountRoom, timeOfDay, loadAnim, clipInfo } from './room.js?v=202611031012';
+import { openGames, GAMES, titleOf } from './games.js?v=202611031012';
+import * as K from './care.js?v=202611031012';
+import { openShop, openVet, openTreats } from './shop.js?v=202611031012';
+import * as M from './money.js?v=202611031012';
+import { isApp, initNative, scheduleCare, exactAlarm, shareImage, saveWidget, widgetCount } from './native.js?v=202611031012';
+import { makeCard } from './card.js?v=202611031012';
+import { runGuide } from './guide.js?v=202611031012';
+import { handCare } from './handcare.js?v=202611031012';
+import { sfx, ambient, stopAmbient, soundOn, setSound } from './sound.js?v=202611031012';
+import * as F from './fun.js?v=202611031012';
+import { training } from './train.js?v=202611031012';
 
 const $ = (s, el = document) => el.querySelector(s);
 const view = $('#view');
@@ -578,6 +578,7 @@ const TIPS = {
 };
 TIPS.avoid_dog = ['마음이 상해서 피해요', '스트레스를 받거나 마음이 힘든 개는 숨거나, 사람에게서 뒷걸음질 치며 피하기도 해요. 억지로 붙잡지 말고 밥·산책·놀이를 제때 챙기며 기다려 주세요. 스스로 다가오면 그때 부드럽게 쓰다듬어 주세요.', ['dogstrust_stress', 'bluecross_dog_stress']];
 TIPS.avoid_cat = ['마음이 상해서 숨었어요', '고양이는 스트레스를 받으면 오래 숨어 있거나 사람을 피하는 식으로 조용히 드러내요. 억지로 꺼내지 말고 밥·화장실·놀이를 제때 챙기며 기다려 주세요. 스스로 나오면 그때 다가가세요.', ['icatcare_stress', 'bluecross_cat_stress']];
+TIPS.tug_rules = ['터그 놀이에도 규칙이 있어요', '줄은 너무 세게 당기지 말고, 아이가 너무 흥분하면 손을 몸 가까이 가만히 두고 잠깐 멈췄다가 다시 해요. 이빨이 손에 닿으면 그 판은 잠깐 쉬어요 — 이빨은 장난감에만!', ['bluecross_play', 'rspca_play'], '놀이'];
 TIPS.shy_dog = ['아직 낯설어해요', '데려온 첫 3일쯤은 새 집에 적응하는 시간이에요. 숨거나, 잠이 많거나, 덜 먹고 사람을 망설이는 게 흔해요. 억지로 만지기보다 조용한 자리를 마련하고 밥·배변 시간을 일정하게 지켜 주세요. 스스로 다가오면 그때 쓰다듬어 주세요.', ['hsnt_333']];
 TIPS.brush_long = ['엉킨 털은 가위로 자르지 마세요', '털이 긴 고양이는 매일 빗어 주는 게 좋아요. 다리 안쪽·엉덩이·가슴·목둘레가 잘 엉켜요. 엉킨 털은 피부에 바짝 붙어 있어서 가위로 자르다 다칠 수 있어요 — 심하면 동물병원에 맡겨요.', ['vca_longhair'], '빗질'];
 TIPS.brush_rough = ['살살, 짧게 빗어 주세요', '엉킨 털을 세게 당기면 아파서 빗질 자체를 싫어하게 될 수 있어요. 짧게 여러 번 살살 풀고, 끝나면 칭찬해 주세요.', [], '빗질'];
@@ -690,6 +691,18 @@ const hands = (kind) => {
   track(`hand_${kind}`);
   return handCare(kind, { type: P().type, stage, cat: species() === 'cat', longHair: !!T().brushDaily });
 };
+// 손으로 놀아 주기(11/3 사용자 "터그놀이는 터치로, 낚싯대는 터치 좌우로 같이 놀아 주는 느낌"): 터그 로프(강아지)·깃털 낚싯대(고양이)를 샀으면
+// 확대 화면에서 직접 논다. 끝까지 하면 { ok, toy, rough }, 그 장난감이 없으면 null(예전처럼 버튼 한 번 놀이)
+async function handPlay() {
+  const id = species() === 'dog' ? 'toy_tug' : 'toy_wand';
+  if (!(S.inv?.toys ?? []).includes(id)) return null;
+  const r = await hands(id === 'toy_tug' ? 'tug' : 'wand');
+  return { ...r, toy: C.shop.items.find((i) => i.id === id) };
+}
+// 세게 당기거나 '잠깐'을 무시했으면 마음이 조금 내려가고 한 번 알려 준다
+function playAfter(r) {
+  if (r.rough >= 2) { S.stats = E.applyFx(S.stats, { bond: -1 }); toast('너무 세게 놀아서 조금 겁먹었어요'); strokeTip('tug_rules'); }
+}
 // 세게 빗었으면(엉킨 털이 당겨짐) 마음이 조금 내려가고 한 번 알려 준다. 장모 고양이는 첫 빗질 뒤 엉킨 털 안내
 function brushAfter(rough) {
   if (rough >= 3) { S.stats = E.applyFx(S.stats, { bond: -1 }); toast('세게 빗어서 빗질을 조금 무서워해요'); strokeTip('brush_rough'); }
@@ -718,6 +731,11 @@ async function doAct(kind) {
       if (kind === 'brush') brushAfter(r.rough);
       if (kind === 'litter') strokeTip('litter_daily');
     }
+    if (kind === 'play') {
+      const r = await handPlay();
+      if (r && !r.ok) { BUSY = false; return; }
+      if (r) { S.stats = E.applyFx(S.stats, { habit: 1 }); playAfter(r); }
+    }
     S.results[a.task.id] = { status, at: nm };
     S.lastDone = now().getTime();
     await save();
@@ -733,12 +751,15 @@ async function doAct(kind) {
     const n = S.freePlay[key] || 0;
     if (n >= 3) return ROOM.nudge('오늘은 충분히 놀았어요. 쉬는 것도 중요해요');
     BUSY = true;
+    const hp = kind === 'play' ? await handPlay() : null;   // 터그·낚싯대가 있으면 손으로
+    if (hp && !hp.ok) { BUSY = false; return; }
     S.freePlay[key] = n + 1;
     // 펫샵에서 산 장난감이 있으면 그걸로 — 심심함(습관)도 덜어 준다(11/3 사용자 "장난감도 실제 상품으로")
     const toys = (S.inv?.toys ?? []).map((id) => C.shop.items.find((i) => i.id === id)).filter(Boolean);
-    const toy = toys.length ? toys[n % toys.length] : null;
-    S.stats = E.applyFx(S.stats, toy ? { bond: 1, habit: 1 } : { bond: 1 });
-    if (toy) toast(`${toy.emoji} ${E.josa(toy.name.split('(')[0].trim(), '으로/로')} 놀아 줬어요 — 마음 +1 · 습관 +1`);
+    const toy = hp?.toy ?? (toys.length ? toys[n % toys.length] : null);
+    S.stats = E.applyFx(S.stats, toy ? { bond: hp ? 2 : 1, habit: 1 } : { bond: 1 });
+    if (hp) playAfter(hp);
+    if (toy) toast(`${toy.emoji} ${E.josa(toy.name.split('(')[0].trim(), '으로/로')} 놀아 줬어요 — 마음 +${hp ? 2 : 1} · 습관 +1`);
     S.lastDone = now().getTime();
     await save();
     await ROOM.play('play');

@@ -3,10 +3,10 @@
 // 그림: 아이 = art/sprite/<성향>_<단계>_idle.webp(배경 없음), 화장실·패드 = art/prop/*.webp
 // 근거: 장모 고양이 매일 빗질·엉킨 털 가위 금지(vca_longhair), 화장실 하루 1번 이상(aspca_litter), 약욕 거품 10~15분(iscaid2025·merck_pyoderma)
 
-import { RIG } from './rig.js?v=202611031004';
-import { sfx } from './sound.js?v=202611031004';
+import { RIG } from './rig.js?v=202611031012';
+import { sfx } from './sound.js?v=202611031012';
 
-const TITLE = { brush: '빗질', litter: '화장실 치우기', potty: '패드 갈기', bath: '약욕' };
+const TITLE = { brush: '빗질', litter: '화장실 치우기', potty: '패드 갈기', bath: '약욕', tug: '터그 놀이', wand: '낚싯대 놀이' };
 const FAST = 1 / 220;  // 빗이 1ms에 아이 키의 이 비율보다 빨리 움직이면 '세게'(작은 화면에서도 같은 느낌) — 엉킨 털이 당겨진다
 const HIT_GAP = 160;   // 같은 엉킨 털을 다시 빗을 수 있는 간격(ms) — 한 번 쓸 때 한 번만
 const WAIT_S = 10;     // 약욕 기다리기: 체험에선 10초(= 10분)
@@ -131,6 +131,8 @@ export function handCare(kind, { type, stage, cat, longHair = false } = {}) {
     if (kind === 'brush' || kind === 'bath') return petMode();
     if (kind === 'litter') return litterMode();
     if (kind === 'potty') return padMode();
+    if (kind === 'tug') return tugMode();
+    if (kind === 'wand') return wandMode();
     finish(true);
 
     // ---------- 아이 확대(빗질·약욕) ----------
@@ -387,5 +389,119 @@ export function handCare(kind, { type, stage, cat, longHair = false } = {}) {
       cleanup = () => { baseCleanup(); off(); };
       return off;
     }
+    // ---------- 터그 놀이(강아지, 11/3 사용자 "터그놀이를 터치로 같이 놀아주는 느낌") ----------
+    // 줄 끝을 손가락으로 잡고 뒤로 당긴다. 아이가 머리를 흔들며 당겨 올 때 버티면 게이지가 찬다(너무 세게 당기면 '살살').
+    // 흥분해서 '잠깐!'이 뜨면 손을 떼야 한다 — 흥분이 오르면 잠깐 멈췄다가 다시(RSPCA·Blue Cross 놀이 안내).
+    // 끝은 아이가 이기게 줄을 놓아 준다. rough = 너무 세게 당기거나 '잠깐'을 무시한 횟수
+    function tugMode() {
+      const src = `art/sprite/${name}_idle.webp`;
+      const cfg = RIG[name];
+      stage_.innerHTML = `<div class="hc-pet hc-tugpet" id="hc-pet"><img src="${src}" alt="" draggable="false"></div><svg class="hc-rope" id="hc-rope"><path/><circle r="9"/></svg>`;
+      const wrap = stage_.querySelector('#hc-pet'), rope = stage_.querySelector('#hc-rope'), path = rope.querySelector('path'), knob = rope.querySelector('circle');
+      setTool('hand');
+      say('줄 끝을 손가락으로 잡고 뒤로 당겨 보세요');
+      const im = wrap.querySelector('img');
+      // 입 자리(원본 픽셀 → 화면): 두 눈 가운데 아래, 턱 쪽
+      const mouth = () => {
+        const r = wrap.getBoundingClientRect(), s = stage_.getBoundingClientRect();
+        const W = im.naturalWidth || 300, H = im.naturalHeight || 420;
+        const mx = cfg ? (cfg.eyes[0][0] + cfg.eyes[1][0]) / 2 : W / 2, my = cfg ? cfg.eyes[0][1] + (cfg.neck[1] - cfg.eyes[0][1]) * 0.8 : H * 0.45;
+        return [r.left - s.left + (mx / W) * r.width, r.top - s.top + (my / H) * r.height, r.height];
+      };
+      const waits = [0.4, 0.75];
+      let hold = null, p = 0, rough = 0, yank = 0, nextYank = 900, wait = null, last = performance.now(), raf = 0, shake = 0, hard = false;
+      const pos = (e) => { const s = stage_.getBoundingClientRect(); return [e.clientX - s.left, e.clientY - s.top]; };
+      const draw = (now) => {
+        const dt = Math.min(50, now - last); last = now;
+        const [mx, my, ph] = mouth();
+        const rest = [mx + ph * 0.05, my + ph * 0.42];
+        const [hx, hy] = hold ?? rest;
+        const dist = Math.hypot(hx - mx, hy - my), slack = ph * 0.32, pull = Math.max(0, Math.min(1.3, (dist - slack) / (ph * 0.45)));
+        // 아이가 당겨 오기: 머리를 흔들며(좌우) 몸을 뒤로
+        nextYank -= dt;
+        if (nextYank <= 0 && !wait) { yank = 1; nextYank = 700 + Math.random() * 700; shake = Math.random() < 0.5 ? -1 : 1; sfx.pop?.(); }
+        yank = Math.max(0, yank - dt / 420);
+        const lean = hold ? Math.min(1, pull) : 0;
+        wrap.style.transform = `translate(${(hx - mx) * 0.06 * lean}px, ${-yank * 8}px) rotate(${shake * yank * 7 + (hx - mx) * 0.02 * lean}deg)`;
+        // 버티기: 당겨 올 때 적당히(0.25~1.1) 잡고 있으면 찬다 · 너무 세면 살살
+        if (!wait && hold && yank > 0.5) {
+          if (pull > 1.1) { if (!hard) { hard = true; rough++; say('너무 세게 당기면 이빨·목이 다칠 수 있어요 — 살살'); wrap.classList.add('flinch'); setTimeout(() => wrap.classList.remove('flinch'), 350); } }
+          else if (pull > 0.25) { p += dt / 1500; hard = false; if (Math.random() < 0.05) say(['좋아요, 버텨요!', '으르릉 — 신났어요', '당겼다 풀었다!'][Math.floor(Math.random() * 3)]); }
+        }
+        // 흥분 신호: '잠깐!' — 손을 떼면(가만히) 차분해진다
+        if (!wait && waits.length && p >= waits[0]) { waits.shift(); wait = { at: now }; el.classList.add('hc-wait'); say('✋ 너무 흥분했어요 — 손을 떼고 잠깐 멈춰요'); sfx.tap?.(); }
+        if (wait) {
+          if (!hold && now - wait.at > 300) { wait = null; el.classList.remove('hc-wait'); p += 0.06; say('잘했어요 — 차분해졌으면 다시 잡아요'); sfx.ding?.(); }
+          else if (now - wait.at > 1800) { wait = null; el.classList.remove('hc-wait'); rough++; say('흥분했을 땐 잠깐 멈췄다 다시 하는 게 좋아요'); }
+        }
+        prog(p);
+        const cx = (mx + hx) / 2, cy = Math.max(my, hy) + ph * 0.12 * Math.max(0, 1 - pull);   // 느슨하면 아래로 처진다
+        path.setAttribute('d', `M${mx} ${my} Q${cx} ${cy} ${hx} ${hy}`);
+        knob.setAttribute('cx', hx); knob.setAttribute('cy', hy);
+        if (p >= 1) { cancelAnimationFrame(raf); el.classList.remove('hc-wait'); wrap.style.transform = ''; hold = null; return end('이번엔 이기게 해 줬어요 — 신나게 놀았어요!', { rough }); }
+        raf = requestAnimationFrame(draw);
+      };
+      const down = (e) => {
+        const [x, y] = pos(e), [mx, my, ph] = mouth(), k = [mx + ph * 0.05, my + ph * 0.42];
+        if (!hold && Math.hypot(x - k[0], y - k[1]) > ph * 0.35) return;   // 줄 끝 근처를 잡아야 한다
+        hold = [x, y]; stage_.setPointerCapture?.(e.pointerId);
+      };
+      const mv = (e) => { if (hold) hold = pos(e); };
+      const up = () => { hold = null; };
+      stage_.addEventListener('pointerdown', down); stage_.addEventListener('pointermove', mv); stage_.addEventListener('pointerup', up); stage_.addEventListener('pointercancel', up);
+      raf = requestAnimationFrame(draw);
+      cleanup = () => { baseCleanup(); cancelAnimationFrame(raf); el.classList.remove('hc-wait'); };
+    }
+
+    // ---------- 낚싯대 놀이(고양이, 11/3 사용자 "낚시대는 터치 좌우로 같이 놀아주는 느낌") ----------
+    // 손가락을 좌우로 움직이면 깃털이 따라오고 아이가 눈으로 쫓다 다가온다. 깃털을 아이 가까이에서 멈추면 몸을 낮췄다 덮친다.
+    // 먹잇감처럼 '움직였다 멈췄다'가 좋고, 계속 빠르게 흔들기만 하면 흥미를 잃는다. 마지막엔 꼭 잡게 해 준다(iCatCare 놀이 안내)
+    function wandMode() {
+      const src = `art/sprite/${name}_idle.webp`;
+      stage_.innerHTML = `<div class="hc-wand" id="hc-wand"><svg class="hc-line"><path/></svg><img class="hc-feather" src="art/prop/feather.webp" alt="" draggable="false"><div class="hc-pet hc-cat" id="hc-pet"><img src="${src}" alt="" draggable="false"></div></div>`;
+      const box = stage_.querySelector('#hc-wand'), cat_ = stage_.querySelector('#hc-pet'), fe = stage_.querySelector('.hc-feather'), line = stage_.querySelector('.hc-line path');
+      setTool('hand');
+      say('손가락을 좌우로 움직여 깃털을 흔들고, 아이 앞에서 잠깐 멈춰 보세요');
+      let fx = 0.75, tx = fx, cx = 0.3, p = 0, still = 0, fast = 0, pounce = 0, caught = 0, last = performance.now(), raf = 0, lastFx = fx, bored = 0;
+      const fy = 0.3;   // 깃털 높이(상자 비율) — 아이 머리 위, 덮치면 닿는 높이
+      const draw = (now) => {
+        const dt = Math.min(50, now - last) / 1000; last = now;
+        fx += (tx - fx) * Math.min(1, dt * 14);
+        const speed = Math.abs(fx - lastFx) / Math.max(dt, 0.001); lastFx = fx;
+        still = speed < 0.08 ? still + dt : 0;
+        fast = speed > 1.6 ? fast + dt : Math.max(0, fast - dt * 2);
+        if (fast > 2.2 && !bored) { bored = 1.5; fast = 0; say('너무 빨리 흔들기만 하면 흥미를 잃어요 — 숨었다 멈췄다, 먹잇감처럼'); cat_.classList.add('hc-bored'); }
+        bored = Math.max(0, bored - dt); if (!bored) cat_.classList.remove('hc-bored');
+        // 아이: 깃털 쪽으로 천천히(덮칠 땐 한 번에)
+        if (!pounce && !bored) cx += Math.max(-0.35 * dt, Math.min(0.35 * dt, (fx - cx) * dt * 1.4));
+        const near = Math.abs(fx - cx) < 0.16;
+        if (!pounce && near && still > 0.35 && !bored) { pounce = 0.001; cat_.classList.add('hc-crouch'); say('몸을 낮췄어요…'); }
+        if (pounce) {
+          const before = pounce; pounce += dt;
+          if (before < 0.9 && pounce >= 0.9) { cat_.classList.remove('hc-crouch'); cat_.classList.add('hc-jump'); cx += (fx - cx) * 0.9; sfx.pop?.(); }
+          if (pounce > 1.35) {
+            cat_.classList.remove('hc-jump');
+            const got = Math.abs(fx - cx) < 0.12;
+            p += got ? 0.2 : 0.06; caught = got ? 0.7 : 0; pounce = 0; still = 0;
+            say(got ? '잡았다! 🐾' : '앗, 놓쳤어요 — 그래도 신났어요'); if (got) sfx.ding?.();
+          }
+        } else if (speed > 0.15 && speed < 1.6 && Math.abs(fx - cx) < 0.4) p += dt * 0.03;   // 눈으로 쫓기만 해도 조금
+        caught = Math.max(0, caught - dt);
+        prog(p);
+        const W = box.clientWidth, H = box.clientHeight;
+        const fxp = fx * W, fyp = (fy + (caught ? 0.18 : Math.sin(now / 160) * 0.015)) * H;
+        fe.style.left = `${fxp}px`; fe.style.top = `${fyp}px`;
+        line.setAttribute('d', `M${W * 0.5} 0 Q${(W * 0.5 + fxp) / 2} ${fyp * 0.35} ${fxp} ${fyp - 10}`);
+        cat_.style.left = `${cx * 100}%`;
+        cat_.classList.toggle('face-left', fx < cx);
+        if (p >= 1) { cancelAnimationFrame(raf); return end('마지막엔 꼭 잡게 해 줬어요 — 사냥 놀이 성공!'); }
+        raf = requestAnimationFrame(draw);
+      };
+      const mv = (e) => { const r = box.getBoundingClientRect(); tx = Math.max(0.05, Math.min(0.95, (e.clientX - r.left) / r.width)); };
+      box.addEventListener('pointermove', mv); box.addEventListener('pointerdown', mv);
+      raf = requestAnimationFrame(draw);
+      cleanup = () => { baseCleanup(); cancelAnimationFrame(raf); };
+    }
+
   });
 }

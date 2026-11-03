@@ -678,5 +678,19 @@
   "year": "2026",
   "grade": "C",
   "url": "https://oneulah.com/pricing"
+ },
+ "bluecross_play": {
+  "title": "Play with your dog (D23 안내서)",
+  "org": "영국 Blue Cross",
+  "year": "",
+  "grade": "A",
+  "url": "https://www.bluecross.org.uk/sites/default/files/d8/downloads/D23_Play_with_your_dog.pdf"
+ },
+ "rspca_play": {
+  "title": "Appropriate play",
+  "org": "RSPCA 브라이튼 지부",
+  "year": "2023",
+  "grade": "A",
+  "url": "https://rspca-brighton.org.uk/wp-content/uploads/2023/02/RSPCA-Appropriate-play.docx.pdf"
  }
 }

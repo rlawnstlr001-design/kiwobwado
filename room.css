@@ -526,3 +526,19 @@ body.playing { overflow: hidden; }
 .mg-slip { display: grid; grid-template-columns: auto auto; gap: 3px 22px; justify-content: center; margin: 6px auto; padding: 10px 18px; background: var(--card); border: 2px dashed var(--paper-3); border-radius: 14px; font-size: 15px; text-align: left; }
 .mg-slip b { text-align: right; }
 .mg-slip .tot { font-size: 18px; font-weight: 900; border-top: 1px solid var(--paper-3); padding-top: 4px; }
+
+/* 손으로 놀아 주기(js/handcare.js, 11/3): 터그 놀이(강아지)·낚싯대 놀이(고양이) */
+.hc-rope { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; overflow: visible; z-index: 3; }
+.hc-rope path { fill: none; stroke: #D45B4E; stroke-width: 10; stroke-linecap: round; stroke-dasharray: 7 4; }
+.hc-rope circle { fill: #3F6B4F; stroke: #fff; stroke-width: 3; }
+.hc-tugpet { transform-origin: 50% 100%; }
+.hc.hc-wait .hc-stage { box-shadow: inset 0 0 0 6px rgba(232, 101, 122, .55); }
+.hc-wand { position: relative; width: 100%; height: 100%; }
+.hc-line { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; overflow: visible; }
+.hc-line path { fill: none; stroke: #6E5232; stroke-width: 2; }
+.hc-feather { position: absolute; width: clamp(64px, 13%, 130px); transform: translate(-50%, -20%) rotate(-20deg); pointer-events: none; z-index: 3; }
+.hc-pet.hc-cat { position: absolute; bottom: 0; height: 58%; max-height: none; transform: translateX(-50%); transform-origin: 50% 100%; transition: transform .25s ease-out; }
+.hc-cat.face-left img { transform: scaleX(-1); }
+.hc-cat.hc-crouch { transform: translateX(-50%) scale(1.06, .84); }
+.hc-cat.hc-jump { transform: translateX(-50%) translateY(-26%) rotate(-6deg) scale(1.04); transition-duration: .18s; }
+.hc-cat.hc-bored { opacity: .7; filter: grayscale(.35); }

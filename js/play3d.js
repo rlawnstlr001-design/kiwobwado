@@ -5,9 +5,9 @@
 //       흥분 신호 '✋'에 손을 놓으면 줄을 놓고 앉아 차분해졌다가 다시 놀자(RSPCA·Blue Cross 놀이 안내) → 끝은 아이가 이겨 줄을 물고 으쓱 걸어간다.
 // 결과 { ok, rough } — rough = 너무 세게 당기거나 흥분 신호를 무시한 횟수(app.js playAfter)
 import * as THREE from 'three';
-import { sfx } from './sound.js?v=202611031103';
-import { haptic } from './native.js?v=202611031103';
-import { loadPet3d, loadGLB, clamp } from './arena3d.js?v=202611031103';
+import { sfx } from './sound.js?v=202611031138';
+import { haptic } from './native.js?v=202611031138';
+import { loadPet3d, loadGLB, clamp } from './arena3d.js?v=202611031138';
 
 const N = 16;              // 줄 마디 수
 const ROPE = 0.8;          // 줄 길이(m)
@@ -55,7 +55,7 @@ export function tug3d({ type, stage, base = '', src = null } = {}) {
     const strands = [null, null, null];
     const knotM = new THREE.Group(), knotH = new THREE.Group();
     scene.add(knotM, knotH);
-    loadGLB(`${base}art/3d/toy_tug.glb?v=202611031103`).then((g) => {
+    loadGLB(`${base}art/3d/toy_tug.glb?v=202611031138`).then((g) => {
       if (!g || done) return;
       for (const [nm, grp] of [['KnotMouth', knotM], ['KnotHand', knotH]]) {
         const o = g.scene.getObjectByName(nm);
@@ -262,6 +262,7 @@ export function tug3d({ type, stage, base = '', src = null } = {}) {
 // 엉덩이를 씰룩이다 덮친다('Pounce') — 깃털이 그대로 있으면 잡는다. 깃털이 얼굴 높이에 가까이 오면 앞발로 탁('Swat'), 멀리 가면 뛰어서 쫓는다('Run').
 // 먹잇감처럼 '움직였다 멈췄다'가 좋고, 계속 빠르게만 흔들면 흥미를 잃는다. 마지막엔 꼭 잡게 해 준다(iCatCare 놀이 안내). 결과 { ok, rough: 0 }
 const WN = 10;          // 낚싯줄 마디
+const PITCH = false;    // 고개 위아래 꺾기 — 고양이 얼굴 살이 앞으로 늘어나 '얼굴이 길쭉'해 보여 끈다(11/3 사용자). 좌우만 머리 위주로 조금
 const LINE = 0.42;      // 낚싯줄 길이(m)
 export function wand3d({ type, stage, base = '', src = null } = {}) {
   return new Promise((resolve) => {
@@ -299,7 +300,7 @@ export function wand3d({ type, stage, base = '', src = null } = {}) {
 
     // 깃털 + 낚싯줄
     const feather = new THREE.Group(); scene.add(feather);
-    loadGLB(`${base}art/3d/toy_wand.glb?v=202611031103`).then((g) => {
+    loadGLB(`${base}art/3d/toy_wand.glb?v=202611031138`).then((g) => {
       if (!g || done) return;
       const o = g.scene.getObjectByName('Feather') ?? g.scene;
       o.position.set(0, 0, 0); o.traverse((m) => { if (m.isMesh) { m.castShadow = true; m.material.side = THREE.DoubleSide; } });
@@ -472,8 +473,8 @@ export function wand3d({ type, stage, base = '', src = null } = {}) {
         const pitch = clamp(Math.atan2(_v.y, Math.hypot(_v.x, _v.z)), -0.4, 0.4);
         headBones.forEach((b, i) => {
           b.getWorldQuaternion(_q); const inv = _q.clone().invert();
-          _ax.set(0, 1, 0).applyQuaternion(inv); b.rotateOnAxis(_ax, yaw * (i ? 0.8 : 0.15));
-          b.getWorldQuaternion(_q); _ax.set(Math.cos(heading + yaw), 0, -Math.sin(heading + yaw)).applyQuaternion(_q.clone().invert()); b.rotateOnAxis(_ax, -pitch * (i ? 0.7 : 0));
+          _ax.set(0, 1, 0).applyQuaternion(inv); b.rotateOnAxis(_ax, yaw * (i ? 0.6 : 0.1));
+          b.getWorldQuaternion(_q); _ax.set(Math.cos(heading + yaw), 0, -Math.sin(heading + yaw)).applyQuaternion(_q.clone().invert()); if (PITCH) b.rotateOnAxis(_ax, -pitch * (i ? 0.7 : 0));
         });
         if (backBone && wiggle > 0) { backBone.getWorldQuaternion(_q); _ax.set(0, 1, 0).applyQuaternion(_q.invert()); backBone.rotateOnAxis(_ax, Math.sin(t * 9) * 0.06 * Math.min(1, wiggle * 3)); }
         cat.model.updateMatrixWorld(true);

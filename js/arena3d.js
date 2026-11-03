@@ -5,7 +5,7 @@
 import * as THREE from 'three';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import { clone as skClone } from 'three/addons/utils/SkeletonUtils.js';
-import { makeBlinker } from './blink.js?v=202611031101';
+import { makeBlinker } from './blink.js?v=202611031103';
 
 export const SIZE = { small: 0.5, medium: 0.6, large: 0.7, short: 0.48, long: 0.5 };
 export const STAGE_K = { baby: 0.78, teen: 0.9, adult: 1 };
@@ -170,7 +170,7 @@ export function buildArena(scene, { half, lanes = 1, end, r }) {
 // art/3d/pets/<성향_단계>.glb(키 1·바닥 0, 동작 Run·Dash·Leap·Sit·Down·Walk…) — 없으면 null(부르는 쪽이 그림 판으로 대신)
 // 크기: 아기 크기(H×1.3, 10/29에 맞춘 값)를 기준으로 단계만큼 키운다
 export async function loadPet3d(scene, base, type, stage, src = null) {   // src: 시험용 다른 GLB(lab/play3d)
-  const g = await loadGLB(src ?? `${base}art/3d/pets/${type}_${stage}.glb?v=202611031101`);
+  const g = await loadGLB(src ?? `${base}art/3d/pets/${type}_${stage}.glb?v=202611031103`);
   if (!g) return null;
   const H = SIZE[type] ?? 0.55;
   const model = g.scene, mats = [];
@@ -213,7 +213,7 @@ const OWNER_LOOK = [
   { Shirt: '#6FC1B6', Pants: '#4A4F5A', Hair: '#6B4226', HairBase: '#6B4226', Skin: '#DDB08A' },
 ];
 export async function loadOwners(scene, base, n, r) {
-  const g = await loadGLB(`${base}art/3d/owner.glb?v=202611031101`);
+  const g = await loadGLB(`${base}art/3d/owner.glb?v=202611031103`);
   if (!g) return [];
   // 키: 살(SkinnedMesh)의 상자는 뼈대 배율(×100)을 안 따라 엉뚱하다 → 머리 뼈 높이로 잰다(머리 뼈 = 키의 0.89, tools/owner_hug.py 확인)
   g.scene.updateMatrixWorld(true);
@@ -256,7 +256,7 @@ export async function loadOwners(scene, base, n, r) {
 
 // ---------- 그림 판(3D가 없을 때) ----------
 let BACKS = null;
-const backs = (base) => (BACKS ??= fetch(`${base}art/sprite/backs.json?v=202611031101`).then((x) => (x.ok ? x.json() : {})).catch(() => ({})));
+const backs = (base) => (BACKS ??= fetch(`${base}art/sprite/backs.json?v=202611031103`).then((x) => (x.ok ? x.json() : {})).catch(() => ({})));
 export async function backFrames(type, stage, base) {
   const have = await backs(base);
   const order = { baby: ['baby', 'teen', 'adult'], teen: ['teen', 'adult', 'baby'], adult: ['adult', 'teen', 'baby'] }[stage] ?? ['baby'];

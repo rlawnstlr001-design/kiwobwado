@@ -5,9 +5,9 @@
 //       흥분 신호 '✋'에 손을 놓으면 줄을 놓고 앉아 차분해졌다가 다시 놀자(RSPCA·Blue Cross 놀이 안내) → 끝은 아이가 이겨 줄을 물고 으쓱 걸어간다.
 // 결과 { ok, rough } — rough = 너무 세게 당기거나 흥분 신호를 무시한 횟수(app.js playAfter)
 import * as THREE from 'three';
-import { sfx } from './sound.js?v=202611031101';
-import { haptic } from './native.js?v=202611031101';
-import { loadPet3d, loadGLB, clamp } from './arena3d.js?v=202611031101';
+import { sfx } from './sound.js?v=202611031103';
+import { haptic } from './native.js?v=202611031103';
+import { loadPet3d, loadGLB, clamp } from './arena3d.js?v=202611031103';
 
 const N = 16;              // 줄 마디 수
 const ROPE = 0.8;          // 줄 길이(m)
@@ -55,7 +55,7 @@ export function tug3d({ type, stage, base = '', src = null } = {}) {
     const strands = [null, null, null];
     const knotM = new THREE.Group(), knotH = new THREE.Group();
     scene.add(knotM, knotH);
-    loadGLB(`${base}art/3d/toy_tug.glb?v=202611031101`).then((g) => {
+    loadGLB(`${base}art/3d/toy_tug.glb?v=202611031103`).then((g) => {
       if (!g || done) return;
       for (const [nm, grp] of [['KnotMouth', knotM], ['KnotHand', knotH]]) {
         const o = g.scene.getObjectByName(nm);
@@ -77,7 +77,9 @@ export function tug3d({ type, stage, base = '', src = null } = {}) {
     const _q = new THREE.Quaternion(), _ax = new THREE.Vector3(), _v = new THREE.Vector3();
     el.__p3 = () => ({ mouth, P, hand, dog, anchor, state, p, zd, camera });   // 시험용
 
-    const size = () => { const w = stageEl.clientWidth, h = stageEl.clientHeight; renderer.setSize(w, h, false); camera.aspect = w / h; camera.updateProjectionMatrix(); };
+    // 세로 화면이면 카메라를 뒤로 물린다(좁은 화면에 아이가 가득 차 너무 가까워 보였다, 11/3)
+    const camBase = camera.position.clone(), camLook = new THREE.Vector3(0, 0.25, 0);
+    const size = () => { const w = stageEl.clientWidth, h = stageEl.clientHeight; renderer.setSize(w, h, false); camera.aspect = w / h; camera.position.copy(camLook).addScaledVector(camBase.clone().sub(camLook), camera.aspect < 1 ? 1 / Math.sqrt(camera.aspect) : 1); camera.updateProjectionMatrix(); };
     addEventListener('resize', size); size();
 
     loadPet3d(scene, base, type, stage, src).then((d) => {
@@ -297,7 +299,7 @@ export function wand3d({ type, stage, base = '', src = null } = {}) {
 
     // 깃털 + 낚싯줄
     const feather = new THREE.Group(); scene.add(feather);
-    loadGLB(`${base}art/3d/toy_wand.glb?v=202611031101`).then((g) => {
+    loadGLB(`${base}art/3d/toy_wand.glb?v=202611031103`).then((g) => {
       if (!g || done) return;
       const o = g.scene.getObjectByName('Feather') ?? g.scene;
       o.position.set(0, 0, 0); o.traverse((m) => { if (m.isMesh) { m.castShadow = true; m.material.side = THREE.DoubleSide; } });
@@ -318,7 +320,9 @@ export function wand3d({ type, stage, base = '', src = null } = {}) {
     const _q = new THREE.Quaternion(), _ax = new THREE.Vector3(), _v = new THREE.Vector3(), _d = new THREE.Vector3();
     el.__p3 = () => ({ state, p, tip, W, cpos, camera, cat });   // 시험용
 
-    const size = () => { const w = stageEl.clientWidth, h = stageEl.clientHeight; renderer.setSize(w, h, false); camera.aspect = w / h; camera.updateProjectionMatrix(); };
+    // 세로 화면이면 카메라를 뒤로 물린다(좁은 화면에 아이가 가득 차 너무 가까워 보였다, 11/3)
+    const camBase = camera.position.clone(), camLook = new THREE.Vector3(0, 0.25, 0);
+    const size = () => { const w = stageEl.clientWidth, h = stageEl.clientHeight; renderer.setSize(w, h, false); camera.aspect = w / h; camera.position.copy(camLook).addScaledVector(camBase.clone().sub(camLook), camera.aspect < 1 ? 1 / Math.sqrt(camera.aspect) : 1); camera.updateProjectionMatrix(); };
     addEventListener('resize', size); size();
 
     loadPet3d(scene, base, type, stage, src).then((d) => {
@@ -459,7 +463,7 @@ export function wand3d({ type, stage, base = '', src = null } = {}) {
             break;
         }
         if (p >= 0.9) finale = true;   // 마지막 덮치기는 꼭 잡게
-        cpos.x = clamp(cpos.x, -0.9, 0.9); cpos.z = clamp(cpos.z, -0.8, 0.55);
+        cpos.x = clamp(cpos.x, -0.9, 0.9); cpos.z = clamp(cpos.z, -0.8, 0.2);   // 카메라 바로 앞까지 오면 너무 커 보였다
         cat.holder.position.copy(cpos); cat.holder.rotation.y = heading;
         // 고개를 깃털 쪽으로(좌우·위아래) · 웅크린 채 멈춰 있으면 엉덩이 씰룩
         _v.set(F.x - mouth.x, F.y - mouth.y, F.z - mouth.z);

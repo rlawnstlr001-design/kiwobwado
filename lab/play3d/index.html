@@ -1,0 +1,27 @@
+<!doctype html>
+<html lang="ko"><head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>터그 놀이 3D 시험 — 키워봐도될까</title>
+<!-- 11/3 1단계 시험판(js/play3d.js): 중형견 아기 한 마리로 터그 놀이 3D. 놀이 동작(Tug·Bow)이 든 시험용 GLB는 이 폴더의 medium_baby.glb -->
+<link rel="stylesheet" href="../../styles.css">
+<link rel="stylesheet" href="../../room.css">
+<style>
+  html, body { margin: 0; height: 100%; overflow: hidden; background: #EFE4CF; font-family: Pretendard, -apple-system, 'Malgun Gothic', sans-serif; }
+  body { position: relative; }
+  .res { position: fixed; inset: 0; display: grid; place-content: center; text-align: center; gap: 10px; }
+  .res b { font-size: 28px; }
+</style>
+</head><body>
+<div class="res" id="res"><b>터그 놀이 3D 시험판</b><p>중형견 아기 · 마우스(손가락)로 줄 끝 빨간 매듭을 잡고 당겨 보세요</p><button class="btn btn-main" id="go">시작</button><p id="out"></p></div>
+<script type="importmap">{ "imports": { "three": "../../js/vendor/three/three.module.js", "three/addons/": "../../js/vendor/three/addons/" } }</script>
+<script type="module">
+const { tug3d } = await import(`../../js/play3d.js?t=${Date.now()}`);
+document.getElementById('go').onclick = async () => {
+  const res = document.getElementById('res'); res.style.visibility = 'hidden';
+  const r = await tug3d({ type: 'medium', stage: 'baby', base: '../../', src: `./medium_baby.glb?t=${Date.now()}` });
+  res.style.visibility = '';
+  document.getElementById('out').textContent = r.ok ? `끝까지 놀았어요 · 너무 셌던 횟수 ${r.rough}` : '그만뒀어요';
+};
+</script>
+</body></html>

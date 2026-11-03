@@ -542,3 +542,11 @@ body.playing { overflow: hidden; }
 .hc-cat.hc-crouch { transform: translateX(-50%) scale(1.06, .84); }
 .hc-cat.hc-jump { transform: translateX(-50%) translateY(-26%) rotate(-6deg) scale(1.04); transition-duration: .18s; }
 .hc-cat.hc-bored { opacity: .7; filter: grayscale(.35); }
+
+/* 손으로 놀아 주기 3D(js/play3d.js, 11/3): 방 그림 위에 투명 3D */
+.p3-stage { flex: 1; position: relative; min-height: 0; background: var(--room) center 78% / cover no-repeat, #EFE4CF; cursor: none; touch-action: none; }
+.p3-stage::before { content: ''; position: absolute; inset: 0; background: linear-gradient(rgba(251, 247, 239, .25), rgba(251, 247, 239, 0) 40%); pointer-events: none; }
+.p3-stage canvas { position: absolute; inset: 0; width: 100%; height: 100%; display: block; }
+.p3-hand { position: absolute; width: 54px; height: 54px; margin: -14px 0 0 -18px; pointer-events: none; z-index: 3; background: center / contain no-repeat url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 48 48'%3E%3Cpath d='M14 44c-4-4-7-10-8-15-1-3 3-4 4-2l3 4V12c0-3 4-3 4 0v12h1V8c0-3 4-3 4 0v16h1V10c0-3 4-3 4 0v14h1v-9c0-3 4-3 4 0v15c0 6-1 10-4 14z' fill='%23FFF8EE' stroke='%232D2A26' stroke-width='2.2' stroke-linejoin='round'/%3E%3C/svg%3E"); filter: drop-shadow(0 3px 2px rgba(0, 0, 0, .2)); }
+.p3-hand.hold { transform: scale(.88) rotate(-12deg); }
+.hc-play3d.hc-wait .p3-stage { box-shadow: inset 0 0 0 6px rgba(232, 101, 122, .55); }

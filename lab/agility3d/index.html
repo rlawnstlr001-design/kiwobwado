@@ -3,7 +3,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>장애물 경주 3D 시험 — 키워봐도될까</title>
-<!-- 10/27 장애물 경주 3D 시험판(js/agility3d.js). 앱에는 아직 안 들어간다 — 판정 뒤 games.js에 연결 -->
+<!-- 10/27 장애물 경주 3D 시험판(js/agility3d.js) — 11/2부터 앱 미니게임도 같은 코드 -->
 <link rel="stylesheet" href="../../styles.css">
 <link rel="stylesheet" href="../../room.css">
 <style>
@@ -24,7 +24,7 @@
 <div id="stage"></div>
 <div class="pick" id="pick"><h1>장애물 경주 3D 시험판</h1><p>달릴 아이를 골라 주세요 · ↑ 허들·경사로 · ↓ 터널 · ←→ 위브 폴 (키보드·버튼·밀기)</p><div class="grid" id="grid"></div></div>
 <div class="res" id="res"><b id="res-score"></b><p id="res-note"></p><button class="btn btn-main" onclick="location.reload()">다시 하기</button></div>
-<script type="importmap">{ "imports": { "three": "https://unpkg.com/three@0.160.0/build/three.module.js", "three/addons/": "https://unpkg.com/three@0.160.0/examples/jsm/" } }</script>
+<script type="importmap">{ "imports": { "three": "../../js/vendor/three/three.module.js", "three/addons/": "../../js/vendor/three/addons/" } }</script>
 <script type="module">
 // 열 때마다 새 코드(시험판이라 자주 바뀐다 — 휴대폰이 옛 코드를 붙잡고 있던 10/27 문제)
 const { agility3dGame } = await import(`../../js/agility3d.js?t=${Date.now()}`);

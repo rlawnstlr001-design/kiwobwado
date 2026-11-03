@@ -1,8 +1,8 @@
 // 펫샵·동물병원·간식 주기 화면. 미니게임으로 번 돈(지갑, js/money.js)으로 사고, 가격은 실제 평균값(content/shop.json·costs.json, 출처 표시)
 // 병원비만 외상(지갑이 마이너스 = 빚) — 펫샵 물건은 돈이 모자라면 못 산다(11/3 사용자)
 // 상태는 앱(app.js)이 넘기는 api로만 읽고 쓴다
-import { PROTEIN, itemsFor, itemById, hasProtein, addItem, TRIAL_DAYS, BATHS_PER_WEEK } from './care.js?v=202611031042';
-import { spend, hoursOf } from './money.js?v=202611031042';
+import { PROTEIN, itemsFor, itemById, hasProtein, addItem, TRIAL_DAYS, BATHS_PER_WEEK } from './care.js?v=202611031055';
+import { spend, hoursOf } from './money.js?v=202611031055';
 
 const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 const TABS = { food: '사료', treat: '간식', hygiene: '위생', toy: '장난감', wear: '옷·액세서리' };

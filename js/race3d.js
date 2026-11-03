@@ -3,10 +3,10 @@
 // 다른 성향 봇 3마리와 100m. 그리는 것만 three.js 3D — 4레인 경기장(js/arena3d.js) + 우리 아이 3D 4마리 + 레인마다 보호자 3D.
 // 골인하면 내 보호자는 무릎 꿇고 안아 주고(Hug), 다른 보호자는 자기 아이가 들어오면 박수(Clapping)
 import * as THREE from 'three';
-import { sfx } from './sound.js?v=202611031042';
-import { rng } from './engine.js?v=202611031042';
-import { haptic } from './native.js?v=202611031042';
-import { SIZE, clamp, shuffleR, nameTex, roundTex, makeStage, buildArena, loadPet3d, loadOwners, backFrames, SHIRT } from './arena3d.js?v=202611031042';
+import { sfx } from './sound.js?v=202611031055';
+import { rng } from './engine.js?v=202611031055';
+import { haptic } from './native.js?v=202611031055';
+import { SIZE, clamp, shuffleR, nameTex, roundTex, makeStage, buildArena, loadPet3d, loadOwners, backFrames, SHIRT } from './arena3d.js?v=202611031055';
 
 const TYPES = ['small', 'medium', 'large', 'short', 'long'];
 const BOT_NAMES = ['초코', '몽이', '까미', '쿠키', '라떼', '호떡', '감자', '모찌', '탄이', '별이'];

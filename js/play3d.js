@@ -1,13 +1,13 @@
-// 손으로 놀아 주기 3D — 터그 놀이(11/3 사용자 "터그놀이 퀄리티가 바닥이네 · 놀아주는 것도 3d로 진짜처럼")
+// 손으로 놀아 주기 3D — 터그 놀이(강아지)·낚싯대 놀이(고양이, 아래 wand3d)(11/3 사용자 "터그놀이 퀄리티가 바닥이네 · 놀아주는 것도 3d로 진짜처럼")
 // 보호자가 바닥에 앉은 눈높이에서 우리 아이 3D(js/arena3d.js loadPet3d — 'Bow' 놀자 자세·'Tug' 당기기 자세, tools/rig_pet.py)와 줄을 당긴다.
 // 줄은 마디 16개 물리 줄(베를레 적분) — 한쪽은 아이 입, 한쪽은 내 손가락. 느슨하면 처지고, 당기면 팽팽해지고 아이가 앞발로 미끄러진다.
 // 흐름: 놀자 자세(꼬리 흔들기) → 줄 끝을 잡으면 당기기 → 아이가 머리를 흔들며 '훅' 당길 때 적당히 버티면 게이지 →
 //       흥분 신호 '✋'에 손을 놓으면 줄을 놓고 앉아 차분해졌다가 다시 놀자(RSPCA·Blue Cross 놀이 안내) → 끝은 아이가 이겨 줄을 물고 으쓱 걸어간다.
 // 결과 { ok, rough } — rough = 너무 세게 당기거나 흥분 신호를 무시한 횟수(app.js playAfter)
 import * as THREE from 'three';
-import { sfx } from './sound.js?v=202611031042';
-import { haptic } from './native.js?v=202611031042';
-import { loadPet3d, loadGLB, clamp } from './arena3d.js?v=202611031042';
+import { sfx } from './sound.js?v=202611031055';
+import { haptic } from './native.js?v=202611031055';
+import { loadPet3d, loadGLB, clamp } from './arena3d.js?v=202611031055';
 
 const N = 16;              // 줄 마디 수
 const ROPE = 0.8;          // 줄 길이(m)
@@ -55,7 +55,7 @@ export function tug3d({ type, stage, base = '', src = null } = {}) {
     const strands = [null, null, null];
     const knotM = new THREE.Group(), knotH = new THREE.Group();
     scene.add(knotM, knotH);
-    loadGLB(`${base}art/3d/toy_tug.glb?v=202611031042`).then((g) => {
+    loadGLB(`${base}art/3d/toy_tug.glb?v=202611031055`).then((g) => {
       if (!g || done) return;
       for (const [nm, grp] of [['KnotMouth', knotM], ['KnotHand', knotH]]) {
         const o = g.scene.getObjectByName(nm);
@@ -249,6 +249,246 @@ export function tug3d({ type, stage, base = '', src = null } = {}) {
       el.classList.remove('on');
       setTimeout(() => el.remove(), 250);
       resolve({ ok, rough });
+    };
+    el.querySelector('.hc-x').addEventListener('click', () => finish(false));
+  });
+}
+
+// ---------- 낚싯대 놀이 3D(고양이, 11/3 2단계) ----------
+// 손가락으로 낚싯대 끝을 움직이면 낚싯줄(물리) 끝의 깃털(art/3d/toy_wand.glb — tools/make_wand_toy.py)이 흔들린다.
+// 아이(우리 고양이 3D): 앉아서 눈으로 쫓다가(머리 돌리기) 깃털이 바닥 가까이 오면 낮게 웅크려('Crouch') 다가가고, 깃털이 앞에서 멈추면
+// 엉덩이를 씰룩이다 덮친다('Leap') — 깃털이 그대로 있으면 잡는다. 깃털이 얼굴 높이에 가까이 오면 앞발로 탁('Swat'), 멀리 가면 뛰어서 쫓는다('Run').
+// 먹잇감처럼 '움직였다 멈췄다'가 좋고, 계속 빠르게만 흔들면 흥미를 잃는다. 마지막엔 꼭 잡게 해 준다(iCatCare 놀이 안내). 결과 { ok, rough: 0 }
+const WN = 10;          // 낚싯줄 마디
+const LINE = 0.42;      // 낚싯줄 길이(m)
+export function wand3d({ type, stage, base = '', src = null } = {}) {
+  return new Promise((resolve) => {
+    const root = document.getElementById('game') ?? document.body;
+    const el = document.createElement('div');
+    el.className = 'hc hc-play3d';
+    el.setAttribute('role', 'dialog');
+    el.setAttribute('aria-label', '낚싯대 놀이');
+    el.innerHTML = `<div class="hc-top"><b>낚싯대 놀이</b><span class="hc-say" id="hc-say">불러오는 중…</span>
+        <i class="hc-bar" aria-hidden="true"><i id="hc-fill"></i></i><button class="hc-x" type="button">그만두기</button></div>
+      <div class="p3-stage" id="p3-stage" style="--room:url('${base}art/room/room_wide.webp')"><canvas></canvas><i class="p3-hand" id="p3-hand" hidden></i></div>`;
+    root.appendChild(el);
+    document.body.classList.add('handcare');
+    setTimeout(() => el.classList.add('on'), 20);
+    const stageEl = el.querySelector('#p3-stage'), cv = stageEl.querySelector('canvas'), handEl = el.querySelector('#p3-hand');
+    const sayEl = el.querySelector('#hc-say'), fill = el.querySelector('#hc-fill');
+    const say = (t) => { if (sayEl.textContent !== t) sayEl.textContent = t; };
+    const prog = (p) => { fill.style.width = `${Math.round(clamp(p, 0, 1) * 100)}%`; };
+
+    const renderer = new THREE.WebGLRenderer({ canvas: cv, antialias: true, alpha: true });
+    renderer.setPixelRatio(Math.min(2, devicePixelRatio || 1));
+    renderer.shadowMap.enabled = true; renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+    renderer.outputColorSpace = THREE.SRGBColorSpace;
+    renderer.toneMapping = THREE.ACESFilmicToneMapping; renderer.toneMappingExposure = 1.05;
+    const scene = new THREE.Scene();
+    const camera = new THREE.PerspectiveCamera(40, 1, 0.05, 30);
+    camera.position.set(0.75, 0.55, 2.0); camera.lookAt(0, 0.2, 0);   // 바닥에 앉은 눈높이, 비스듬히
+    scene.add(new THREE.HemisphereLight('#FFF6E8', '#B08A5A', 1.25));
+    const sun = new THREE.DirectionalLight('#FFF1DC', 1.9);
+    sun.position.set(-1.2, 2.4, 1.6); sun.castShadow = true; sun.shadow.mapSize.set(1024, 1024);
+    Object.assign(sun.shadow.camera, { left: -1.5, right: 1.5, top: 1.5, bottom: -1.5, near: 0.5, far: 6 }); sun.shadow.bias = -0.0008;
+    scene.add(sun);
+    const floor = new THREE.Mesh(new THREE.PlaneGeometry(6, 6), new THREE.ShadowMaterial({ opacity: 0.28 }));
+    floor.rotation.x = -Math.PI / 2; floor.receiveShadow = true; scene.add(floor);
+
+    // 깃털 + 낚싯줄
+    const feather = new THREE.Group(); scene.add(feather);
+    loadGLB(`${base}art/3d/toy_wand.glb?v=202611031055`).then((g) => {
+      if (!g || done) return;
+      const o = g.scene.getObjectByName('Feather') ?? g.scene;
+      o.position.set(0, 0, 0); o.traverse((m) => { if (m.isMesh) { m.castShadow = true; m.material.side = THREE.DoubleSide; } });
+      feather.add(o);
+    });
+    const lineM = new THREE.MeshStandardMaterial({ color: '#3B3530', roughness: 0.6 });
+    let lineMesh = null;
+    const tip = new THREE.Vector3(0.35, 0.75, 0.45);
+    const W = Array.from({ length: WN + 1 }, (_, i) => new THREE.Vector3(tip.x, tip.y - (LINE * i) / WN, tip.z));
+    const WQ = W.map((v) => v.clone());
+    const wseg = LINE / WN;
+
+    let cat = null, mouthBone = null, done = false, raf = 0, last = performance.now(), t = 0;
+    let state = 'load', p = 0, stT = 0, still = 0, fastT = 0, wiggle = 0, pounceFrom = null, pounceTo = null, caughtT = 0, swatHit = false, heading = 0, held = false, finale = false;
+    const cpos = new THREE.Vector3(0, 0, -0.1), fprev = new THREE.Vector3(), fvel = new THREE.Vector3(), mouth = new THREE.Vector3();
+    const headBones = [], headQ = [];
+    let backBone = null, backQ = null;
+    const _q = new THREE.Quaternion(), _ax = new THREE.Vector3(), _v = new THREE.Vector3(), _d = new THREE.Vector3();
+    el.__p3 = () => ({ state, p, tip, W, cpos, camera, cat });   // 시험용
+
+    const size = () => { const w = stageEl.clientWidth, h = stageEl.clientHeight; renderer.setSize(w, h, false); camera.aspect = w / h; camera.updateProjectionMatrix(); };
+    addEventListener('resize', size); size();
+
+    loadPet3d(scene, base, type, stage, src).then((d) => {
+      if (done) return;
+      if (!d || !d.act.Crouch) { say('이 아이는 아직 3D 놀이 준비 중이에요'); setTimeout(() => finish(false), 1400); return; }
+      cat = d;
+      mouthBone = cat.model.getObjectByName('Mouth');
+      for (const n of ['Neck1', 'Head']) { const b = cat.model.getObjectByName(n); if (b) { headBones.push(b); headQ.push(b.quaternion.clone()); } }
+      backBone = cat.model.getObjectByName('Back'); backQ = backBone?.quaternion.clone();
+      if (cat.act.Swat) { cat.act.Swat.setLoop(THREE.LoopOnce, 1); cat.act.Swat.clampWhenFinished = true; }
+      if (cat.act.Leap) { cat.act.Leap.setLoop(THREE.LoopOnce, 1); cat.act.Leap.clampWhenFinished = true; }
+      heading = Math.atan2(camera.position.x, camera.position.z) * 0.4;
+      state = 'watch'; cat.to(cat.act.Sit, 0.01);
+      say('손가락을 움직여 깃털을 흔들어 보세요 — 바닥 가까이, 움직였다 멈췄다');
+    });
+
+    // 손가락 → 낚싯대 끝: 카메라를 향한 세로 판에 닿은 자리 + 줄 길이만큼 위(깃털이 손가락 근처에 오게)
+    const ray = new THREE.Raycaster(), ndc = new THREE.Vector2();
+    const camDir = new THREE.Vector3(camera.position.x, 0, camera.position.z).normalize();
+    const plane = new THREE.Plane().setFromNormalAndCoplanarPoint(camDir, camDir.clone().multiplyScalar(0.25));
+    const toTip = (e) => {
+      const r = cv.getBoundingClientRect();
+      ndc.set(((e.clientX - r.left) / r.width) * 2 - 1, -((e.clientY - r.top) / r.height) * 2 + 1);
+      ray.setFromCamera(ndc, camera);
+      const out = new THREE.Vector3();
+      if (!ray.ray.intersectPlane(plane, out)) return;
+      out.x = clamp(out.x, -1.0, 1.0); out.y = clamp(out.y + LINE * 0.92, LINE * 0.95, 1.3);
+      tip.copy(out);
+    };
+    const showHand = (e) => { const r = stageEl.getBoundingClientRect(); handEl.hidden = false; handEl.style.left = `${e.clientX - r.left}px`; handEl.style.top = `${e.clientY - r.top}px`; };
+    stageEl.addEventListener('pointerdown', (e) => { held = true; stageEl.setPointerCapture?.(e.pointerId); showHand(e); toTip(e); });
+    stageEl.addEventListener('pointermove', (e) => { showHand(e); if (held || e.pointerType === 'mouse') toTip(e); });
+    const up = () => { held = false; };
+    stageEl.addEventListener('pointerup', up); stageEl.addEventListener('pointercancel', up);
+
+    // 낚싯줄 물리: 위 끝은 낚싯대 끝(고정), 아래 끝은 깃털(잡혔으면 아이 입에 고정)
+    const stepLine = (dt) => {
+      const g = -9.8 * dt * dt;
+      for (let i = 1; i <= WN; i++) {
+        if (i === WN && state === 'caught') continue;
+        const a = W[i], b = WQ[i];
+        const vx = (a.x - b.x) * 0.97, vy = (a.y - b.y) * 0.97, vz = (a.z - b.z) * 0.97;
+        b.copy(a); a.x += vx; a.y += vy + g; a.z += vz;
+        if (a.y < 0.015) { a.y = 0.015; a.x -= vx * 0.5; a.z -= vz * 0.5; }
+      }
+      W[0].copy(tip); WQ[0].copy(tip);
+      if (state === 'caught') { W[WN].copy(mouth); WQ[WN].copy(mouth); }
+      for (let it = 0; it < 10; it++) {
+        for (let i = 0; i < WN; i++) {
+          const a = W[i], b = W[i + 1];
+          _v.subVectors(b, a); const d = _v.length() || 1e-6, diff = (d - wseg) / d;
+          const pinB = i + 1 === WN && state === 'caught';
+          const fa = i === 0 ? 0 : pinB ? 1 : 0.5, fb = pinB ? 0 : i === 0 ? 1 : 0.5;
+          a.addScaledVector(_v, diff * fa); b.addScaledVector(_v, -diff * fb);
+        }
+      }
+    };
+    const drawLine = () => {
+      const geo = new THREE.TubeGeometry(new THREE.CatmullRomCurve3(W), 40, 0.0022, 4, false);
+      if (!lineMesh) { lineMesh = new THREE.Mesh(geo, lineM); scene.add(lineMesh); } else { lineMesh.geometry.dispose(); lineMesh.geometry = geo; }
+      feather.position.copy(W[WN]);
+      _v.subVectors(W[WN], W[WN - 1]).normalize();
+      feather.quaternion.setFromUnitVectors(new THREE.Vector3(0, -1, 0), _v);   // 깃털은 줄 끝에서 줄이 오는 반대쪽으로 늘어진다(블렌더 −Z = glTF −Y)
+    };
+
+    const go = (s, a, fade = 0.25) => { state = s; stT = 0; if (a) cat.to(a, fade); };
+    const frame = (now) => {
+      const dt = Math.min(0.033, (now - last) / 1000); last = now; t += dt;
+      stepLine(dt);
+      const F = W[WN];
+      fvel.subVectors(F, fprev).divideScalar(Math.max(dt, 1e-3)); fprev.copy(F);
+      const fsp = Math.hypot(fvel.x, fvel.z) + Math.abs(fvel.y) * 0.5;
+      still = fsp < 0.12 ? still + dt : 0;
+      fastT = fsp > 2.2 ? fastT + dt : Math.max(0, fastT - dt * 2);
+      if (cat) {
+        stT += dt;
+        // 고개: 동작 값으로 되돌리고 믹서 → 저장 → 깃털 쪽으로 돌리기(믹서는 값이 바뀔 때만 써서, 안 되돌리면 쌓인다)
+        headBones.forEach((b, i) => b.quaternion.copy(headQ[i])); if (backBone) backBone.quaternion.copy(backQ);
+        cat.mixer.update(dt);
+        headBones.forEach((b, i) => headQ[i].copy(b.quaternion)); if (backBone) backQ.copy(backBone.quaternion);
+        if (mouthBone) mouthBone.getWorldPosition(mouth); else mouth.copy(cpos).add(_v.set(Math.sin(heading) * 0.15, 0.2, Math.cos(heading) * 0.15));
+        _d.set(F.x - cpos.x, 0, F.z - cpos.z);
+        const dist = Math.max(0, _d.length() - 0.12), want = Math.atan2(_d.x, _d.z);
+        const turn = (k) => { let a = want - heading; a = Math.atan2(Math.sin(a), Math.cos(a)); heading += a * Math.min(1, dt * k); };
+        if (fastT > 2 && !['bored', 'pounce', 'caught', 'win'].includes(state)) { go('bored', cat.act.Sit, 0.4); say('너무 빨리 흔들기만 하면 흥미를 잃어요 — 숨었다 멈췄다, 먹잇감처럼'); }
+        switch (state) {
+          case 'watch':   // 앉아서 눈으로 쫓는다
+            turn(1.5);
+            if (F.y < 0.3 && dist < 1.0 && fsp > 0.05) go('stalk', cat.act.Crouch, 0.3);
+            else if (F.y < 0.55 && dist < 0.28 && cat.act.Swat) { go('swat', cat.act.Swat, 0.12); swatHit = false; }
+            break;
+          case 'stalk':   // 낮게 웅크려 다가간다 → 앞에서 멈추면 씰룩 → 덮치기
+            turn(2.2);
+            if (dist > 1.1) { go('chase', cat.act.Run, 0.2); break; }
+            if (F.y > 0.45) { go('watch', cat.act.Sit, 0.35); break; }
+            if (dist > 0.38) { cpos.x += Math.sin(heading) * 0.14 * dt; cpos.z += Math.cos(heading) * 0.14 * dt; wiggle = 0; }
+            if (dist < 0.5 && still > 0.25) { wiggle += dt; say('엉덩이를 씰룩씰룩…'); } else wiggle = Math.max(0, wiggle - dt);
+            // 덮치기: 입이 깃털 자리에 닿게 착지할 곳을 정한다
+            if (wiggle > 0.7 && cat.act.Leap) { pounceFrom = cpos.clone(); const md = Math.hypot(mouth.x - cpos.x, mouth.z - cpos.z); pounceTo = new THREE.Vector3(F.x - Math.sin(heading) * md, 0, F.z - Math.cos(heading) * md); go('pounce', cat.act.Leap, 0.08); cat.act.Leap.timeScale = cat.act.Leap.getClip().duration / 0.55; sfx.pop?.(); }
+            break;
+          case 'chase':   // 뛰어서 쫓는다
+            turn(4); cpos.x += Math.sin(heading) * 0.9 * dt; cpos.z += Math.cos(heading) * 0.9 * dt;
+            if (dist < 0.55) go('stalk', cat.act.Crouch, 0.25);
+            break;
+          case 'pounce': {   // 덮치기: 0.55초 동안 깃털 자리로(포물선은 동작이 맡는다)
+            const k = Math.min(1, stT / 0.55), e = k * k * (3 - 2 * k);
+            cpos.lerpVectors(pounceFrom, pounceTo, e);
+            if (k >= 1) {
+              const got = Math.hypot(F.x - mouth.x, F.z - mouth.z) < 0.2 && F.y < 0.25;
+              if (got || finale) { go('caught', cat.act.Crouch, 0.15); caughtT = 0; p += 0.15; say(p >= 1 ? '잡았다! 마지막엔 꼭 잡게 해 주세요 — 사냥 성공!' : '잡았다! 🐾'); sfx.ding?.(); haptic('light'); }
+              else { p += 0.06; go('stalk', cat.act.Crouch, 0.2); say('앗, 놓쳤어요 — 그래도 신났어요'); }
+            }
+            break;
+          }
+          case 'caught':   // 잡은 깃털을 잠깐 물고 있다가 놓는다
+            caughtT += dt;
+            if (caughtT > 1.1) {
+              if (p >= 1) { go('win', cat.act.Sit, 0.4); break; }
+              WQ[WN].copy(W[WN]).add(_v.set(0, 0.02, 0)); go('watch', cat.act.Sit, 0.35);
+            }
+            break;
+          case 'swat':   // 앞발로 탁
+            turn(3);
+            if (!swatHit && stT > 0.32 && stT < 0.5 && Math.hypot(F.x - mouth.x, F.z - mouth.z) < 0.22 && F.y < 0.55) {
+              swatHit = true; p += 0.07; say('탁! 🐾'); sfx.tap?.(); haptic('light');
+              WQ[WN].copy(W[WN]).add(_v.set(Math.sin(heading) * -0.03, -0.01, Math.cos(heading) * -0.03));   // 깃털이 튕겨 나간다
+            }
+            if (stT > 0.85) go('watch', cat.act.Sit, 0.3);
+            break;
+          case 'bored':
+            heading += dt * 0.3;
+            if (stT > 1.8) { fastT = 0; go('watch', cat.act.Sit, 0.4); say('다시 천천히 — 바닥 가까이 움직였다 멈춰 보세요'); }
+            break;
+          case 'win':
+            if (stT > 1.4 && !done) { prog(1); el.classList.add('hc-done'); setTimeout(() => finish(true), 600); state = 'end'; }
+            break;
+        }
+        if (p >= 0.9) finale = true;   // 마지막 덮치기는 꼭 잡게
+        cpos.x = clamp(cpos.x, -0.9, 0.9); cpos.z = clamp(cpos.z, -0.8, 0.55);
+        cat.holder.position.copy(cpos); cat.holder.rotation.y = heading;
+        // 고개를 깃털 쪽으로(좌우·위아래) · 웅크린 채 멈춰 있으면 엉덩이 씰룩
+        _v.set(F.x - mouth.x, F.y - mouth.y, F.z - mouth.z);
+        let yaw = Math.atan2(_v.x, _v.z) - heading; yaw = clamp(Math.atan2(Math.sin(yaw), Math.cos(yaw)), -0.9, 0.9);
+        const pitch = clamp(Math.atan2(_v.y, Math.hypot(_v.x, _v.z)), -0.6, 0.7);
+        headBones.forEach((b, i) => {
+          b.getWorldQuaternion(_q); const inv = _q.clone().invert();
+          _ax.set(0, 1, 0).applyQuaternion(inv); b.rotateOnAxis(_ax, yaw * (i ? 0.55 : 0.45));
+          b.getWorldQuaternion(_q); _ax.set(Math.cos(heading + yaw), 0, -Math.sin(heading + yaw)).applyQuaternion(_q.clone().invert()); b.rotateOnAxis(_ax, -pitch * (i ? 0.5 : 0.3));
+        });
+        if (backBone && wiggle > 0) { backBone.getWorldQuaternion(_q); _ax.set(0, 1, 0).applyQuaternion(_q.invert()); backBone.rotateOnAxis(_ax, Math.sin(t * 16) * 0.14 * Math.min(1, wiggle * 3)); }
+        cat.model.updateMatrixWorld(true);
+        prog(p);
+      }
+      drawLine();
+      renderer.render(scene, camera);
+      if (!done) raf = requestAnimationFrame(frame);
+    };
+    raf = requestAnimationFrame(frame);
+
+    const finish = (ok) => {
+      if (done) return;
+      done = true;
+      cancelAnimationFrame(raf);
+      removeEventListener('resize', size);
+      renderer.dispose(); renderer.forceContextLoss();
+      scene.traverse((o) => { o.geometry?.dispose?.(); });
+      document.body.classList.remove('handcare');
+      el.classList.remove('on');
+      setTimeout(() => el.remove(), 250);
+      resolve({ ok, rough: 0 });
     };
     el.querySelector('.hc-x').addEventListener('click', () => finish(false));
   });

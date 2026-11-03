@@ -4,10 +4,10 @@
 //  아이·보호자는 우리 수채 그림(뒷모습 2걸음)을 3D 공간에 세운 판 — 그림체는 그대로, 공간·빛·그림자·카메라는 3D
 // 좌표: x 오른쪽 · y 위 · 코스는 -z 방향(아이 위치 s m → z = -s)
 import * as THREE from 'three';
-import { sfx } from './sound.js?v=202611031012';
-import { rng } from './engine.js?v=202611031012';
-import { haptic } from './native.js?v=202611031012';
-import { SIZE, STAGE_K, clamp, shuffleR, canvasTex, stripeTex, roundTex, makeStage, std, mesh, buildArena, loadPet3d, loadOwners, backFrames, loadTex, SHIRT } from './arena3d.js?v=202611031012';
+import { sfx } from './sound.js?v=202611031016';
+import { rng } from './engine.js?v=202611031016';
+import { haptic } from './native.js?v=202611031016';
+import { SIZE, STAGE_K, clamp, shuffleR, canvasTex, stripeTex, roundTex, makeStage, std, mesh, buildArena, loadPet3d, loadOwners, backFrames, loadTex, SHIRT } from './arena3d.js?v=202611031016';
 
 const KEY = { ArrowUp: 'up', ArrowDown: 'down', ArrowLeft: 'left', ArrowRight: 'right', KeyW: 'up', KeyS: 'down', KeyA: 'left', KeyD: 'right' };
 const ARROW = { up: '↑', down: '↓', left: '←', right: '→' };
@@ -371,7 +371,8 @@ export function agility3dGame(body, ctx, done, { base = '' } = {}) {
   };
   const cleanup = () => {
     cancelAnimationFrame(raf); removeEventListener('keydown', onKey); removeEventListener('resize', size); clearTimeout(judge.t);
-    renderer.dispose(); scene.traverse((o) => { o.geometry?.dispose?.(); });
+    renderer.dispose(); renderer.forceContextLoss();   // 그래픽을 바로 돌려준다 — 안 하면 판마다 쌓여 브라우저가 방의 움직이는 아이 그래픽까지 끊었다(11/3)
+    scene.traverse((o) => { o.geometry?.dispose?.(); });
   };
   raf = requestAnimationFrame(frame);
   return () => { over = true; cleanup(); };

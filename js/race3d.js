@@ -3,10 +3,10 @@
 // 다른 성향 봇 3마리와 100m. 그리는 것만 three.js 3D — 4레인 경기장(js/arena3d.js) + 우리 아이 3D 4마리 + 레인마다 보호자 3D.
 // 골인하면 내 보호자는 무릎 꿇고 안아 주고(Hug), 다른 보호자는 자기 아이가 들어오면 박수(Clapping)
 import * as THREE from 'three';
-import { sfx } from './sound.js?v=202611031012';
-import { rng } from './engine.js?v=202611031012';
-import { haptic } from './native.js?v=202611031012';
-import { SIZE, clamp, shuffleR, nameTex, roundTex, makeStage, buildArena, loadPet3d, loadOwners, backFrames, SHIRT } from './arena3d.js?v=202611031012';
+import { sfx } from './sound.js?v=202611031016';
+import { rng } from './engine.js?v=202611031016';
+import { haptic } from './native.js?v=202611031016';
+import { SIZE, clamp, shuffleR, nameTex, roundTex, makeStage, buildArena, loadPet3d, loadOwners, backFrames, SHIRT } from './arena3d.js?v=202611031016';
 
 const TYPES = ['small', 'medium', 'large', 'short', 'long'];
 const BOT_NAMES = ['초코', '몽이', '까미', '쿠키', '라떼', '호떡', '감자', '모찌', '탄이', '별이'];
@@ -263,7 +263,8 @@ export function race3dGame(body, ctx, done, { base = '' } = {}) {
   };
   const cleanup = () => {
     cancelAnimationFrame(raf); removeEventListener('keydown', onKey); removeEventListener('resize', size); clearTimeout(flash.t); clearTimeout(pop.t);
-    renderer.dispose(); scene.traverse((o) => { o.geometry?.dispose?.(); });
+    renderer.dispose(); renderer.forceContextLoss();   // 그래픽을 바로 돌려준다 — 안 하면 판마다 쌓여 브라우저가 방의 움직이는 아이 그래픽까지 끊었다(11/3)
+    scene.traverse((o) => { o.geometry?.dispose?.(); });
   };
   raf = requestAnimationFrame(frame);
   return () => { over = true; cleanup(); };

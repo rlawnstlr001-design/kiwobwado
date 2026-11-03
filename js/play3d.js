@@ -5,9 +5,9 @@
 //       흥분 신호 '✋'에 손을 놓으면 줄을 놓고 앉아 차분해졌다가 다시 놀자(RSPCA·Blue Cross 놀이 안내) → 끝은 아이가 이겨 줄을 물고 으쓱 걸어간다.
 // 결과 { ok, rough } — rough = 너무 세게 당기거나 흥분 신호를 무시한 횟수(app.js playAfter)
 import * as THREE from 'three';
-import { sfx } from './sound.js?v=202611031058';
-import { haptic } from './native.js?v=202611031058';
-import { loadPet3d, loadGLB, clamp } from './arena3d.js?v=202611031058';
+import { sfx } from './sound.js?v=202611031101';
+import { haptic } from './native.js?v=202611031101';
+import { loadPet3d, loadGLB, clamp } from './arena3d.js?v=202611031101';
 
 const N = 16;              // 줄 마디 수
 const ROPE = 0.8;          // 줄 길이(m)
@@ -55,7 +55,7 @@ export function tug3d({ type, stage, base = '', src = null } = {}) {
     const strands = [null, null, null];
     const knotM = new THREE.Group(), knotH = new THREE.Group();
     scene.add(knotM, knotH);
-    loadGLB(`${base}art/3d/toy_tug.glb?v=202611031058`).then((g) => {
+    loadGLB(`${base}art/3d/toy_tug.glb?v=202611031101`).then((g) => {
       if (!g || done) return;
       for (const [nm, grp] of [['KnotMouth', knotM], ['KnotHand', knotH]]) {
         const o = g.scene.getObjectByName(nm);
@@ -257,7 +257,7 @@ export function tug3d({ type, stage, base = '', src = null } = {}) {
 // ---------- 낚싯대 놀이 3D(고양이, 11/3 2단계) ----------
 // 손가락으로 낚싯대 끝을 움직이면 낚싯줄(물리) 끝의 깃털(art/3d/toy_wand.glb — tools/make_wand_toy.py)이 흔들린다.
 // 아이(우리 고양이 3D): 앉아서 눈으로 쫓다가(머리 돌리기) 깃털이 바닥 가까이 오면 낮게 웅크려('Crouch') 다가가고, 깃털이 앞에서 멈추면
-// 엉덩이를 씰룩이다 덮친다('Leap') — 깃털이 그대로 있으면 잡는다. 깃털이 얼굴 높이에 가까이 오면 앞발로 탁('Swat'), 멀리 가면 뛰어서 쫓는다('Run').
+// 엉덩이를 씰룩이다 덮친다('Pounce') — 깃털이 그대로 있으면 잡는다. 깃털이 얼굴 높이에 가까이 오면 앞발로 탁('Swat'), 멀리 가면 뛰어서 쫓는다('Run').
 // 먹잇감처럼 '움직였다 멈췄다'가 좋고, 계속 빠르게만 흔들면 흥미를 잃는다. 마지막엔 꼭 잡게 해 준다(iCatCare 놀이 안내). 결과 { ok, rough: 0 }
 const WN = 10;          // 낚싯줄 마디
 const LINE = 0.42;      // 낚싯줄 길이(m)
@@ -297,7 +297,7 @@ export function wand3d({ type, stage, base = '', src = null } = {}) {
 
     // 깃털 + 낚싯줄
     const feather = new THREE.Group(); scene.add(feather);
-    loadGLB(`${base}art/3d/toy_wand.glb?v=202611031058`).then((g) => {
+    loadGLB(`${base}art/3d/toy_wand.glb?v=202611031101`).then((g) => {
       if (!g || done) return;
       const o = g.scene.getObjectByName('Feather') ?? g.scene;
       o.position.set(0, 0, 0); o.traverse((m) => { if (m.isMesh) { m.castShadow = true; m.material.side = THREE.DoubleSide; } });
@@ -329,7 +329,9 @@ export function wand3d({ type, stage, base = '', src = null } = {}) {
       for (const n of ['Neck1', 'Head']) { const b = cat.model.getObjectByName(n); if (b) { headBones.push(b); headQ.push(b.quaternion.clone()); } }
       backBone = cat.model.getObjectByName('Back'); backQ = backBone?.quaternion.clone();
       if (cat.act.Swat) { cat.act.Swat.setLoop(THREE.LoopOnce, 1); cat.act.Swat.clampWhenFinished = true; }
-      if (cat.act.Leap) { cat.act.Leap.setLoop(THREE.LoopOnce, 1); cat.act.Leap.clampWhenFinished = true; }
+      // 덮치기: 고양이용 'Pounce'(낮게 앞으로 — 허들 넘는 'Leap'은 착지 때 세로로 길게 늘어나 보였다, 11/3)
+      cat.pounce = cat.act.Pounce ?? cat.act.Leap;
+      if (cat.pounce) { cat.pounce.setLoop(THREE.LoopOnce, 1); cat.pounce.clampWhenFinished = true; }
       heading = Math.atan2(camera.position.x, camera.position.z) * 0.4;
       state = 'watch'; cat.to(cat.act.Sit, 0.01);
       say('손가락을 움직여 깃털을 흔들어 보세요 — 바닥 가까이, 움직였다 멈췄다');
@@ -417,7 +419,7 @@ export function wand3d({ type, stage, base = '', src = null } = {}) {
             if (dist > 0.38) { cpos.x += Math.sin(heading) * 0.14 * dt; cpos.z += Math.cos(heading) * 0.14 * dt; wiggle = 0; }
             if (dist < 0.5 && still > 0.25) { wiggle += dt; say('엉덩이를 씰룩씰룩…'); } else wiggle = Math.max(0, wiggle - dt);
             // 덮치기: 입이 깃털 자리에 닿게 착지할 곳을 정한다
-            if (wiggle > 0.7 && cat.act.Leap) { pounceFrom = cpos.clone(); const md = Math.hypot(mouth.x - cpos.x, mouth.z - cpos.z); pounceTo = new THREE.Vector3(F.x - Math.sin(heading) * md, 0, F.z - Math.cos(heading) * md); go('pounce', cat.act.Leap, 0.08); cat.act.Leap.timeScale = cat.act.Leap.getClip().duration / 0.55; sfx.pop?.(); }
+            if (wiggle > 0.7 && cat.pounce) { pounceFrom = cpos.clone(); const md = Math.hypot(mouth.x - cpos.x, mouth.z - cpos.z); pounceTo = new THREE.Vector3(F.x - Math.sin(heading) * md, 0, F.z - Math.cos(heading) * md); go('pounce', cat.pounce, 0.08); cat.pounce.timeScale = cat.pounce.getClip().duration / 0.55; sfx.pop?.(); }
             break;
           case 'chase':   // 뛰어서 쫓는다
             turn(4); cpos.x += Math.sin(heading) * 0.9 * dt; cpos.z += Math.cos(heading) * 0.9 * dt;

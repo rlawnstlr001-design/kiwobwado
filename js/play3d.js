@@ -5,9 +5,9 @@
 //       흥분 신호 '✋'에 손을 놓으면 줄을 놓고 앉아 차분해졌다가 다시 놀자(RSPCA·Blue Cross 놀이 안내) → 끝은 아이가 이겨 줄을 물고 으쓱 걸어간다.
 // 결과 { ok, rough } — rough = 너무 세게 당기거나 흥분 신호를 무시한 횟수(app.js playAfter)
 import * as THREE from 'three';
-import { sfx } from './sound.js?v=202611031036';
-import { haptic } from './native.js?v=202611031036';
-import { loadPet3d, loadGLB, clamp } from './arena3d.js?v=202611031036';
+import { sfx } from './sound.js?v=202611031042';
+import { haptic } from './native.js?v=202611031042';
+import { loadPet3d, loadGLB, clamp } from './arena3d.js?v=202611031042';
 
 const N = 16;              // 줄 마디 수
 const ROPE = 0.8;          // 줄 길이(m)
@@ -50,12 +50,12 @@ export function tug3d({ type, stage, base = '', src = null } = {}) {
     floor.rotation.x = -Math.PI / 2; floor.receiveShadow = true; scene.add(floor);
 
     // 장난감: Blender로 만든 터그 로프 매듭 두 개(art/3d/toy_tug.glb — tools/make_tug_toy.py, 세 가닥 꼰 매듭 + 풀린 술)
-    // 줄 몸통은 같은 세 가닥(빨강·크림·파랑)을 물리 줄 둘레에 나선으로 감아 매 프레임 만든다. 매듭은 +Z가 줄 쪽
+    // 줄 몸통은 같은 세 가닥(빨강·크림·파랑)을 물리 줄 둘레에 나선으로 감아 매 프레임 만든다. 매듭은 줄기가 +Y(블렌더 +Z)
     const STRAND = ['#C72924', '#F2E8D1', '#285C9E'].map((c) => new THREE.MeshStandardMaterial({ color: c, roughness: 0.95 }));
     const strands = [null, null, null];
     const knotM = new THREE.Group(), knotH = new THREE.Group();
     scene.add(knotM, knotH);
-    loadGLB(`${base}art/3d/toy_tug.glb?v=202611031036`).then((g) => {
+    loadGLB(`${base}art/3d/toy_tug.glb?v=202611031042`).then((g) => {
       if (!g || done) return;
       for (const [nm, grp] of [['KnotMouth', knotM], ['KnotHand', knotH]]) {
         const o = g.scene.getObjectByName(nm);
@@ -132,20 +132,19 @@ export function tug3d({ type, stage, base = '', src = null } = {}) {
     const stepRope = (dt) => {
       const g = -9.8 * dt * dt;
       for (let i = 0; i <= N; i++) {
-        if ((i <= 1 && mouthOn) || (i === N && held)) continue;
+        if ((i === 0 && mouthOn) || (i === N && held)) continue;
         const p_ = P[i], q = Q[i];
         const vx = (p_.x - q.x) * 0.985, vy = (p_.y - q.y) * 0.985, vz = (p_.z - q.z) * 0.985;
         q.copy(p_); p_.x += vx; p_.y += vy + g; p_.z += vz;
         if (p_.y < 0.012) { p_.y = 0.012; p_.x -= vx * 0.4; p_.z -= vz * 0.4; }   // 바닥 마찰
       }
-      if (mouthOn) { P[0].copy(lipFar); Q[0].copy(lipFar); P[1].copy(mouth); Q[1].copy(mouth); }
+      if (mouthOn) { P[0].copy(mouth); Q[0].copy(mouth); }
       if (held) { P[N].copy(hand); Q[N].copy(hand); }
       for (let it = 0; it < 14; it++) {
         for (let i = 0; i < N; i++) {
           const a = P[i], b = P[i + 1];
           _v.subVectors(b, a); const d = _v.length() || 1e-6, diff = (d - seg) / d;
-          const pinA = i <= 1 && mouthOn, pinB = (i + 1 <= 1 && mouthOn) || (i + 1 === N && held);
-          if (pinA && pinB) continue;
+          const pinA = i === 0 && mouthOn, pinB = i + 1 === N && held;
           const fa = pinA ? 0 : pinB ? 1 : 0.5, fb = pinB ? 0 : pinA ? 1 : 0.5;
           a.addScaledVector(_v, diff * fa); b.addScaledVector(_v, -diff * fb);
         }
@@ -172,9 +171,9 @@ export function tug3d({ type, stage, base = '', src = null } = {}) {
         const geo = new THREE.TubeGeometry(new THREE.CatmullRomCurve3(lines[k]), M * 2, RT, 5, false);
         if (!strands[k]) { strands[k] = new THREE.Mesh(geo, STRAND[k]); strands[k].castShadow = true; scene.add(strands[k]); } else { strands[k].geometry.dispose(); strands[k].geometry = geo; }
       }
-      // 매듭: 입 쪽은 반대쪽 입꼬리 밖(없으면 줄 첫 점), 손 쪽은 줄 끝 — 둘 다 +Z가 줄 쪽을 보게
-      const aim = (grp, at, toward) => { grp.position.copy(at); _o.subVectors(toward, at).normalize(); grp.quaternion.setFromUnitVectors(new THREE.Vector3(0, 0, 1), _o); };
-      if (mouthOn && dog) aim(knotM, knotPos, P[0]); else aim(knotM, _o.copy(P[0]).addScaledVector(_t.subVectors(P[0], P[1]).normalize(), 0.035), P[0]);
+      // 매듭: 입 쪽은 반대쪽 입꼬리 밖(없으면 줄 첫 점), 손 쪽은 줄 끝 — 둘 다 줄기(+Y)가 줄 쪽을 보게
+      const aim = (grp, at, toward) => { grp.position.copy(at); _o.subVectors(toward, at).normalize(); grp.quaternion.setFromUnitVectors(new THREE.Vector3(0, 1, 0), _o); };   // 블렌더 +Z(줄기) = glTF +Y
+      if (mouthOn && dog) aim(knotM, knotPos, mouth); else aim(knotM, _o.copy(P[0]).addScaledVector(_t.subVectors(P[0], P[1]).normalize(), 0.035), P[0]);
       aim(knotH, _c.copy(P[N]).addScaledVector(_t.subVectors(P[N], P[N - 1]).normalize(), 0.03), P[N]);
     };
 
@@ -223,13 +222,13 @@ export function tug3d({ type, stage, base = '', src = null } = {}) {
         const yawAdd = (state === 'tug' ? shake * Math.sin(yank * Math.PI * 3) * 0.32 * yank : 0) + (state === 'win' ? 0 : look);
         headBones.forEach((b, i) => { b.getWorldQuaternion(_q); _ax.set(0, 1, 0).applyQuaternion(_q.invert()); b.rotateOnAxis(_ax, yawAdd * (i ? 0.6 : 0.4)); });
         dog.model.updateMatrixWorld(true);
-        if (mouthBone) { mouthBone.getWorldPosition(mouth); mouthBone.getWorldQuaternion(_q); side.set(1, 0, 0).applyQuaternion(_q).normalize(); }
+        if (mouthBone) { mouthBone.getWorldPosition(mouth); mouthBone.getWorldQuaternion(_q); _ax.set(0, 1, 0).applyQuaternion(_q); side.set(_ax.z, 0, -_ax.x).normalize(); if (side.lengthSq() < 1e-6) side.set(1, 0, 0); }
         else { mouth.fromBufferAttribute(anchor.m.geometry.attributes.position, anchor.i); anchor.m.applyBoneTransform(anchor.i, mouth); mouth.applyMatrix4(anchor.m.matrixWorld); mouth.y -= anchor.drop; side.set(Math.cos(dog.holder.rotation.y), 0, -Math.sin(dog.holder.rotation.y)); }
         // 줄은 입을 가로질러 문다(실제 터그처럼): 손 쪽 입꼬리에서 줄이 나가고, 반대쪽 입꼬리 밖에 매듭
         const w = dog.height * 0.035, sgn = _v.subVectors(P[N], mouth).dot(side) >= 0 ? 1 : -1;
         lipFar.copy(mouth).addScaledVector(side, -w * sgn);
         mouth.addScaledVector(side, w * sgn);
-        knotPos.copy(lipFar).addScaledVector(side, -0.035 * sgn);
+        knotPos.copy(lipFar).addScaledVector(side, -0.03 * sgn); knotPos.y -= 0.006;
         prog(p);
       }
       stepRope(dt);

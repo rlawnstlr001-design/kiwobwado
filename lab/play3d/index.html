@@ -3,7 +3,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>놀아 주기 3D 시험 — 키워봐도될까</title>
-<!-- 11/3 시험판(js/play3d.js): 1단계 터그 놀이(중형견 아기) · 2단계 낚싯대 놀이(단모 고양이 아기). 놀이 동작이 든 시험용 GLB는 이 폴더에 -->
+<!-- 11/3 시험판(js/play3d.js): 터그 놀이(강아지) · 낚싯대 놀이(고양이) — 앱과 같은 코드·같은 아이 GLB(art/3d/pets) -->
 <link rel="stylesheet" href="../../styles.css">
 <link rel="stylesheet" href="../../room.css">
 <style>
@@ -23,7 +23,7 @@ const { tug3d, wand3d } = await import(`../../js/play3d.js?t=${Date.now()}`);
 const res = document.getElementById('res'), out = document.getElementById('out');
 const run = async (fn, opt) => {
   res.style.visibility = 'hidden';
-  const r = await fn({ ...opt, base: '../../', src: `./${opt.type}_${opt.stage}.glb?t=${Date.now()}` });
+  const r = await fn({ ...opt, base: '../../' });   // 11/3부터 앱과 같은 art/3d/pets GLB(놀이 동작 포함)
   res.style.visibility = '';
   out.textContent = r.ok ? `끝까지 놀았어요${r.rough ? ` · 너무 셌던 횟수 ${r.rough}` : ''}` : '그만뒀어요';
 };

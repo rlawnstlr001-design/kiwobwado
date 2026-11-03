@@ -1,20 +1,20 @@
 // 키워봐도될까 — 내 생활 그대로 30일 키워 보고 반려 준비도를 확인하는 입양 전 체험
-import * as db from './db.js?v=202611031138';
-import * as E from './engine.js?v=202611031138';
-import { C, loadContent, eventById, lessonById, foodById, momentById } from './content.js?v=202611031138';
-import { track } from './track.js?v=202611031138';
-import { roomHTML, mountRoom, timeOfDay, loadAnim, clipInfo } from './room.js?v=202611031138';
-import { openGames, GAMES, titleOf } from './games.js?v=202611031138';
-import * as K from './care.js?v=202611031138';
-import { openShop, openVet, openTreats } from './shop.js?v=202611031138';
-import * as M from './money.js?v=202611031138';
-import { isApp, initNative, scheduleCare, exactAlarm, shareImage, saveWidget, widgetCount } from './native.js?v=202611031138';
-import { makeCard } from './card.js?v=202611031138';
-import { runGuide } from './guide.js?v=202611031138';
-import { handCare } from './handcare.js?v=202611031138';
-import { sfx, ambient, stopAmbient, soundOn, setSound } from './sound.js?v=202611031138';
-import * as F from './fun.js?v=202611031138';
-import { training } from './train.js?v=202611031138';
+import * as db from './db.js?v=202611031153';
+import * as E from './engine.js?v=202611031153';
+import { C, loadContent, eventById, lessonById, foodById, momentById } from './content.js?v=202611031153';
+import { track } from './track.js?v=202611031153';
+import { roomHTML, mountRoom, timeOfDay, loadAnim, clipInfo } from './room.js?v=202611031153';
+import { openGames, GAMES, titleOf } from './games.js?v=202611031153';
+import * as K from './care.js?v=202611031153';
+import { openShop, openVet, openTreats } from './shop.js?v=202611031153';
+import * as M from './money.js?v=202611031153';
+import { isApp, initNative, scheduleCare, exactAlarm, shareImage, saveWidget, widgetCount } from './native.js?v=202611031153';
+import { makeCard } from './card.js?v=202611031153';
+import { runGuide } from './guide.js?v=202611031153';
+import { handCare } from './handcare.js?v=202611031153';
+import { sfx, ambient, stopAmbient, soundOn, setSound } from './sound.js?v=202611031153';
+import * as F from './fun.js?v=202611031153';
+import { training } from './train.js?v=202611031153';
 
 const $ = (s, el = document) => el.querySelector(s);
 const view = $('#view');
@@ -693,10 +693,21 @@ const hands = (kind) => {
 };
 // 손으로 놀아 주기(11/3 사용자 "터그놀이는 터치로, 낚싯대는 터치 좌우로 같이 놀아 주는 느낌"): 터그 로프(강아지)·깃털 낚싯대(고양이)를 샀으면
 // 확대 화면에서 직접 논다. 끝까지 하면 { ok, toy, rough }, 그 장난감이 없으면 null(예전처럼 버튼 한 번 놀이)
+// 11/3 사용자 "놀아 주는 것도 3D로 진짜처럼": 우리 아이 3D와 Blender 장난감으로 노는 화면(js/play3d.js — 터그 tug3d·낚싯대 wand3d)을 먼저,
+// WebGL이 없거나 3D를 못 불러오면 예전 2D 손 놀이(js/handcare.js)로
+const webgl3d = () => { try { const c = document.createElement('canvas'); return !!(c.getContext('webgl2') || c.getContext('webgl')); } catch { return false; } };
 async function handPlay() {
   const id = species() === 'dog' ? 'toy_tug' : 'toy_wand';
   if (!(S.inv?.toys ?? []).includes(id)) return null;
-  const r = await hands(id === 'toy_tug' ? 'tug' : 'wand');
+  let r = null;
+  if (webgl3d()) {
+    try {
+      const m = await import('./play3d.js?v=202611031153');
+      track(`play3d_${id}`);
+      r = await (id === 'toy_tug' ? m.tug3d : m.wand3d)({ type: P().type, stage: E.stageOf(ageW(dayNow())) });
+    } catch (e) { console.error(e); r = null; }
+  }
+  if (!r) r = await hands(id === 'toy_tug' ? 'tug' : 'wand');
   return { ...r, toy: C.shop.items.find((i) => i.id === id) };
 }
 // 세게 당기거나 '잠깐'을 무시했으면 마음이 조금 내려가고 한 번 알려 준다

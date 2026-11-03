@@ -5,9 +5,9 @@
 //       흥분 신호 '✋'에 손을 놓으면 줄을 놓고 앉아 차분해졌다가 다시 놀자(RSPCA·Blue Cross 놀이 안내) → 끝은 아이가 이겨 줄을 물고 으쓱 걸어간다.
 // 결과 { ok, rough } — rough = 너무 세게 당기거나 흥분 신호를 무시한 횟수(app.js playAfter)
 import * as THREE from 'three';
-import { sfx } from './sound.js?v=202611031138';
-import { haptic } from './native.js?v=202611031138';
-import { loadPet3d, loadGLB, clamp } from './arena3d.js?v=202611031138';
+import { sfx } from './sound.js?v=202611031153';
+import { haptic } from './native.js?v=202611031153';
+import { loadPet3d, loadGLB, clamp } from './arena3d.js?v=202611031153';
 
 const N = 16;              // 줄 마디 수
 const ROPE = 0.8;          // 줄 길이(m)
@@ -55,7 +55,7 @@ export function tug3d({ type, stage, base = '', src = null } = {}) {
     const strands = [null, null, null];
     const knotM = new THREE.Group(), knotH = new THREE.Group();
     scene.add(knotM, knotH);
-    loadGLB(`${base}art/3d/toy_tug.glb?v=202611031138`).then((g) => {
+    loadGLB(`${base}art/3d/toy_tug.glb?v=202611031153`).then((g) => {
       if (!g || done) return;
       for (const [nm, grp] of [['KnotMouth', knotM], ['KnotHand', knotH]]) {
         const o = g.scene.getObjectByName(nm);
@@ -300,7 +300,7 @@ export function wand3d({ type, stage, base = '', src = null } = {}) {
 
     // 깃털 + 낚싯줄
     const feather = new THREE.Group(); scene.add(feather);
-    loadGLB(`${base}art/3d/toy_wand.glb?v=202611031138`).then((g) => {
+    loadGLB(`${base}art/3d/toy_wand.glb?v=202611031153`).then((g) => {
       if (!g || done) return;
       const o = g.scene.getObjectByName('Feather') ?? g.scene;
       o.position.set(0, 0, 0); o.traverse((m) => { if (m.isMesh) { m.castShadow = true; m.material.side = THREE.DoubleSide; } });

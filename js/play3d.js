@@ -5,9 +5,9 @@
 //       흥분 신호 '✋'에 손을 놓으면 줄을 놓고 앉아 차분해졌다가 다시 놀자(RSPCA·Blue Cross 놀이 안내) → 끝은 아이가 이겨 줄을 물고 으쓱 걸어간다.
 // 결과 { ok, rough } — rough = 너무 세게 당기거나 흥분 신호를 무시한 횟수(app.js playAfter)
 import * as THREE from 'three';
-import { sfx } from './sound.js?v=202611031055';
-import { haptic } from './native.js?v=202611031055';
-import { loadPet3d, loadGLB, clamp } from './arena3d.js?v=202611031055';
+import { sfx } from './sound.js?v=202611031058';
+import { haptic } from './native.js?v=202611031058';
+import { loadPet3d, loadGLB, clamp } from './arena3d.js?v=202611031058';
 
 const N = 16;              // 줄 마디 수
 const ROPE = 0.8;          // 줄 길이(m)
@@ -23,7 +23,7 @@ export function tug3d({ type, stage, base = '', src = null } = {}) {
     el.setAttribute('aria-label', '터그 놀이');
     el.innerHTML = `<div class="hc-top"><b>터그 놀이</b><span class="hc-say" id="hc-say">불러오는 중…</span>
         <i class="hc-bar" aria-hidden="true"><i id="hc-fill"></i></i><button class="hc-x" type="button">그만두기</button></div>
-      <div class="p3-stage" id="p3-stage" style="--room:url('${base}art/room/room_wide.webp')"><canvas></canvas><i class="p3-hand" id="p3-hand" hidden></i></div>`;
+      <div class="p3-stage" id="p3-stage" style="--room:url('${new URL(`${base}art/room/room_wide.webp`, location.href).href}')"><canvas></canvas><i class="p3-hand" id="p3-hand" hidden></i></div>`;
     root.appendChild(el);
     document.body.classList.add('handcare');   // 여는 동안 앱의 1분 다시 그리기를 멈춘다
     setTimeout(() => el.classList.add('on'), 20);   // rAF는 창이 가려지면 멈춰 반투명으로 남았다
@@ -55,7 +55,7 @@ export function tug3d({ type, stage, base = '', src = null } = {}) {
     const strands = [null, null, null];
     const knotM = new THREE.Group(), knotH = new THREE.Group();
     scene.add(knotM, knotH);
-    loadGLB(`${base}art/3d/toy_tug.glb?v=202611031055`).then((g) => {
+    loadGLB(`${base}art/3d/toy_tug.glb?v=202611031058`).then((g) => {
       if (!g || done) return;
       for (const [nm, grp] of [['KnotMouth', knotM], ['KnotHand', knotH]]) {
         const o = g.scene.getObjectByName(nm);
@@ -220,7 +220,7 @@ export function tug3d({ type, stage, base = '', src = null } = {}) {
         // 머리: 당길 때 좌우로 흔들고, 평소엔 손(줄 끝) 쪽을 본다
         const look = clamp((Math.atan2(P[N].x - dog.holder.position.x, P[N].z - dog.holder.position.z) - dog.holder.rotation.y) * 0.5, -0.5, 0.5);
         const yawAdd = (state === 'tug' ? shake * Math.sin(yank * Math.PI * 3) * 0.32 * yank : 0) + (state === 'win' ? 0 : look);
-        headBones.forEach((b, i) => { b.getWorldQuaternion(_q); _ax.set(0, 1, 0).applyQuaternion(_q.invert()); b.rotateOnAxis(_ax, yawAdd * (i ? 0.6 : 0.4)); });
+        headBones.forEach((b, i) => { b.getWorldQuaternion(_q); _ax.set(0, 1, 0).applyQuaternion(_q.invert()); b.rotateOnAxis(_ax, yawAdd * (i ? 0.8 : 0.15)); });   // 머리 위주 — 목뿌리를 많이 돌리면 어깨·가슴 살이 비틀렸다
         dog.model.updateMatrixWorld(true);
         if (mouthBone) { mouthBone.getWorldPosition(mouth); mouthBone.getWorldQuaternion(_q); _ax.set(0, 1, 0).applyQuaternion(_q); side.set(_ax.z, 0, -_ax.x).normalize(); if (side.lengthSq() < 1e-6) side.set(1, 0, 0); }
         else { mouth.fromBufferAttribute(anchor.m.geometry.attributes.position, anchor.i); anchor.m.applyBoneTransform(anchor.i, mouth); mouth.applyMatrix4(anchor.m.matrixWorld); mouth.y -= anchor.drop; side.set(Math.cos(dog.holder.rotation.y), 0, -Math.sin(dog.holder.rotation.y)); }
@@ -270,7 +270,7 @@ export function wand3d({ type, stage, base = '', src = null } = {}) {
     el.setAttribute('aria-label', '낚싯대 놀이');
     el.innerHTML = `<div class="hc-top"><b>낚싯대 놀이</b><span class="hc-say" id="hc-say">불러오는 중…</span>
         <i class="hc-bar" aria-hidden="true"><i id="hc-fill"></i></i><button class="hc-x" type="button">그만두기</button></div>
-      <div class="p3-stage" id="p3-stage" style="--room:url('${base}art/room/room_wide.webp')"><canvas></canvas><i class="p3-hand" id="p3-hand" hidden></i></div>`;
+      <div class="p3-stage" id="p3-stage" style="--room:url('${new URL(`${base}art/room/room_wide.webp`, location.href).href}')"><canvas></canvas><i class="p3-hand" id="p3-hand" hidden></i></div>`;
     root.appendChild(el);
     document.body.classList.add('handcare');
     setTimeout(() => el.classList.add('on'), 20);
@@ -297,7 +297,7 @@ export function wand3d({ type, stage, base = '', src = null } = {}) {
 
     // 깃털 + 낚싯줄
     const feather = new THREE.Group(); scene.add(feather);
-    loadGLB(`${base}art/3d/toy_wand.glb?v=202611031055`).then((g) => {
+    loadGLB(`${base}art/3d/toy_wand.glb?v=202611031058`).then((g) => {
       if (!g || done) return;
       const o = g.scene.getObjectByName('Feather') ?? g.scene;
       o.position.set(0, 0, 0); o.traverse((m) => { if (m.isMesh) { m.castShadow = true; m.material.side = THREE.DoubleSide; } });
@@ -461,14 +461,15 @@ export function wand3d({ type, stage, base = '', src = null } = {}) {
         cat.holder.position.copy(cpos); cat.holder.rotation.y = heading;
         // 고개를 깃털 쪽으로(좌우·위아래) · 웅크린 채 멈춰 있으면 엉덩이 씰룩
         _v.set(F.x - mouth.x, F.y - mouth.y, F.z - mouth.z);
-        let yaw = Math.atan2(_v.x, _v.z) - heading; yaw = clamp(Math.atan2(Math.sin(yaw), Math.cos(yaw)), -0.9, 0.9);
-        const pitch = clamp(Math.atan2(_v.y, Math.hypot(_v.x, _v.z)), -0.6, 0.7);
+        // 머리 위주로 돌린다(목뿌리 Neck1은 어깨·가슴 살까지 끌어 몸이 비틀렸다 — 11/3 사용자 "왜 이렇게 고양이가 일그러지지?"). 넘치는 각은 몸통이 돈다(turn)
+        let yaw = Math.atan2(_v.x, _v.z) - heading; yaw = clamp(Math.atan2(Math.sin(yaw), Math.cos(yaw)), -0.6, 0.6);
+        const pitch = clamp(Math.atan2(_v.y, Math.hypot(_v.x, _v.z)), -0.4, 0.4);
         headBones.forEach((b, i) => {
           b.getWorldQuaternion(_q); const inv = _q.clone().invert();
-          _ax.set(0, 1, 0).applyQuaternion(inv); b.rotateOnAxis(_ax, yaw * (i ? 0.55 : 0.45));
-          b.getWorldQuaternion(_q); _ax.set(Math.cos(heading + yaw), 0, -Math.sin(heading + yaw)).applyQuaternion(_q.clone().invert()); b.rotateOnAxis(_ax, -pitch * (i ? 0.5 : 0.3));
+          _ax.set(0, 1, 0).applyQuaternion(inv); b.rotateOnAxis(_ax, yaw * (i ? 0.8 : 0.15));
+          b.getWorldQuaternion(_q); _ax.set(Math.cos(heading + yaw), 0, -Math.sin(heading + yaw)).applyQuaternion(_q.clone().invert()); b.rotateOnAxis(_ax, -pitch * (i ? 0.7 : 0));
         });
-        if (backBone && wiggle > 0) { backBone.getWorldQuaternion(_q); _ax.set(0, 1, 0).applyQuaternion(_q.invert()); backBone.rotateOnAxis(_ax, Math.sin(t * 16) * 0.14 * Math.min(1, wiggle * 3)); }
+        if (backBone && wiggle > 0) { backBone.getWorldQuaternion(_q); _ax.set(0, 1, 0).applyQuaternion(_q.invert()); backBone.rotateOnAxis(_ax, Math.sin(t * 9) * 0.06 * Math.min(1, wiggle * 3)); }
         cat.model.updateMatrixWorld(true);
         prog(p);
       }

@@ -4,10 +4,10 @@
 // 11/2 추가 4종(먹이 받기·높이 쌓기·카드 짝 맞추기·OX 퀴즈)은 다른 세션에서 만든 패키지(js/mg — README 참고)의 '판'만 빌려 쓴다:
 // 패키지 자체 결과 화면·보상 규칙·광고 2배·하루 횟수는 쓰지 않고, 점수 → 코인·결과 화면은 이 앱 규칙(1코인 = 1,000원, 하루 한도)을 따른다.
 // 패키지 클래스 접두어는 앱의 .mg-* 와 겹쳐 kpg- 로 바꿔 넣었다. 문제 은행(196KB)이 있어 게임을 고를 때 불러온다
-import { C } from './content.js?v=202611031055';
-import { raceGame, agilityGame } from './race.js?v=202611031055';
-import { sfx } from './sound.js?v=202611031055';
-import { haptic } from './native.js?v=202611031055';
+import { C } from './content.js?v=202611031058';
+import { raceGame, agilityGame } from './race.js?v=202611031058';
+import { sfx } from './sound.js?v=202611031058';
+import { haptic } from './native.js?v=202611031058';
 
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 const shuffle = (a) => { for (let i = a.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [a[i], a[j]] = [a[j], a[i]]; } return a; };
@@ -85,7 +85,7 @@ function lazy3d(kind, fallback) {
     if (!webgl()) return fallback(body, ctx, done);
     let stop = null, dead = false;
     body.innerHTML = '<p class="mg-note">경기장을 준비하고 있어요…</p>';
-    (kind === 'race' ? import('./race3d.js?v=202611031055').then((m) => m.race3dGame) : import('./agility3d.js?v=202611031055').then((m) => m.agility3dGame))
+    (kind === 'race' ? import('./race3d.js?v=202611031058').then((m) => m.race3dGame) : import('./agility3d.js?v=202611031058').then((m) => m.agility3dGame))
       .then((game) => { if (!dead) stop = game(body, ctx, done); })
       .catch((e) => { console.error(e); if (!dead) stop = fallback(body, ctx, done); });
     return () => { dead = true; stop?.(); };
@@ -144,8 +144,8 @@ function pkgGame(id) {
     body.innerHTML = `<div class="kpg-root mgp"><div class="kpg-top"><div class="kpg-title"></div><div class="kpg-hud"></div></div><div class="kpg-stage"></div></div>`;
     const stage = body.querySelector('.kpg-stage'), hudBox = body.querySelector('.kpg-hud');
     const [dir, name] = PKG[id];
-    Promise.all([import(`./mg/games/${dir}/game.js?v=202611031055`), import('./mg/core/styles.js?v=202611031055'), import('./mg/core/strings.js?v=202611031055'), import('./mg/core/rewards.js?v=202611031055'),
-      id === 'quiz' ? import('./mg/games/quiz/questions.ko.js?v=202611031055') : {}]).then(([g, st, strs, rw, qs]) => {
+    Promise.all([import(`./mg/games/${dir}/game.js?v=202611031058`), import('./mg/core/styles.js?v=202611031058'), import('./mg/core/strings.js?v=202611031058'), import('./mg/core/rewards.js?v=202611031058'),
+      id === 'quiz' ? import('./mg/games/quiz/questions.ko.js?v=202611031058') : {}]).then(([g, st, strs, rw, qs]) => {
       if (dead) return;
       const def = g[name]; st.injectStyles(document);
       let lastHud = '';

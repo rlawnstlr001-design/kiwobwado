@@ -1,20 +1,20 @@
 // 키워봐도될까 — 내 생활 그대로 30일 키워 보고 반려 준비도를 확인하는 입양 전 체험
-import * as db from './db.js?v=202611031055';
-import * as E from './engine.js?v=202611031055';
-import { C, loadContent, eventById, lessonById, foodById, momentById } from './content.js?v=202611031055';
-import { track } from './track.js?v=202611031055';
-import { roomHTML, mountRoom, timeOfDay, loadAnim, clipInfo } from './room.js?v=202611031055';
-import { openGames, GAMES, titleOf } from './games.js?v=202611031055';
-import * as K from './care.js?v=202611031055';
-import { openShop, openVet, openTreats } from './shop.js?v=202611031055';
-import * as M from './money.js?v=202611031055';
-import { isApp, initNative, scheduleCare, exactAlarm, shareImage, saveWidget, widgetCount } from './native.js?v=202611031055';
-import { makeCard } from './card.js?v=202611031055';
-import { runGuide } from './guide.js?v=202611031055';
-import { handCare } from './handcare.js?v=202611031055';
-import { sfx, ambient, stopAmbient, soundOn, setSound } from './sound.js?v=202611031055';
-import * as F from './fun.js?v=202611031055';
-import { training } from './train.js?v=202611031055';
+import * as db from './db.js?v=202611031058';
+import * as E from './engine.js?v=202611031058';
+import { C, loadContent, eventById, lessonById, foodById, momentById } from './content.js?v=202611031058';
+import { track } from './track.js?v=202611031058';
+import { roomHTML, mountRoom, timeOfDay, loadAnim, clipInfo } from './room.js?v=202611031058';
+import { openGames, GAMES, titleOf } from './games.js?v=202611031058';
+import * as K from './care.js?v=202611031058';
+import { openShop, openVet, openTreats } from './shop.js?v=202611031058';
+import * as M from './money.js?v=202611031058';
+import { isApp, initNative, scheduleCare, exactAlarm, shareImage, saveWidget, widgetCount } from './native.js?v=202611031058';
+import { makeCard } from './card.js?v=202611031058';
+import { runGuide } from './guide.js?v=202611031058';
+import { handCare } from './handcare.js?v=202611031058';
+import { sfx, ambient, stopAmbient, soundOn, setSound } from './sound.js?v=202611031058';
+import * as F from './fun.js?v=202611031058';
+import { training } from './train.js?v=202611031058';
 
 const $ = (s, el = document) => el.querySelector(s);
 const view = $('#view');

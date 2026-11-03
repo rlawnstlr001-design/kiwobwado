@@ -1,20 +1,20 @@
 // 키워봐도될까 — 내 생활 그대로 30일 키워 보고 반려 준비도를 확인하는 입양 전 체험
-import * as db from './db.js?v=202611030949';
-import * as E from './engine.js?v=202611030949';
-import { C, loadContent, eventById, lessonById, foodById, momentById } from './content.js?v=202611030949';
-import { track } from './track.js?v=202611030949';
-import { roomHTML, mountRoom, timeOfDay, loadAnim, clipInfo } from './room.js?v=202611030949';
-import { openGames, GAMES, titleOf } from './games.js?v=202611030949';
-import * as K from './care.js?v=202611030949';
-import { openShop, openVet, openTreats } from './shop.js?v=202611030949';
-import * as M from './money.js?v=202611030949';
-import { isApp, initNative, scheduleCare, exactAlarm, shareImage, saveWidget, widgetCount } from './native.js?v=202611030949';
-import { makeCard } from './card.js?v=202611030949';
-import { runGuide } from './guide.js?v=202611030949';
-import { handCare } from './handcare.js?v=202611030949';
-import { sfx, ambient, stopAmbient, soundOn, setSound } from './sound.js?v=202611030949';
-import * as F from './fun.js?v=202611030949';
-import { training } from './train.js?v=202611030949';
+import * as db from './db.js?v=202611031004';
+import * as E from './engine.js?v=202611031004';
+import { C, loadContent, eventById, lessonById, foodById, momentById } from './content.js?v=202611031004';
+import { track } from './track.js?v=202611031004';
+import { roomHTML, mountRoom, timeOfDay, loadAnim, clipInfo } from './room.js?v=202611031004';
+import { openGames, GAMES, titleOf } from './games.js?v=202611031004';
+import * as K from './care.js?v=202611031004';
+import { openShop, openVet, openTreats } from './shop.js?v=202611031004';
+import * as M from './money.js?v=202611031004';
+import { isApp, initNative, scheduleCare, exactAlarm, shareImage, saveWidget, widgetCount } from './native.js?v=202611031004';
+import { makeCard } from './card.js?v=202611031004';
+import { runGuide } from './guide.js?v=202611031004';
+import { handCare } from './handcare.js?v=202611031004';
+import { sfx, ambient, stopAmbient, soundOn, setSound } from './sound.js?v=202611031004';
+import * as F from './fun.js?v=202611031004';
+import { training } from './train.js?v=202611031004';
 
 const $ = (s, el = document) => el.querySelector(s);
 const view = $('#view');
@@ -734,7 +734,11 @@ async function doAct(kind) {
     if (n >= 3) return ROOM.nudge('오늘은 충분히 놀았어요. 쉬는 것도 중요해요');
     BUSY = true;
     S.freePlay[key] = n + 1;
-    S.stats = E.applyFx(S.stats, { bond: 1 });
+    // 펫샵에서 산 장난감이 있으면 그걸로 — 심심함(습관)도 덜어 준다(11/3 사용자 "장난감도 실제 상품으로")
+    const toys = (S.inv?.toys ?? []).map((id) => C.shop.items.find((i) => i.id === id)).filter(Boolean);
+    const toy = toys.length ? toys[n % toys.length] : null;
+    S.stats = E.applyFx(S.stats, toy ? { bond: 1, habit: 1 } : { bond: 1 });
+    if (toy) toast(`${toy.emoji} ${E.josa(toy.name.split('(')[0].trim(), '으로/로')} 놀아 줬어요 — 마음 +1 · 습관 +1`);
     S.lastDone = now().getTime();
     await save();
     await ROOM.play('play');
@@ -1388,6 +1392,10 @@ async function devAction(a) {
   const saved = await db.get('kv', 'state').catch(() => null);
   if (saved?.profile) S = { ...fresh(), ...saved };
   M.migrate(S);
+  // 11/3 소고기 키튼 사료 → 오리 키튼 사료(소고기 주재료 키튼 건사료가 시장에 없어서) — 예전 저장본의 재고·지금 사료를 옮긴다
+  if (S.inv?.food?.food_beef_c != null) { S.inv.food.food_duck_c = (S.inv.food.food_duck_c || 0) + S.inv.food.food_beef_c; delete S.inv.food.food_beef_c; }
+  if (S.inv?.cur === 'food_beef_c') S.inv.cur = 'food_duck_c';
+  if (S.skin?.trial?.prev === 'food_beef_c') S.skin.trial.prev = 'food_duck_c';
   if (P() && !S.inv) { initCare(); save(); }
   if (P() && !S.album) { S.album = S.closed.map((c) => albumEntry(c.day, c, true)); S.albumSeen = S.lastClosed; save(); }
   db.askPersist();

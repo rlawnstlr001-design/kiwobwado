@@ -1,5 +1,5 @@
 {
- "_note": "가격은 원. 판매가는 2026-10-09 다나와 최저가(출처 C, 참고값). [계산]·[추정]·[대체값]은 note에 밝힌다. 일수 = 그 아이가 그 양을 다 쓰는 데 걸리는 대략의 날수",
+ "_note": "가격은 원. 판매가는 다나와 최저가(2026-10-09, 키튼 사료·장난감은 2026-11-03)(출처 C, 참고값). [계산]·[추정]·[대체값]은 note에 밝힌다. 일수 = 그 아이가 그 양을 다 쓰는 데 걸리는 대략의 날수",
  "allergy": {
   "dog": [
    [
@@ -64,19 +64,19 @@
  "vet": {
   "cytology": {
    "label": "피부 세포 검사",
-   "price": 35973,
-   "note": "공식 평균 없음 → CBC 혈액검사 평균으로 대신 [대체값]",
+   "price": 22000,
+   "note": "공식 평균 없음 → 동물병원 공개 가격표(현미경 도말·특수염색 22,000원)",
    "src": [
-    "vetfee2025",
+    "lakeamc_fee",
     "merck_pyoderma"
    ]
   },
   "t4": {
    "label": "갑상선 호르몬(T4) 검사",
-   "price": 35973,
-   "note": "공식 평균 없음 → CBC 혈액검사 평균으로 대신 [대체값]",
+   "price": 50000,
+   "note": "공식 평균 없음 → 동물병원 공개 가격표(Total T4 단독 50,000원)",
    "src": [
-    "vetfee2025",
+    "oneulah_fee",
     "merck_hypo"
    ]
   },
@@ -288,28 +288,29 @@
    "id": "food_chicken_c",
    "cat": "food",
    "sp": "cat",
-   "name": "닭고기 키튼 사료 2kg",
+   "name": "닭고기 키튼 사료 2kg(로얄캐닌 키튼)",
    "emoji": "🍗",
-   "price": 18000,
+   "price": 25680,
    "protein": [
-    "chicken"
+    "chicken",
+    "fish"
    ],
    "days": {
     "short": 30,
     "long": 30
    },
-   "note": "성장기용 · 가격은 키튼 2kg 가격대(1만~2.6만원) 중간값 [계산]",
+   "note": "성장기용 · 동물성 단백질: 닭·오리·생선 · 배송비 별도",
    "src": [
-    "dn_kittenfood"
+    "dn_kitten_rc"
    ]
   },
   {
    "id": "food_fish_c",
    "cat": "food",
    "sp": "cat",
-   "name": "생선 키튼 사료 2kg",
+   "name": "참치 키튼 사료 2kg(네츄럴랩)",
    "emoji": "🐟",
-   "price": 18000,
+   "price": 24000,
    "protein": [
     "fish"
    ],
@@ -317,28 +318,29 @@
     "short": 30,
     "long": 30
    },
-   "note": "성장기용 · 가격은 키튼 2kg 가격대 중간값 [계산]",
+   "note": "성장기용 · 주원료 참치",
    "src": [
-    "dn_kittenfood"
+    "dn_kitten_tuna"
    ]
   },
   {
-   "id": "food_beef_c",
+   "id": "food_duck_c",
    "cat": "food",
    "sp": "cat",
-   "name": "소고기 키튼 사료 2kg",
-   "emoji": "🥩",
-   "price": 18000,
+   "name": "오리 키튼 사료 1.5kg(몬지 모노프로틴)",
+   "emoji": "🦆",
+   "price": 29600,
    "protein": [
-    "beef"
+    "duck",
+    "pork"
    ],
    "days": {
-    "short": 30,
-    "long": 30
+    "short": 22,
+    "long": 22
    },
-   "note": "성장기용 · 가격은 키튼 2kg 가격대 중간값 [계산]",
+   "note": "성장기용 · 오리·돼지고기 · 소고기가 주재료인 키튼 건사료는 시장에서 찾지 못해 오리로 바꿨어요 · 배송비 별도",
    "src": [
-    "dn_kittenfood"
+    "dn_kitten_duck"
    ]
   },
   {
@@ -470,13 +472,62 @@
    "use": "meds",
    "name": "먹는 항생제 2주분",
    "emoji": "💊",
-   "price": 7931,
+   "price": 49840,
    "count": 14,
    "unit": "일분",
-   "note": "약값 공식 평균이 없어 재진 진찰료로 대신 [대체값]",
+   "note": "약값 공식 평균이 없어 성남시립동물병원 내복약 1일 단가(5kg 이하 3,560원) × 14일로 [계산]",
    "src": [
-    "vetfee2025",
+    "seongnam_vetfee",
     "vin_catpyo"
+   ]
+  },
+  {
+   "id": "toy_nose",
+   "cat": "toy",
+   "sp": "dog",
+   "name": "노즈워크 담요 L(딩동펫)",
+   "emoji": "🧩",
+   "price": 25500,
+   "note": "간식을 숨겨 냄새로 찾게 해요 — 혼자 있는 시간·심심함 달래기",
+   "src": [
+    "dn_toy_nose"
+   ]
+  },
+  {
+   "id": "toy_tug",
+   "cat": "toy",
+   "sp": "dog",
+   "name": "터그 로프 장난감(심플리파이도)",
+   "emoji": "🪢",
+   "price": 13680,
+   "note": "당기기 놀이 · 배송비 포함",
+   "src": [
+    "dn_toy_tug"
+   ]
+  },
+  {
+   "id": "toy_wand",
+   "cat": "toy",
+   "sp": "cat",
+   "name": "깃털 낚싯대 3단(리예코퍼레이션)",
+   "emoji": "🪶",
+   "price": 2400,
+   "note": "쫓고 잡는 사냥 놀이를 매일 · 배송비 별도",
+   "src": [
+    "dn_toy_wand",
+    "icatcare_play"
+   ]
+  },
+  {
+   "id": "toy_scratch",
+   "cat": "toy",
+   "sp": "cat",
+   "name": "스크래처 소파 와이드(가리가리)",
+   "emoji": "🪵",
+   "price": 13860,
+   "note": "발톱 긁기는 자연스러운 행동 — 긁을 곳을 마련해 줘요 · 배송비 별도",
+   "src": [
+    "dn_toy_scratch"
    ]
   },
   {

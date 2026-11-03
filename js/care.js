@@ -2,7 +2,7 @@
 // 약욕(개)·먹는 약(고양이), 식이 제한 시험(가수분해 사료만 8주), 재도전 시험. 수치 근거는 content/shop.json의 src
 // 다른 모듈을 가져오지 않는다(배포 때 ?v= 붙는 경로 문제를 피하려고) — 난수는 부르는 쪽에서 넘긴다
 
-export const PROTEIN = { beef: '소고기', chicken: '닭고기', lamb: '양고기', fish: '생선', dairy: '유제품', wheat: '밀', pork: '돼지고기', hydro: '가수분해 단백질' };
+export const PROTEIN = { beef: '소고기', chicken: '닭고기', lamb: '양고기', fish: '생선', duck: '오리고기', dairy: '유제품', wheat: '밀', pork: '돼지고기', hydro: '가수분해 단백질' };
 export const ALLERGY_CHANCE = 0.5; // 체험용으로 실제(가려운 개의 일부)보다 자주 생기게 한다 — 화면에 그렇게 밝힌다
 
 // 피부 가려움 단계 기준

@@ -608,5 +608,75 @@
   "year": "",
   "grade": "A",
   "url": "https://www.dogstrust.org.uk/dog-advice/understanding-your-dog/signs-your-dog-may-be-stressed"
+ },
+ "dn_kitten_rc": {
+  "title": "로얄캐닌 캣 키튼 2kg 판매가(2026-11-03 다나와 최저가)",
+  "org": "다나와",
+  "year": "2026",
+  "grade": "C",
+  "url": "https://prod.danawa.com/info/?pcode=1801714"
+ },
+ "dn_kitten_tuna": {
+  "title": "네츄럴랩 캣 6-제로 플러스 참치 키튼 2kg 판매가(2026-11-03 다나와 최저가)",
+  "org": "다나와",
+  "year": "2026",
+  "grade": "C",
+  "url": "https://prod.danawa.com/info/?pcode=100331609"
+ },
+ "dn_kitten_duck": {
+  "title": "몬지 캣 모노프로틴 키튼 오리 1.5kg 판매가(2026-11-03 다나와 최저가)",
+  "org": "다나와",
+  "year": "2026",
+  "grade": "C",
+  "url": "https://prod.danawa.com/info/?pcode=95285267"
+ },
+ "dn_toy_nose": {
+  "title": "딩동펫 노즈워크 마약담요 L 판매가(2026-11-03 다나와 최저가)",
+  "org": "다나와",
+  "year": "2026",
+  "grade": "C",
+  "url": "https://prod.danawa.com/info/?pcode=99808697"
+ },
+ "dn_toy_tug": {
+  "title": "심플리파이도 스타로프 장난감 판매가(2026-11-03 다나와 최저가)",
+  "org": "다나와",
+  "year": "2026",
+  "grade": "C",
+  "url": "https://prod.danawa.com/info/?pcode=58670069"
+ },
+ "dn_toy_wand": {
+  "title": "리예코퍼레이션 3단 낚시대깃털 판매가(2026-11-03 다나와 최저가)",
+  "org": "다나와",
+  "year": "2026",
+  "grade": "C",
+  "url": "https://prod.danawa.com/info/?pcode=33058154"
+ },
+ "dn_toy_scratch": {
+  "title": "가리가리 스크래쳐 소파 와이드 판매가(2026-11-03 다나와 최저가)",
+  "org": "다나와",
+  "year": "2026",
+  "grade": "C",
+  "url": "https://prod.danawa.com/info/?pcode=33050360"
+ },
+ "seongnam_vetfee": {
+  "title": "성남시립동물병원 진료비 안내(내복약 1일 단가)",
+  "org": "성남시",
+  "year": "2026",
+  "grade": "A",
+  "url": "https://dept.seongnam.go.kr/svc/user/hospital_guide/content.do"
+ },
+ "lakeamc_fee": {
+  "title": "진료비 안내 — 현미경 도말·특수염색",
+  "org": "레이크동물의료센터(동물병원 공개 가격표)",
+  "year": "2026",
+  "grade": "C",
+  "url": "https://lakeamc.co.kr/bbs/content.php?co_id=cost"
+ },
+ "oneulah_fee": {
+  "title": "진료비 안내 — 갑상선 호르몬 검사(Total T4)",
+  "org": "오늘동물병원(동물병원 공개 가격표)",
+  "year": "2026",
+  "grade": "C",
+  "url": "https://oneulah.com/pricing"
  }
 }

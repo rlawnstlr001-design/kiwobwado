@@ -4,10 +4,10 @@
 //  아이·보호자는 우리 수채 그림(뒷모습 2걸음)을 3D 공간에 세운 판 — 그림체는 그대로, 공간·빛·그림자·카메라는 3D
 // 좌표: x 오른쪽 · y 위 · 코스는 -z 방향(아이 위치 s m → z = -s)
 import * as THREE from 'three';
-import { sfx } from './sound.js?v=202611030949';
-import { rng } from './engine.js?v=202611030949';
-import { haptic } from './native.js?v=202611030949';
-import { SIZE, STAGE_K, clamp, shuffleR, canvasTex, stripeTex, roundTex, makeStage, std, mesh, buildArena, loadPet3d, loadOwners, backFrames, loadTex, SHIRT } from './arena3d.js?v=202611030949';
+import { sfx } from './sound.js?v=202611031004';
+import { rng } from './engine.js?v=202611031004';
+import { haptic } from './native.js?v=202611031004';
+import { SIZE, STAGE_K, clamp, shuffleR, canvasTex, stripeTex, roundTex, makeStage, std, mesh, buildArena, loadPet3d, loadOwners, backFrames, loadTex, SHIRT } from './arena3d.js?v=202611031004';
 
 const KEY = { ArrowUp: 'up', ArrowDown: 'down', ArrowLeft: 'left', ArrowRight: 'right', KeyW: 'up', KeyS: 'down', KeyA: 'left', KeyD: 'right' };
 const ARROW = { up: '↑', down: '↓', left: '←', right: '→' };

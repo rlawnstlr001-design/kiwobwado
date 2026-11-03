@@ -1,19 +1,20 @@
 // 키워봐도될까 — 내 생활 그대로 30일 키워 보고 반려 준비도를 확인하는 입양 전 체험
-import * as db from './db.js?v=202611022158';
-import * as E from './engine.js?v=202611022158';
-import { C, loadContent, eventById, lessonById, foodById, momentById } from './content.js?v=202611022158';
-import { track } from './track.js?v=202611022158';
-import { roomHTML, mountRoom, timeOfDay, loadAnim, clipInfo } from './room.js?v=202611022158';
-import { openGames, GAMES, titleOf } from './games.js?v=202611022158';
-import * as K from './care.js?v=202611022158';
-import { openShop, openVet, openTreats } from './shop.js?v=202611022158';
-import { isApp, initNative, scheduleCare, exactAlarm, shareImage, saveWidget, widgetCount } from './native.js?v=202611022158';
-import { makeCard } from './card.js?v=202611022158';
-import { runGuide } from './guide.js?v=202611022158';
-import { handCare } from './handcare.js?v=202611022158';
-import { sfx, ambient, stopAmbient, soundOn, setSound } from './sound.js?v=202611022158';
-import * as F from './fun.js?v=202611022158';
-import { training } from './train.js?v=202611022158';
+import * as db from './db.js?v=202611030949';
+import * as E from './engine.js?v=202611030949';
+import { C, loadContent, eventById, lessonById, foodById, momentById } from './content.js?v=202611030949';
+import { track } from './track.js?v=202611030949';
+import { roomHTML, mountRoom, timeOfDay, loadAnim, clipInfo } from './room.js?v=202611030949';
+import { openGames, GAMES, titleOf } from './games.js?v=202611030949';
+import * as K from './care.js?v=202611030949';
+import { openShop, openVet, openTreats } from './shop.js?v=202611030949';
+import * as M from './money.js?v=202611030949';
+import { isApp, initNative, scheduleCare, exactAlarm, shareImage, saveWidget, widgetCount } from './native.js?v=202611030949';
+import { makeCard } from './card.js?v=202611030949';
+import { runGuide } from './guide.js?v=202611030949';
+import { handCare } from './handcare.js?v=202611030949';
+import { sfx, ambient, stopAmbient, soundOn, setSound } from './sound.js?v=202611030949';
+import * as F from './fun.js?v=202611030949';
+import { training } from './train.js?v=202611030949';
 
 const $ = (s, el = document) => el.querySelector(s);
 const view = $('#view');
@@ -29,10 +30,9 @@ const fresh = () => ({
   profile: null, stats: E.startStats(), results: {}, arrange: {}, closed: [], lastClosed: 0,
   dayEvents: {}, answers: [], pending: [], seen: [], chains: [], triggers: [], ledger: [],
   quiz: { right: 0, total: 0 }, offset: 0, petted: {}, freePlay: {},
-  coins: 0, earned: {}, best: {}, coinLog: [], // 미니게임 코인(1코인 = 1,000원)
+  cash: 0, work: {}, workLog: [], spendLog: [], best: {}, // 지갑(원) — 미니게임 한 판 = 1시간 근무(js/money.js, 11/3). 옛 코인은 migrate로 원으로
   wearing: { neck: null, head: null }, inv: null, skin: null, allergy: null, vet: { visits: 0, lastExam: null }, buyLog: [], treatLog: {}, careNotes: [], // 살림·피부(care.js)
 });
-const COIN_CAP = 50; // 하루에 벌 수 있는 코인
 let S = fresh();
 const save = () => db.put('kv', S, 'state');
 
@@ -183,6 +183,8 @@ function closeDayN(n) {
     S.stats = E.applyFx(S.stats, c.fx);
     for (const code of c.notes) S.careNotes.push({ day: n, code, read: false });
   }
+  // 아픈데(건강 50 미만) 그날 병원에 안 가면 더 나빠진다(11/3 사용자 "건강이 안 좋을 때 병원 보내기")
+  if (S.stats.health < 50 && S.vet?.lastExam !== n) S.stats = E.applyFx(S.stats, { health: -3 });
   S.lastClosed = n;
   (S.album ??= []).push(albumEntry(n, S.closed.at(-1)));
   // 마감 후 지난 날의 무작위 사건은 남기지 않는다(병원·법 같은 정해진 일만 이어서)
@@ -428,6 +430,8 @@ function moodOf(plan, key) {
   if (now() - (S.lastDone ?? 0) < 20 * 60000) return { text: species() === 'dog' ? '신이 나서 꼬리를 흔들어요' : '기분이 좋아 장난감을 쫓아요', state: 'happy' };
   const ad = E.adaptOf(dayNow(), course());
   if (ad.phase === 'new') return { text: species() === 'dog' ? '새 집이 낯설어 구석에서 조심조심 살펴요' : '구석에 숨어 조용히 주변을 살펴요', state: 'idle' };
+  // 마음이 많이 상하면(마음 25 미만) 보호자를 피해 숨는다(11/3 사용자) — 방에선 소파 쪽 끝으로 가 거의 안 보이고, 만지려 하면 더 멀리
+  if (S.stats.bond < 25) return { text: species() === 'dog' ? '마음이 상해 보호자를 피해 숨었어요' : '마음이 상해 소파 뒤로 숨어 버렸어요', state: 'idle', avoid: true };
   if (S.stats.habit < 15) return { text: species() === 'dog' ? '심심해서 뭔가를 물어뜯고 있어요' : '심심해서 사고를 치고 있어요', state: 'oops' };
   if (ad.phase === 'learn' && S.stats.bond < 50) return { text: '조금씩 새 집에 익숙해지는 중이에요', state: 'idle' };
   if (S.stats.bond < 30) return { text: '아직 보호자를 조금 어려워해요', state: 'idle' };
@@ -494,13 +498,14 @@ function today() {
     </div>
       ${mo ? `<button class="alert hot mo" data-mo="${mo.id}"><span class="pill now">지금</span><span>${esc(fill(mo.title))}</span></button>` : ''}
       ${!papersDone() && (S.personaSeen || d >= 2) ? `<button class="alert${d >= 3 ? ' hot' : ''}" data-hud="papers"><span class="pill law">서류</span><span>입양 서류 마저 쓰기 · 집·가족·예산</span></button>` : ''}
+      ${S.stats.health < 50 && !sleepNow ? `<button class="alert hot" data-hud="vet"><span class="pill vet">병원</span><span>기운이 없어요 — 병원에 데려가 보세요 (건강 ${S.stats.health})</span></button>` : ''}
       ${evs.map((p) => { const e = eventById(p.id); return `<button class="alert hot" data-ev="${e.id}"><span class="pill ${e.kind}">${KIND[e.kind]}</span><span>${esc(fill(e.title))}</span></button>`; }).join('')}
       ${notes.map((x) => `<button class="alert hot" data-note="${x.i}"><span class="pill vet">${NOTE[x.code][0]}</span><span>${esc(fill(NOTE[x.code][1]))}</span></button>`).join('')}
       ${awayAlert ? `<button class="alert${arr ? '' : ' hot'}" data-hud="away"><span class="pill life">낮</span><span>${arr ? arrLabel[arr] : `${toHM(spans[0][0])}~${toHM(spans[0][1])} 누가 챙길까요?`}</span></button>` : ''}
       <button class="alert" data-hud="plan"><span class="pill law">오늘</span><span>일정 · 혼자 ${stretch ? `${Math.floor(stretch / 60)}시간${stretch % 60 ? ` ${stretch % 60}분` : ''}` : '없음'}${limit && stretch > limit ? ' ⚠' : ''}</span></button>
     </div>
     <nav class="hud hud-tr" aria-label="메뉴">
-      <button class="hud-btn coin" data-hud="wallet" aria-label="코인"><i class="ci"></i> ${S.coins}</button><button class="hud-btn" data-hud="shop">샵</button><button class="hud-btn" data-hud="vet">병원</button><button class="hud-btn" data-hud="games">미니게임</button>
+      <button class="hud-btn coin${S.cash < 0 ? ' debt' : ''}" data-hud="wallet" aria-label="지갑">${S.cash < 0 ? '빚 ' : ''}${won(Math.abs(S.cash))}</button><button class="hud-btn" data-hud="shop">샵</button><button class="hud-btn${S.stats.health < 50 ? ' pulse' : ''}" data-hud="vet">병원</button><button class="hud-btn" data-hud="games">미니게임</button>
       <button class="hud-btn icon" data-hud="menu" aria-label="메뉴·설정"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3M4.9 4.9l2.1 2.1M17 17l2.1 2.1M4.9 19.1 7 17M17 7l2.1-2.1"/></svg></button>
     </nav>
     <div class="hud hud-br">${tools.map((a) => `<button class="tool ${a.cls}" data-act="${a.kind}">${ICON[a.icon]}<b>${a.label}</b><small>${a.sub}</small></button>`).join('')}</div>
@@ -514,7 +519,8 @@ function today() {
     wear: Object.values(S.wearing).filter(Boolean).map((id) => C.shop.items.find((i) => i.id === id)).filter(Boolean).map((i) => ({ src: `art/wear/${i.art}.webp`, art: i.art, slot: i.slot, wf: i.wf, fb: i.fb, hs: i.hs, tuck: !!i.tuck })),
     canPet: () => !sleepNow,
     shy: sleepNow ? 0 : E.adaptOf(d, course()).shy,
-    onTip: (code) => strokeTip(code === 'shy' ? `shy_${species()}` : code),
+    avoid: !sleepNow && !!mood.avoid,
+    onTip: (code) => strokeTip(code === 'shy' ? `shy_${species()}` : code === 'avoid' ? `avoid_${species()}` : code),
     onStroke: (n) => {
       if (sleepNow) { if (n === 1) ROOM?.nudge('자는 아이는 깨우지 말고 쉬게 둬요'); return; }
       if (n === 3) {
@@ -562,7 +568,7 @@ function startGuide(force = false) {
     { sel: '.hud-tl .hud-card', title: '상태 카드', text: '건강·마음·습관과 남은 사료·패드가 보여요. 성격은 지내 보면 알게 돼요.' },
     { sel: '.prop-bowl', title: '반짝이면 지금 할 일', text: `밥·${dog ? '패드·현관' : '화장실'}처럼 방 물건이 반짝이면 눌러요. 요청 시각 ${E.EARLY}분 전부터 ${E.WINDOW}분 안이면 '제때'예요.` },
     { sel: '.hud-br', title: '놀이·훈련·간식', text: `훈련에선 칭찬 타이밍을 맞춰 재주를 가르쳐요. ${baby && dog ? '접종 전엔 바깥 구경, 그 뒤엔 산책이에요.' : '빗질은 엉킨 털을 직접 살살 빗어요.'}` },
-    { sel: '.hud-tr', title: '샵·병원·미니게임', text: `사료가 떨어지면 샵, 아프면 병원. 미니게임으로 코인을 모아요(하루 ${COIN_CAP}개). 톱니바퀴엔 수첩·리포트가 있어요.${isApp ? ' 요청 시각마다 알림이 와요.' : ''}` },
+    { sel: '.hud-tr', title: '샵·병원·미니게임', text: `사료가 떨어지면 샵, 아프면 병원. 미니게임 한 판 = 1시간 일한 돈이에요(시급 ${won(M.WAGE)}). 톱니바퀴엔 수첩·리포트가 있어요.${isApp ? ' 요청 시각마다 알림이 와요.' : ''}` },
   ], { onDone: () => { S.guided = true; save(); momentNextAt = 0; scheduleMoment(false); if (!S.adaptSeen && E.adaptOf(dayNow(), course()).phase === 'new') { S.adaptSeen = true; save(); setTimeout(() => adaptCard(), 400); } } });
 }
 // 쓰다듬는 자리 팁(코스마다 한 번): 고양이 꼬리 쪽 / 강아지 가슴 쪽 — 작은 연구라 단정하지 않게
@@ -570,6 +576,8 @@ const TIPS = {
   cat_tail: ['꼬리 쪽은 싫어해요', '고양이를 쓰다듬는 연구에서 꼬리 뿌리 쪽을 만질 때 싫은 반응(꼬리를 탁탁 치기·귀 눕히기·피하기)이 가장 많았어요. 연구진은 꼬리 쪽은 피하라고 권해요. 머리 쪽부터 쓰다듬어 보세요.', ['ellis2015_cat']],
   dog_chest: ['가슴 쪽을 쓰다듬었어요', '개 28마리를 살펴본 작은 연구에서 가슴을 쓰다듬을 때 몸이 차분해지는 신호(미주신경 활동 증가)가 나왔대요. 다만 아이마다 좋아하는 자리가 달라요 — 몸을 기대 오는지 피하는지 살펴 주세요.', ['kuhne2014_dog']],
 };
+TIPS.avoid_dog = ['마음이 상해서 피해요', '스트레스를 받거나 마음이 힘든 개는 숨거나, 사람에게서 뒷걸음질 치며 피하기도 해요. 억지로 붙잡지 말고 밥·산책·놀이를 제때 챙기며 기다려 주세요. 스스로 다가오면 그때 부드럽게 쓰다듬어 주세요.', ['dogstrust_stress', 'bluecross_dog_stress']];
+TIPS.avoid_cat = ['마음이 상해서 숨었어요', '고양이는 스트레스를 받으면 오래 숨어 있거나 사람을 피하는 식으로 조용히 드러내요. 억지로 꺼내지 말고 밥·화장실·놀이를 제때 챙기며 기다려 주세요. 스스로 나오면 그때 다가가세요.', ['icatcare_stress', 'bluecross_cat_stress']];
 TIPS.shy_dog = ['아직 낯설어해요', '데려온 첫 3일쯤은 새 집에 적응하는 시간이에요. 숨거나, 잠이 많거나, 덜 먹고 사람을 망설이는 게 흔해요. 억지로 만지기보다 조용한 자리를 마련하고 밥·배변 시간을 일정하게 지켜 주세요. 스스로 다가오면 그때 쓰다듬어 주세요.', ['hsnt_333']];
 TIPS.brush_long = ['엉킨 털은 가위로 자르지 마세요', '털이 긴 고양이는 매일 빗어 주는 게 좋아요. 다리 안쪽·엉덩이·가슴·목둘레가 잘 엉켜요. 엉킨 털은 피부에 바짝 붙어 있어서 가위로 자르다 다칠 수 있어요 — 심하면 동물병원에 맡겨요.', ['vca_longhair'], '빗질'];
 TIPS.brush_rough = ['살살, 짧게 빗어 주세요', '엉킨 털을 세게 당기면 아파서 빗질 자체를 싫어하게 될 수 있어요. 짧게 여러 번 살살 풀고, 끝나면 칭찬해 주세요.', [], '빗질'];
@@ -818,7 +826,10 @@ async function markTask(id) {
 async function setArrange(v) {
   const key = todayKey();
   const prev = S.arrange[key];
-  if (prev === 'sitter' && v !== 'sitter') S.ledger = S.ledger.filter((l) => !(l.day === dayNow() && l.tag === 'sitter-day'));
+  const sit = C.costs.care.sitter_hour.amount;
+  // 펫시터 요금도 미니게임으로 번 돈으로(외상 안 됨, 11/3 사용자)
+  if (v === 'sitter' && prev !== 'sitter' && !M.spend(S, sit, '낮 돌봄 — 방문 펫시터 1시간', { day: dayNow() })) { toast(`펫시터 요금이 ${won(sit - Math.max(0, S.cash))} 모자라요 — 미니게임으로 ${M.hoursOf(sit - Math.max(0, S.cash))}시간 더 일해야 해요`); return false; }
+  if (prev === 'sitter' && v !== 'sitter') { S.ledger = S.ledger.filter((l) => !(l.day === dayNow() && l.tag === 'sitter-day')); M.refund(S, sit, '낮 돌봄 — 방문 펫시터 1시간', { day: dayNow() }); }
   if (v === 'sitter' && prev !== 'sitter') S.ledger.push({ day: dayNow(), label: '낮 돌봄 — 방문 펫시터 1시간', amount: C.costs.care.sitter_hour.amount, src: C.costs.care.sitter_hour.src, tag: 'sitter-day' });
   S.arrange[key] = v;
   await save();
@@ -857,33 +868,31 @@ function openMiniGames() {
   const pet = clipInfo(name, 'walk') ?? { src: `art/sprite/${name}_idle.webp`, ratio: 1 };
   track('games_open');
   openGames({
-    species: species(), type: P().type, stage: E.stageOf(ageW(dayNow())), petName: petName(), pet, coins: S.coins, earned: S.earned[todayKey()] || 0, cap: COIN_CAP, best: { ...S.best },
+    species: species(), type: P().type, stage: E.stageOf(ageW(dayNow())), petName: petName(), pet, cash: S.cash, hours: S.work[todayKey()] || 0, best: { ...S.best },
+    // 한 판 = 1시간 근무: 시급 + 점수 성과급(게임별 최고 보상 기준 0~1), 하루 시간 제한 없음(11/3 사용자)
     onReward: (game, score) => {
-      const k = todayKey();
-      const earned = S.earned[k] || 0;
-      // 하루 횟수가 정해진 게임(GAMES[].daily)은 그 횟수까지만 코인 — 지금은 없음(OX 퀴즈는 11/2부터 매번 새 문제라 뺐다)
-      const plays = ((S.plays ??= {})[k] ??= {}); plays[game] = (plays[game] || 0) + 1;
-      if (Object.keys(S.plays).length > 7) for (const d of Object.keys(S.plays).sort().slice(0, -7)) delete S.plays[d];
-      const once = GAMES[game].daily && plays[game] > GAMES[game].daily;
-      const given = once ? 0 : Math.max(0, Math.min(GAMES[game].coins(score), COIN_CAP - earned));
-      S.coins += given;
-      S.earned[k] = earned + given;
+      const perf = GAMES[game].perf(score);
+      const r = M.work(S, { day: dayNow(), key: todayKey(), game, score, perf });
       S.best[game] = Math.max(S.best[game] || 0, score);
-      if (given) { S.coinLog.push({ day: dayNow(), game, score, coins: given }); sfx.coin(); }
+      sfx.coin();
       save();
       track('game_end');
-      return { given, earned: S.earned[k], coins: S.coins, why: once ? '코인은 하루 첫 판만 — 점수는 기록돼요' : '' };
+      return r;
     },
     onClose: () => route(),
   });
 }
 function openWallet() {
-  const recent = S.coinLog.slice(-6).reverse();
-  const { sheet, close } = openSheet(`<h2><i class="ci"></i> 코인 ${S.coins}개</h2>
-    <p class="sub">1코인 = 1,000원으로 쳐요. 지금 가진 코인은 실제라면 <b>${won(S.coins * 1000)}</b>이에요. 펫샵·병원 가격은 실제 평균값 그대로라, 사료 한 포대·진료 한 번이 미니게임 몇 판인지 느껴 볼 수 있어요.</p>
-    <p class="mood">오늘 번 코인 ${S.earned[todayKey()] || 0} / ${COIN_CAP} — 하루에 일할 수 있는 시간이 정해져 있듯 한도가 있어요.</p>
-    ${recent.length ? `<ul class="timeline">${recent.map((l) => `<li class="task"><time>${l.day}일째</time><span><span class="t-label">${titleOf(l.game, species())}</span><span class="t-sub">${l.score}점</span></span><span class="st done">+${l.coins}</span></li>`).join('')}</ul>` : '<p class="fine">아직 번 코인이 없어요. 미니게임으로 모아 보세요.</p>'}
-    <button class="btn btn-main btn-wide" id="w-play">미니게임 하러 가기</button><button class="btn btn-wide" data-close>닫기</button>`);
+  const hours = S.work[todayKey()] || 0;
+  const todayPay = S.workLog.filter((l) => l.day === dayNow()).reduce((t, l) => t + l.pay, 0);
+  const rows = [...S.workLog.slice(-5).map((l, i) => ({ day: l.day, o: i, label: `${titleOf(l.game, species())} 1시간`, sub: `시급 ${won(l.base)}${l.bonus ? ` + 성과급 ${won(l.bonus)}` : ''}`, won: l.pay })),
+    ...S.spendLog.slice(-5).map((l, i) => ({ day: l.day, o: i + 0.5, label: l.label, sub: l.debt ? `외상 ${won(l.debt)}` : '', won: -l.won }))].sort((x, y) => x.day - y.day || x.o - y.o).slice(-8).reverse();
+  const { sheet, close } = openSheet(`<h2>지갑 <span class="${S.cash < 0 ? 'bad' : ''}">${S.cash < 0 ? `빚 ${won(-S.cash)}` : won(S.cash)}</span></h2>
+    <p class="sub">미니게임 한 판은 <b>1시간 일한 것</b>으로 쳐요. 시급은 2027년 최저임금 <b>${won(M.WAGE)}</b>, 잘하면 성과급이 최대 50% 더 붙어요 <button class="src-btn" data-src="${M.WAGE_SRC.join(',')}">출처</button>. 사료·간식·병원비는 전부 이 돈으로 내요. 병원비만 모자라면 외상으로 달아 두고, 다음에 번 돈에서 먼저 갚아져요.</p>
+    <p class="mood">오늘 ${hours}시간 일해서 ${won(todayPay)} 벌었어요</p>
+    ${rows.length ? `<ul class="timeline">${rows.map((l) => `<li class="task"><time>${l.day}일째</time><span><span class="t-label">${esc(l.label)}</span><span class="t-sub">${l.sub}</span></span><span class="st ${l.won >= 0 ? 'done' : 'missed'}">${l.won >= 0 ? '+' : '−'}${won(Math.abs(l.won))}</span></li>`).join('')}</ul>` : '<p class="fine">아직 번 돈이 없어요. 미니게임으로 일해 보세요.</p>'}
+    <button class="btn btn-main btn-wide" id="w-play">일하러 가기(미니게임)</button><button class="btn btn-wide" data-close>닫기</button>`);
+  sheet.addEventListener('click', (e) => { const b = e.target.closest('[data-src]'); if (b) showSources(b.dataset.src.split(',')); });
   $('#w-play', sheet).addEventListener('click', () => { close(); openMiniGames(); });
 }
 function openMenu() {
@@ -912,7 +921,7 @@ function openAway() {
     const b = e.target.closest('button');
     if (b?.dataset.src) return showSources(b.dataset.src.split(','));
     if (!b?.dataset.arr) return;
-    await setArrange(b.dataset.arr);
+    if (await setArrange(b.dataset.arr) === false) return;
     close();
   });
 }
@@ -963,6 +972,12 @@ function openEvent(id) {
     if (b.dataset.ci == null) return;
     const c = e.choices[Number(b.dataset.ci)];
     const items = c.cost.map((it) => E.resolveCost(C.costs, it, ctx));
+    const vetOf = (raw) => typeof raw === 'string' && /^(vet|illness)/.test(raw);
+    const payOf = (ch) => ch.cost.map((raw) => ({ raw, it: E.resolveCost(C.costs, raw, ctx) })).filter(({ raw }) => !(typeof raw === 'string' && raw.startsWith('monthly.')));
+    const needCash = (ch) => payOf(ch).filter(({ raw }) => !vetOf(raw)).reduce((t, { it }) => t + it.amount, 0);
+    const allBlocked = e.choices.every((ch) => needCash(ch) > Math.max(0, S.cash));   // 고를 수 있는 게 없으면(벌금 등) 외상으로
+    if (needCash(c) > Math.max(0, S.cash) && !allBlocked) { const short = needCash(c) - Math.max(0, S.cash); toast(`${won(short)} 모자라요 — 다른 선택을 하거나 미니게임으로 ${M.hoursOf(short)}시간 더 일해 오세요`); return; }
+    for (const { raw, it } of payOf(c)) M.spend(S, it.amount, `${fill(e.title)} — ${it.label}`, { day: dayNow(), debt: vetOf(raw) || allBlocked });
     for (const it of items) S.ledger.push({ day: dayNow(), label: `${fill(e.title)} — ${it.label}`, amount: it.amount, src: it.src });
     S.stats = E.applyFx(S.stats, c.fx);
     S.answers.push({ id: e.id, day: dayNow(), choice: Number(b.dataset.ci), score: c.score, kind: e.kind });
@@ -974,7 +989,7 @@ function openEvent(id) {
     $('#ev-choices', sheet).innerHTML = `<button class="choice" disabled style="border-color:var(--ink)">${esc(fill(c.label))}</button>`;
     $('#ev-after', sheet).innerHTML = `<div class="reply ${c.score > 0 ? 'good' : c.score < 0 ? 'bad' : ''}">
         <b>${c.score > 0 ? '좋은 선택이에요' : c.score < 0 ? '실제라면 위험할 수 있어요' : '이렇게 됐어요'}</b><p style="margin:4px 0 0">${esc(fill(c.reply))}</p>
-        ${items.length ? `<p class="cost">장부 +${won(sum)} <span class="fine">(${items.map((it) => `${esc(it.label)} ${won(it.amount)}`).join(' · ')})</span></p>` : ''}
+        ${items.length ? `<p class="cost">장부 +${won(sum)} · 지갑 ${S.cash < 0 ? `빚 ${won(-S.cash)}` : won(S.cash)} <span class="fine">(${items.map((it) => `${esc(it.label)} ${won(it.amount)}`).join(' · ')})</span></p>` : ''}
       </div>
       <div class="chips" style="margin-top:10px">${e.lesson ? `<button class="chip" data-lesson="${e.lesson}">레슨: ${esc(lessonById(e.lesson).title)}</button>` : ''}${e.food ? `<button class="chip" data-food="${e.food}">음식 카드 보기</button>` : ''}<button class="chip" data-src="${e.src.join(',')}">출처 보기</button></div>
       <button class="btn btn-main btn-wide" data-close>확인</button>`;
@@ -1085,7 +1100,11 @@ function book() {
     body = `<section class="card"><h2>${courseDone()} 앨범</h2><p class="fine" style="margin:0">하루가 끝날 때마다 한 장씩 담겨요.</p>
       ${al.length ? `<div class="album">${al.map(picHTML).join('')}</div>` : '<p class="sub">첫 하루가 지나면 사진이 생겨요.</p>'}</section>`;
   } else if (bookSeg === 'money') {
-    body = `<section class="card"><span class="label">지금까지 쓴 돈</span><p class="big-num" style="margin:2px 0">${won(total)}</p>
+    // 지갑 요약(11/3): 미니게임으로 일한 시간·번 돈·지갑에서 나간 돈 — 아래 장부는 '실제라면 드는 돈'(평균 양육비 포함) 추정
+    const hrs = S.workLog.length, earnedAll = S.workLog.reduce((t, l) => t + l.pay, 0), spentAll = S.spendLog.reduce((t, l) => t + l.won, 0);
+    body = `<section class="card"><span class="label">내 지갑</span><p class="big-num${S.cash < 0 ? ' bad' : ''}" style="margin:2px 0">${S.cash < 0 ? `빚 ${won(-S.cash)}` : won(S.cash)}</p>
+        <p class="fine" style="margin:0">미니게임으로 ${hrs}시간 일해 ${won(earnedAll)} 벌고, 사료·병원비 등으로 ${won(spentAll)} 썼어요(시급 ${won(M.WAGE)} 기준 ${spentAll > 0 ? M.hoursOf(spentAll) : 0}시간어치).</p></section>
+      <section class="card"><span class="label">지금까지 쓴 돈(장부 — 실제라면)</span><p class="big-num" style="margin:2px 0">${won(total)}</p>
         <div class="cmp"><div><span class="fine">한 달 예상</span><b>${won(proj.total)}</b><span class="fine">양육비 ${won(proj.living)} + 병원비 월 환산 ${won(proj.vet)}${proj.care ? ` + 낮 돌봄 ${won(proj.care)}` : ''}</span></div>
         <div><span class="fine">내 예산</span><b style="color:${P().budget >= proj.total ? 'var(--forest)' : 'var(--warn)'}">${won(P().budget)}</b><span class="fine">${P().budget >= proj.total ? '감당 가능' : `한 달 ${won(proj.total - P().budget)} 부족`}</span></div></div>
         <p class="fine" style="margin:10px 0 0">1년이면 ${Math.round(y.min / 10000)}만~${Math.round(y.max / 10000)}만원 [계산]. 병원비 월 환산 = 치료비를 쓴 집의 2년 치료비 ÷ 24 [계산]. <button class="src-btn" data-src="kb2025,mafra2025,vetfee2025">출처</button></p></section>
@@ -1368,6 +1387,7 @@ async function devAction(a) {
   }
   const saved = await db.get('kv', 'state').catch(() => null);
   if (saved?.profile) S = { ...fresh(), ...saved };
+  M.migrate(S);
   if (P() && !S.inv) { initCare(); save(); }
   if (P() && !S.album) { S.album = S.closed.map((c) => albumEntry(c.day, c, true)); S.albumSeen = S.lastClosed; save(); }
   db.askPersist();

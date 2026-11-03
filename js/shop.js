@@ -1,21 +1,24 @@
-// 펫샵·동물병원·간식 주기 화면. 코인(1코인 = 1,000원)으로 사고, 가격은 실제 평균값(content/shop.json·costs.json, 출처 표시)
+// 펫샵·동물병원·간식 주기 화면. 미니게임으로 번 돈(지갑, js/money.js)으로 사고, 가격은 실제 평균값(content/shop.json·costs.json, 출처 표시)
+// 병원비만 외상(지갑이 마이너스 = 빚) — 펫샵 물건은 돈이 모자라면 못 산다(11/3 사용자)
 // 상태는 앱(app.js)이 넘기는 api로만 읽고 쓴다
-import { PROTEIN, itemsFor, itemById, hasProtein, addItem, TRIAL_DAYS, BATHS_PER_WEEK } from './care.js?v=202611022158';
+import { PROTEIN, itemsFor, itemById, hasProtein, addItem, TRIAL_DAYS, BATHS_PER_WEEK } from './care.js?v=202611030949';
+import { spend, hoursOf } from './money.js?v=202611030949';
 
-export const coinOf = (won) => Math.ceil(won / 1000);
 const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
-const CI = '<i class="ci"></i>';
 const TABS = { food: '사료', treat: '간식', hygiene: '위생', toy: '장난감', wear: '옷·액세서리' };
 
-// 코인을 내고 물건을 산다. 모자라면 false
-function pay(api, won, label) {
+// 지갑에서 낸다. 모자라면 false — 병원비(vet)는 외상으로 낸다
+function pay(api, won, label, vet = false) {
   const S = api.S();
-  const c = coinOf(won);
-  if (S.coins < c) { api.toast(`코인이 ${c - S.coins}개 모자라요 — 미니게임으로 모아요`); return false; }
-  S.coins -= c;
-  S.buyLog.push({ day: api.day(), label, coins: c, won });
+  const short = won - Math.max(0, S.cash);
+  if (!spend(S, won, label, { day: api.day(), debt: vet })) { api.toast(`${api.won(short)} 모자라요 — 미니게임으로 ${hoursOf(short)}시간 더 일해야 해요`); return false; }
+  S.buyLog.push({ day: api.day(), label, won });
+  if (vet && short > 0) api.toast(`병원비 중 ${api.won(short)}은 외상으로 달아 뒀어요 — 다음에 번 돈에서 먼저 갚아져요`);
   return true;
 }
+// 값 버튼: 원 + 몇 시간 일한 돈인지
+const price = (api, won) => `${api.won(won)}<small>${hoursOf(won)}시간</small>`;
+const wallet = (api, S) => `<span class="mg-coin${S.cash < 0 ? ' debt' : ''}">${S.cash < 0 ? '빚 ' : ''}${api.won(Math.abs(S.cash))}</span>`;
 
 // ---------- 펫샵 ----------
 let shopRoot = null;
@@ -43,7 +46,7 @@ export function openShop(api, tab = 'food') {
       if (skin.trial && !skin.trial.done && (i.cat === 'food' || i.cat === 'treat')) return '<span class="sh-warn">식이 제한 시험 중엔 먹이면 안 돼요</span>';
       return '';
     };
-    shopRoot.innerHTML = `<div class="mg-bar"><b class="mg-title">펫샵</b><span class="mg-coin">${CI} <b>${S.coins}</b></span><button class="mg-x" data-x aria-label="닫기">✕</button></div>
+    shopRoot.innerHTML = `<div class="mg-bar"><b class="mg-title">펫샵</b>${wallet(api, S)}<button class="mg-x" data-x aria-label="닫기">✕</button></div>
       <div class="shop-inv">
         <span><b>지금 사료</b> ${cur ? `${cur.emoji} ${esc(cur.name)} · ${inv.food[inv.cur] || 0}일분` : '없음'}</span>
         <span><b>${sp === 'dog' ? '패드' : '모래'}</b> ${sp === 'dog' ? inv.pads : inv.litter}일분</span>
@@ -54,7 +57,7 @@ export function openShop(api, tab = 'food') {
           <span class="si-ic">${i.emoji}</span>
           <span class="si-txt"><b>${esc(i.name)}</b><small>${esc(tag(i))}</small>${warn(i)}${i.note ? `<small class="si-note">${esc(i.note)}</small>` : ''}</span>
           <span class="si-buy">${i.cat === 'food' && (inv.food[i.id] || 0) > 0 && i.id !== inv.cur ? `<button class="btn btn-sm" data-use="${i.id}">이걸로 먹이기</button>` : ''}${i.id === inv.cur ? '<small class="si-cur">지금 먹는 중</small>' : ''}
-            <button class="btn btn-sm btn-main" data-buy="${i.id}">${CI} ${coinOf(i.price)}</button><small>${api.won(i.price)}</small></span>
+            <button class="btn btn-sm btn-main btn-price" data-buy="${i.id}">${price(api, i.price)}</button></span>
         </div>`).join('')}</div>
       <p class="mg-note">가격은 온라인 판매가(참고값, 출처 C)예요. ${tab === 'wear' ? '옷·액세서리는 가만히 있을 때 보이고, 걷거나 먹는 영상에선 잠깐 벗겨져 보여요. ' : ''} ${tab === 'food' ? '아기 때는 성장기용(퍼피·키튼) 사료를 먹여요. 사료를 바꿀 땐 며칠에 걸쳐 섞어 바꾸는 게 좋아요. ' : ''}<button class="src-btn" data-src="${[...new Set((tab === 'wear' ? itemsFor(shop, sp).filter((i) => i.cat === 'wear') : list).flatMap((i) => i.src))].join(',')}">출처</button></p>`;
   };
@@ -65,7 +68,7 @@ export function openShop(api, tab = 'food') {
       const owned = (S.inv.wear ?? []).includes(i.id), wearing = on[i.slot] === i.id;
       return `<div class="shop-item${wearing ? ' cur' : ''}"><img class="si-art" src="art/wear/${i.art}.webp" alt="">
         <span class="si-txt"><b>${esc(i.name)}</b><small>${i.slot === 'head' ? '머리' : '목'}</small>${i.note ? `<small class="si-note">${esc(i.note)}</small>` : ''}</span>
-        <span class="si-buy">${owned ? `<button class="btn btn-sm ${wearing ? '' : 'btn-main'}" data-wear="${i.id}">${wearing ? '벗기기' : '입히기'}</button>` : `<button class="btn btn-sm btn-main" data-buy="${i.id}">${CI} ${coinOf(i.price)}</button><small>${api.won(i.price)}</small>`}</span></div>`;
+        <span class="si-buy">${owned ? `<button class="btn btn-sm ${wearing ? '' : 'btn-main'}" data-wear="${i.id}">${wearing ? '벗기기' : '입히기'}</button>` : `<button class="btn btn-sm btn-main btn-price" data-buy="${i.id}">${price(api, i.price)}</button>`}</span></div>`;
     }).join('');
   };
   shopRoot.addEventListener('click', (e) => {
@@ -146,15 +149,19 @@ export function openVet(api) {
     opts.push({ id: 't4', label: V.t4.label, won: V.t4.price, src: V.t4.src });
   }
   const { sheet, close } = api.openSheet(`<h2>동물병원</h2>
-    <div class="vet-status"><span>지금 피부: <b>${status}</b></span>${skin.trial && !skin.trial.done ? `<span>식이 제한 시험 ${trialDays}/${TRIAL_DAYS}일</span>` : ''}${skin.rx && sp === 'dog' ? `<span>약욕 이번 주 ${skin.baths.filter((d) => d > api.day() - 7).length}/${BATHS_PER_WEEK}</span>` : ''}${skin.found ? `<span>확인된 알레르기: ${PROTEIN[skin.found]}</span>` : ''}</div>
-    ${examined ? '' : `<button class="btn btn-main btn-wide" data-exam>진찰 받기 ${CI} ${coinOf(examWon)} <small>(${S.vet.visits ? '재진' : '초진'} 진찰료 ${api.won(examWon)})</small></button>`}
+    <div class="vet-status"><span>기운(건강): <b${S.stats.health < 50 ? ' class="bad"' : ''}>${S.stats.health}</b></span><span>지금 피부: <b>${status}</b></span>${S.cash < 0 ? `<span>외상(빚) <b class="bad">${api.won(-S.cash)}</b></span>` : ''}${skin.trial && !skin.trial.done ? `<span>식이 제한 시험 ${trialDays}/${TRIAL_DAYS}일</span>` : ''}${skin.rx && sp === 'dog' ? `<span>약욕 이번 주 ${skin.baths.filter((d) => d > api.day() - 7).length}/${BATHS_PER_WEEK}</span>` : ''}${skin.found ? `<span>확인된 알레르기: ${PROTEIN[skin.found]}</span>` : ''}</div>
+    ${examined ? '' : `<button class="btn btn-main btn-wide" data-exam>진찰 받기 ${api.won(examWon)} <small>(${S.vet.visits ? '재진' : '초진'} 진찰료 · ${hoursOf(examWon)}시간 일한 돈)</small></button>`}
     <div id="vet-out">${examined ? findings() : ''}</div>
-    ${opts.length ? `<div class="vet-opts">${opts.map((o) => `<button class="choice" data-opt="${o.id}">${esc(o.label)} <span class="vo-price">${o.won ? `${CI} ${coinOf(o.won)}` : '무료'}</span></button>`).join('')}</div>` : ''}
+    ${opts.length ? `<div class="vet-opts">${opts.map((o) => `<button class="choice" data-opt="${o.id}">${esc(o.label)} <span class="vo-price">${o.won ? api.won(o.won) : '무료'}</span></button>`).join('')}</div>` : ''}
     <p class="disclaimer">수의학적 진단이 아니에요. 실제로 가려움·피부 이상이 보이면 동물병원에서 진료받으세요.</p>
     <button class="btn btn-wide" data-close>닫기</button>`, { onClose: api.rerender });
 
   function findings() {
-    if (skin.state === 'ok' && !skin.trial) return `<div class="reply good"><b>건강해요</b><p>피부·털 상태가 좋아요. 사료나 간식을 바꾼 뒤 자꾸 긁거나 핥으면 다시 와 주세요.</p></div>`;
+    const sick = S.vet.sickDay === api.day() ? '<div class="reply good"><b>기운 없던 몸을 진찰·처치했어요</b><p>진찰을 받고 필요한 처치를 받았어요. 며칠은 밥·물·배변·잠을 잘 챙기며 쉬게 해 주세요. 그래도 기운이 없으면 다시 와 주세요.</p></div>' : '';
+    return sick + skinFindings();
+  }
+  function skinFindings() {
+    if (skin.state === 'ok' && !skin.trial) return `<div class="reply good"><b>피부는 깨끗해요</b><p>피부·털 상태가 좋아요. 사료나 간식을 바꾼 뒤 자꾸 긁거나 핥으면 다시 와 주세요.</p></div>`;
     if (skin.state === 'ok') return `<div class="reply good"><b>많이 좋아졌어요</b><p>${esc(F.trial.text)}</p></div>`;
     return `<div class="reply"><b>${skin.state === 'infected' ? '긁은 자리에 세균 감염이 생겼어요' : '가려움이 있어요'}</b><p>${esc(F.workup.text)}</p></div>`;
   }
@@ -166,15 +173,17 @@ export function openVet(api) {
     if (!b) return;
     if (b.dataset.src) return api.showSources(b.dataset.src.split(','));
     if (b.dataset.exam != null) {
-      if (!pay(api, examWon, `${S.vet.visits ? '재진' : '초진'} 진찰`)) return;
+      if (!pay(api, examWon, `${S.vet.visits ? '재진' : '초진'} 진찰`, true)) return;
       S.vet.visits++; S.vet.lastExam = api.day();
+      // 기운이 없어서 온 거면(건강 60 미만) 진찰·처치로 회복을 돕는다(11/3 사용자 "건강이 안 좋을 때 병원 보내기")
+      if (S.stats.health < 60) { S.stats = api.fx(S.stats, { health: 25 }); S.vet.sickDay = api.day(); }
       api.save(); api.track('vet_exam');
       close(); return openVet(api);
     }
     const id = b.dataset.opt;
     if (!id) return;
     const o = opts.find((x) => x.id === id);
-    if (o.won && !pay(api, o.won, o.label)) return;
+    if (o.won && !pay(api, o.won, o.label, true)) return;
     b.disabled = true;
     anchor = b;
     if (id === 'cyto') reply('', '세포 검사 결과', skin.state === 'infected' ? F.cyto_pos.text : F.cyto_neg.text, F.cyto_pos.src);

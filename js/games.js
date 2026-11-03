@@ -4,10 +4,10 @@
 // 11/2 추가 4종(먹이 받기·높이 쌓기·카드 짝 맞추기·OX 퀴즈)은 다른 세션에서 만든 패키지(js/mg — README 참고)의 '판'만 빌려 쓴다:
 // 패키지 자체 결과 화면·보상 규칙·광고 2배·하루 횟수는 쓰지 않고, 점수 → 코인·결과 화면은 이 앱 규칙(1코인 = 1,000원, 하루 한도)을 따른다.
 // 패키지 클래스 접두어는 앱의 .mg-* 와 겹쳐 kpg- 로 바꿔 넣었다. 문제 은행(196KB)이 있어 게임을 고를 때 불러온다
-import { C } from './content.js?v=202611022158';
-import { raceGame, agilityGame } from './race.js?v=202611022158';
-import { sfx } from './sound.js?v=202611022158';
-import { haptic } from './native.js?v=202611022158';
+import { C } from './content.js?v=202611030949';
+import { raceGame, agilityGame } from './race.js?v=202611030949';
+import { sfx } from './sound.js?v=202611030949';
+import { haptic } from './native.js?v=202611030949';
 
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 const shuffle = (a) => { for (let i = a.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [a[i], a[j]] = [a[j], a[i]]; } return a; };
@@ -16,26 +16,29 @@ const pick = (a) => a[Math.floor(Math.random() * a.length)];
 export const titleOf = (k, species) => (k === 'run' && species === 'cat' ? '사냥 달리기' : (GAMES[k] ?? OLD[k] ?? { title: k }).title); // 예전 기록(run)도 이름이 보이게
 const OLD = { run: { title: '산책 달리기' } };
 
+// perf(점수) → 0~1: 성과급 비율(1이면 시급의 50%를 더 받는다, js/money.js). 예전 코인 15개를 받던 점수가 1
 export const GAMES = {
-  race: { title: '반려 경주', icon: '🏁', desc: '동네 친구 셋과 100m 경주! 발판 두 개를 번갈아 톡톡 — 결승선에서 보호자가 팔 벌리고 기다려요.', coins: (s) => Math.min(15, Math.floor(s / 8)) },
-  agility: { title: '장애물 경주', icon: '🚧', desc: '어질리티 코스! 허들·터널·위브 폴·A자 경사로를 ↑↓←→ 타이밍에 맞춰 통과해요.', coins: (s) => Math.min(15, Math.floor(s / 430)) },
-  shisen: { title: '사천성', icon: '🧸', desc: '같은 반려용품 두 개를 두 번 이하로 꺾이는 길로 이어 없애요.', coins: (s) => Math.min(15, Math.floor(s / 13)) },
-  match: { title: '간식 맞추기', icon: '🥕', desc: '이웃한 간식을 바꿔 같은 것 3개를 한 줄로 맞춰요.', coins: (s) => Math.min(15, Math.floor(s / 80)) },
-  catch: { title: '먹이 받기', icon: '🧺', desc: '좌우로 끌어 먹어도 되는 음식을 받아요. 먹으면 안 되는 음식은 피하기 — 45초, 목숨 3개.', coins: (s) => Math.min(15, Math.floor(s / 5)) },
-  stack: { title: '캣타워 쌓기', icon: '🐈', desc: '좌우로 움직이는 캣타워 층을 톡 눌러 쌓아요. 아래층에 딱 맞추면 퍼펙트!', coins: (s) => Math.min(15, Math.floor(s / 3)) },
-  memory: { title: '위험 음식 짝 맞추기', icon: '🃏', desc: '먹으면 안 되는 음식과 그 이유를 짝지어요 — 카드 16장, 60초.', coins: (s) => Math.min(15, Math.floor(s / 10)) },
-  quiz: { title: '동물 OX 퀴즈', icon: '⭕', desc: '동물·반려동물 5문제, 문제마다 12초. 풀 때마다 새 문제가 나와요.', coins: (s) => s * 2 },
+  race: { title: '반려 경주', icon: '🏁', desc: '동네 친구 셋과 100m 경주! 발판 두 개를 번갈아 톡톡 — 결승선에서 보호자가 팔 벌리고 기다려요.', perf: (s) => Math.min(1, s / 120) },
+  agility: { title: '장애물 경주', icon: '🚧', desc: '어질리티 코스! 허들·터널·위브 폴·A자 경사로를 ↑↓←→ 타이밍에 맞춰 통과해요.', perf: (s) => Math.min(1, s / 6450) },
+  shisen: { title: '사천성', icon: '🧸', desc: '같은 반려용품 두 개를 두 번 이하로 꺾이는 길로 이어 없애요.', perf: (s) => Math.min(1, s / 195) },
+  match: { title: '간식 맞추기', icon: '🥕', desc: '이웃한 간식을 바꿔 같은 것 3개를 한 줄로 맞춰요.', perf: (s) => Math.min(1, s / 1200) },
+  catch: { title: '먹이 받기', icon: '🧺', desc: '좌우로 끌어 먹어도 되는 음식을 받아요. 먹으면 안 되는 음식은 피하기 — 45초, 목숨 3개.', perf: (s) => Math.min(1, s / 75) },
+  stack: { title: '캣타워 쌓기', icon: '🐈', desc: '좌우로 움직이는 캣타워 층을 톡 눌러 쌓아요. 아래층에 딱 맞추면 퍼펙트!', perf: (s) => Math.min(1, s / 45) },
+  memory: { title: '위험 음식 짝 맞추기', icon: '🃏', desc: '먹으면 안 되는 음식과 그 이유를 짝지어요 — 카드 16장, 60초.', perf: (s) => Math.min(1, s / 150) },
+  quiz: { title: '동물 OX 퀴즈', icon: '⭕', desc: '동물·반려동물 5문제, 문제마다 12초. 풀 때마다 새 문제가 나와요.', perf: (s) => s / 5 },
 };
 
+const wonStr = (n) => `${Math.round(n).toLocaleString('ko-KR')}원`;
+const wallet = (c) => (c < 0 ? `빚 ${wonStr(-c)}` : wonStr(c));
 let root = null;
 let stop = null; // 진행 중인 판 정리
 
-// ctx: { species, petName, pet: { src, ratio }, coins, earned, cap, best, onReward(game, score) → { given, earned, coins }, onClose }
+// ctx: { species, petName, pet: { src, ratio }, cash, hours, best, onReward(game, score) → { base, bonus, pay, repaid, hours, cash }, onClose }
 export function openGames(ctx) {
   root?.remove();
   root = document.createElement('div');
   root.className = 'mg';
-  root.innerHTML = `<div class="mg-bar"><b class="mg-title">미니게임</b><span class="mg-coin"><i class="ci"></i> <b id="mg-coins">${ctx.coins}</b></span><span class="mg-cap">오늘 번 코인 <b id="mg-earned">${ctx.earned}</b>/${ctx.cap}</span><button class="mg-x" id="mg-x" aria-label="닫기">✕</button></div><div class="mg-body" id="mg-body"></div>`;
+  root.innerHTML = `<div class="mg-bar"><b class="mg-title">미니게임</b><span class="mg-coin" id="mg-cash">${wallet(ctx.cash)}</span><span class="mg-cap">오늘 <b id="mg-hours">${ctx.hours}</b>시간 일했어요</span><button class="mg-x" id="mg-x" aria-label="닫기">✕</button></div><div class="mg-body" id="mg-body"></div>`;
   document.body.appendChild(root);
   document.body.classList.add('playing');
   const body = root.querySelector('#mg-body');
@@ -46,7 +49,7 @@ export function openGames(ctx) {
     stop?.(); stop = null; root.classList.remove('in-game');
     root.querySelector('.mg-title').textContent = '미니게임';
     body.innerHTML = `<div class="mg-menu">${Object.entries(GAMES).map(([k, g]) => `<button class="mg-card" data-g="${k}"><span class="mg-ic">${g.icon}</span><b>${titleOf(k, ctx.species)}</b><small>${g.desc}</small><span class="mg-best">${ctx.best[k] ? `최고 ${ctx.best[k]}점` : '처음 해 봐요'}</span></button>`).join('')}</div>
-      <p class="mg-note">1코인 = 1,000원. 펫샵·병원 가격은 실제 평균값 그대로예요. 하루에 벌 수 있는 코인은 ${ctx.cap}개까지 — 일할 수 있는 시간이 정해져 있듯이요.</p>`;
+      <p class="mg-note">한 판 = 1시간 근무. 시급 10,700원(2027년 최저임금)에 잘하면 성과급이 최대 50% 더 붙어요. 사료·간식·병원비는 전부 이 돈으로 내요.</p>`;
     body.onclick = (e) => { const b = e.target.closest('[data-g]'); if (b) play(b.dataset.g); };
   };
   const play = (k) => {
@@ -58,15 +61,16 @@ export function openGames(ctx) {
   const finish = (k, score) => {
     stop = null; root.classList.remove('in-game');
     const r = ctx.onReward(k, score);
-    ctx.coins = r.coins; ctx.earned = r.earned; ctx.best[k] = Math.max(ctx.best[k] || 0, score);
-    root.querySelector('#mg-coins').textContent = r.coins;
-    root.querySelector('#mg-earned').textContent = r.earned;
-    const raw = GAMES[k].coins(score);
+    ctx.cash = r.cash; ctx.hours = r.hours; ctx.best[k] = Math.max(ctx.best[k] || 0, score);
+    root.querySelector('#mg-cash').textContent = wallet(r.cash);
+    root.querySelector('#mg-hours').textContent = r.hours;
     const note = ctx.note; ctx.note = null;   // 경주: '2등 · 12.34초', 장애물: '완주 · 완벽 18'
-    body.innerHTML = `<div class="mg-end"><p class="mg-k">${titleOf(k, ctx.species)}</p>${note ? `<p class="mg-place">${note}</p>` : ''}<p class="mg-score">${score}점</p>
-      <p class="mg-got"><i class="ci"></i> +${r.given}${r.why ? ` <small>(${r.why})</small>` : r.given < raw ? ` <small>(오늘 한도 ${ctx.cap}개를 다 채웠어요 — 점수는 기록돼요)</small>` : ''}</p>
-      <p class="mg-sub">= 실제라면 ${(r.given * 1000).toLocaleString('ko-KR')}원어치</p>
-      <div class="mg-btns"><button class="btn btn-main" data-again>다시 하기</button><button class="btn" data-menu>다른 게임</button></div></div>`;
+    // 한 판 = 1시간 근무 — 근무표처럼(11/3 사용자 "진짜 일하고 돈을 벌어온 느낌")
+    body.innerHTML = `<div class="mg-end"><p class="mg-k">${titleOf(k, ctx.species)} · ${score}점</p>${note ? `<p class="mg-place">${note}</p>` : ''}
+      <p class="mg-clock">🕐 1시간 일했어요 <small>오늘 ${r.hours}시간째</small></p>
+      <div class="mg-slip"><span>시급</span><b>${wonStr(r.base)}</b><span>성과급</span><b>${r.bonus ? `+${wonStr(r.bonus)}` : '없음'}</b>${r.repaid ? `<span>외상 갚기</span><b class="bad">−${wonStr(r.repaid)}</b>` : ''}<span class="tot">받은 돈</span><b class="tot">${wonStr(r.pay - r.repaid)}</b></div>
+      <p class="mg-sub">지갑 ${wallet(r.cash)}</p>
+      <div class="mg-btns"><button class="btn btn-main" data-again>한 시간 더 일하기</button><button class="btn" data-menu>다른 일</button></div></div>`;
     body.onclick = (e) => { if (e.target.closest('[data-again]')) play(k); if (e.target.closest('[data-menu]')) menu(); };
   };
   menu();
@@ -81,7 +85,7 @@ function lazy3d(kind, fallback) {
     if (!webgl()) return fallback(body, ctx, done);
     let stop = null, dead = false;
     body.innerHTML = '<p class="mg-note">경기장을 준비하고 있어요…</p>';
-    (kind === 'race' ? import('./race3d.js?v=202611022158').then((m) => m.race3dGame) : import('./agility3d.js?v=202611022158').then((m) => m.agility3dGame))
+    (kind === 'race' ? import('./race3d.js?v=202611030949').then((m) => m.race3dGame) : import('./agility3d.js?v=202611030949').then((m) => m.agility3dGame))
       .then((game) => { if (!dead) stop = game(body, ctx, done); })
       .catch((e) => { console.error(e); if (!dead) stop = fallback(body, ctx, done); });
     return () => { dead = true; stop?.(); };
@@ -140,8 +144,8 @@ function pkgGame(id) {
     body.innerHTML = `<div class="kpg-root mgp"><div class="kpg-top"><div class="kpg-title"></div><div class="kpg-hud"></div></div><div class="kpg-stage"></div></div>`;
     const stage = body.querySelector('.kpg-stage'), hudBox = body.querySelector('.kpg-hud');
     const [dir, name] = PKG[id];
-    Promise.all([import(`./mg/games/${dir}/game.js?v=202611022158`), import('./mg/core/styles.js?v=202611022158'), import('./mg/core/strings.js?v=202611022158'), import('./mg/core/rewards.js?v=202611022158'),
-      id === 'quiz' ? import('./mg/games/quiz/questions.ko.js?v=202611022158') : {}]).then(([g, st, strs, rw, qs]) => {
+    Promise.all([import(`./mg/games/${dir}/game.js?v=202611030949`), import('./mg/core/styles.js?v=202611030949'), import('./mg/core/strings.js?v=202611030949'), import('./mg/core/rewards.js?v=202611030949'),
+      id === 'quiz' ? import('./mg/games/quiz/questions.ko.js?v=202611030949') : {}]).then(([g, st, strs, rw, qs]) => {
       if (dead) return;
       const def = g[name]; st.injectStyles(document);
       let lastHud = '';

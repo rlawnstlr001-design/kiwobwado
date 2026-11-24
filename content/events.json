@@ -285,9 +285,9 @@
     { "id": "vax3", "species": "both", "kind": "vet", "vet": true, "courses": ["year"], "when": { "type": "fixed", "yearDay": 6 },
       "title": "생후 16주 — 마지막 기초 접종", "text": "두 번 맞았는데 병원에서 \"16주가 넘었으니 한 번 더\"라고 해요.",
       "choices": [
-        { "label": "마지막 접종까지 맞힌다", "score": 1, "cost": ["vet.revisit.W", "vet.vax_combo"], "fx": { "health": 6, "bond": 0, "habit": 0 }, "reply": "엄마에게 받은 항체가 남아 있으면 이른 접종이 듣지 않을 수 있어서, 국제 지침(WSAVA)은 2~4주 간격으로 맞히고 마지막을 16주 이후에 맞히라고 해요." },
+        { "label": "마지막 접종까지 맞힌다", "score": 1, "cost": ["vet.revisit.W", "vet.vax_combo"], "fx": { "health": 6, "bond": 0, "habit": 0 }, "reply": "엄마에게 받은 항체가 남아 있으면 이른 접종이 듣지 않을 수 있어서, 국제 지침(WSAVA)은 2~4주 간격으로 맞히고 마지막을 16주 이후에 맞히라고 해요. 고양이는 16~20주까지 맞혀요(16주엔 아직 반응 못 하는 아이가 있어요)." },
         { "label": "두 번이면 충분하다", "score": -1, "cost": [], "fx": { "health": -5, "bond": 0, "habit": 0 }, "reply": "16주 전 접종만으로는 면역이 안 생긴 아이가 있을 수 있어요. 마지막 기초 접종은 16주 이후가 기준이에요." }
-      ], "lesson": "vaccine_two", "src": ["wsava2024", "vetfee2025"] },
+      ], "lesson": "vaccine_two", "src": ["wsava2024", "aafp_vax2020", "vetfee2025"] },
     { "id": "teething", "species": "dog", "kind": "behavior", "courses": ["year"], "when": { "type": "fixed", "yearDay": 7 },
       "title": "이가 근질근질 — 다 물어뜯어요", "text": "{name:이/가} 의자 다리와 신발을 갉아 놨어요. 바닥에 작은 이빨이 하나 떨어져 있어요.",
       "choices": [

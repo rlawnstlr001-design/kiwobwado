@@ -1,8 +1,8 @@
 // 펫샵·동물병원·간식 주기 화면. 미니게임으로 번 돈(지갑, js/money.js)으로 사고, 가격은 실제 평균값(content/shop.json·costs.json, 출처 표시)
 // 병원비만 외상(지갑이 마이너스 = 빚) — 펫샵 물건은 돈이 모자라면 못 산다(11/3 사용자)
 // 상태는 앱(app.js)이 넘기는 api로만 읽고 쓴다
-import { PROTEIN, itemsFor, itemById, hasProtein, addItem, TRIAL_DAYS, BATHS_PER_WEEK } from './care.js?v=202611031153';
-import { spend, hoursOf } from './money.js?v=202611031153';
+import { PROTEIN, itemsFor, itemById, hasProtein, addItem, TRIAL_DAYS, BATHS_PER_WEEK } from './care.js?v=202611241640';
+import { spend, hoursOf } from './money.js?v=202611241640';
 
 const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 const TABS = { food: '사료', treat: '간식', hygiene: '위생', toy: '장난감', wear: '옷·액세서리' };
@@ -59,7 +59,7 @@ export function openShop(api, tab = 'food') {
           <span class="si-buy">${i.cat === 'food' && (inv.food[i.id] || 0) > 0 && i.id !== inv.cur ? `<button class="btn btn-sm" data-use="${i.id}">이걸로 먹이기</button>` : ''}${i.id === inv.cur ? '<small class="si-cur">지금 먹는 중</small>' : ''}
             ${i.cat === 'toy' && inv.toys.includes(i.id) ? '<small class="si-cur">갖고 있어요 · 놀아 주기 때 써요</small>' : `<button class="btn btn-sm btn-main btn-price" data-buy="${i.id}">${price(api, i.price)}</button>`}</span>
         </div>`).join('')}</div>
-      <p class="mg-note">가격은 온라인 판매가(참고값, 출처 C)예요. ${tab === 'wear' ? '옷·액세서리는 가만히 있을 때 보이고, 걷거나 먹는 영상에선 잠깐 벗겨져 보여요. ' : ''} ${tab === 'food' ? '아기 때는 성장기용(퍼피·키튼) 사료를 먹여요. 사료를 바꿀 땐 며칠에 걸쳐 섞어 바꾸는 게 좋아요. ' : ''}<button class="src-btn" data-src="${[...new Set((tab === 'wear' ? itemsFor(shop, sp).filter((i) => i.cat === 'wear') : list).flatMap((i) => i.src))].join(',')}">출처</button></p>`;
+      <p class="mg-note">가격은 온라인 판매가(참고값, 출처 C)예요. ${tab === 'wear' ? '옷·액세서리는 가만히 있을 때 보이고, 걷거나 먹는 영상에선 잠깐 벗겨져 보여요. ' : ''} ${tab === 'food' ? '아기 때는 성장기용(퍼피·키튼) 사료를 먹여요. 사료를 바꿀 땐 며칠에 걸쳐 섞어 바꾸는 게 좋아요. ' : ''}${tab === 'food' && sp === 'dog' ? "강아지는 '성장기' 또는 '전 연령' 표시 사료를 고르고, 큰 개가 될 아기에게 칼슘 보충제를 따로 주지 마세요 — 강아지 사료 기준엔 칼슘 상한도 있어요. " : ''}<button class="src-btn" data-src="${[...new Set((tab === 'wear' ? itemsFor(shop, sp).filter((i) => i.cat === 'wear') : list).flatMap((i) => i.src)), ...(tab === 'food' && sp === 'dog' ? ['fediaf2025'] : [])].join(',')}">출처</button></p>`;
   };
   // 옷·액세서리: 산 것은 입히기·벗기기(목 하나·머리 하나)
   const wearList = () => {

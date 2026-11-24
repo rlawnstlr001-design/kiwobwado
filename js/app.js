@@ -1,20 +1,20 @@
 // 키워봐도될까 — 내 생활 그대로 30일 키워 보고 반려 준비도를 확인하는 입양 전 체험
-import * as db from './db.js?v=202611031153';
-import * as E from './engine.js?v=202611031153';
-import { C, loadContent, eventById, lessonById, foodById, momentById } from './content.js?v=202611031153';
-import { track } from './track.js?v=202611031153';
-import { roomHTML, mountRoom, timeOfDay, loadAnim, clipInfo } from './room.js?v=202611031153';
-import { openGames, GAMES, titleOf } from './games.js?v=202611031153';
-import * as K from './care.js?v=202611031153';
-import { openShop, openVet, openTreats } from './shop.js?v=202611031153';
-import * as M from './money.js?v=202611031153';
-import { isApp, initNative, scheduleCare, exactAlarm, shareImage, saveWidget, widgetCount } from './native.js?v=202611031153';
-import { makeCard } from './card.js?v=202611031153';
-import { runGuide } from './guide.js?v=202611031153';
-import { handCare } from './handcare.js?v=202611031153';
-import { sfx, ambient, stopAmbient, soundOn, setSound } from './sound.js?v=202611031153';
-import * as F from './fun.js?v=202611031153';
-import { training } from './train.js?v=202611031153';
+import * as db from './db.js?v=202611241640';
+import * as E from './engine.js?v=202611241640';
+import { C, loadContent, eventById, lessonById, foodById, momentById } from './content.js?v=202611241640';
+import { track } from './track.js?v=202611241640';
+import { roomHTML, mountRoom, timeOfDay, loadAnim, clipInfo } from './room.js?v=202611241640';
+import { openGames, GAMES, titleOf } from './games.js?v=202611241640';
+import * as K from './care.js?v=202611241640';
+import { openShop, openVet, openTreats } from './shop.js?v=202611241640';
+import * as M from './money.js?v=202611241640';
+import { isApp, initNative, scheduleCare, exactAlarm, shareImage, saveWidget, widgetCount } from './native.js?v=202611241640';
+import { makeCard } from './card.js?v=202611241640';
+import { runGuide } from './guide.js?v=202611241640';
+import { handCare } from './handcare.js?v=202611241640';
+import { sfx, ambient, stopAmbient, soundOn, setSound } from './sound.js?v=202611241640';
+import * as F from './fun.js?v=202611241640';
+import { training } from './train.js?v=202611241640';
 
 const $ = (s, el = document) => el.querySelector(s);
 const view = $('#view');
@@ -303,25 +303,13 @@ function onboarding() {
       <div class="pick-grid five">${Object.entries(TYPES).map(([k, t]) => `<button class="pick${dr.type === k ? ' on' : ''}" data-type="${k}"><img src="${imgOf(k, 'baby')}" alt=""><b>${word[t.species]}</b><small>${PICK_LINE[k]}</small></button>`).join('')}</div>
       <p class="fine" style="margin-top:8px">${word[TYPES[dr.type].species]} 월 양육비 평균 ${won(C.costs.monthly[TYPES[dr.type].species].amount)}(병원비 제외) · 다 크면 ${TYPES[dr.type].adultKg} · ${TYPES[dr.type].exercise} <button class="src-btn" data-src="kb2025,kennelclub">출처</button></p>
       <div class="q"><p>데려오는 길</p><div class="chips">${Object.entries(C.costs.adopt).map(([k, a]) => chip('data-route', k, dr.route, `${a.label}${a.amount ? ` ${Math.round(a.amount / 10000)}만원` : ''}`)).join('')}</div></div>`,
-    () => `<p class="ob-k">2 / 2 · 이름과 내 하루</p>
+    () => `<p class="ob-k">2 / 2 · 이름과 체험 방식</p>
       <div class="ob-name"><figure class="photo"><img src="${imgOf(dr.type, 'baby')}" alt=""></figure><div><h1>이름을 지어 주세요</h1>
       <input class="ob-input" id="f-name" maxlength="8" placeholder="예: 보리" value="${esc(dr.name)}" autocomplete="off">
       <div class="chips" style="margin-top:8px">${['보리', '콩이', '두부', '호두', '나비'].map((x) => `<button class="chip" data-nm="${x}">${x}</button>`).join('')}</div></div></div>
-      <div class="q"><p>내 하루 — 돌봄 요청이 이 시간에 맞춰 와요</p><div class="chips">${chip('data-day', 'office', dayMode, '출근 08:20~19:00')}${chip('data-day', 'remote', dayMode, '재택')}${chip('data-day', 'custom', dayMode, '직접 입력')}</div>
-        ${dayMode === 'custom' ? `<div class="card" style="margin-top:8px">
-          <div class="field"><label for="f-wake">일어나는 시간</label><input type="time" id="f-wake" value="${dr.life.wake}"></div>
-          <div class="field"><label>재택 근무</label><div class="chips">${chip('data-remote', 'no', dr.life.remote ? 'yes' : 'no', '아니요')}${chip('data-remote', 'yes', dr.life.remote ? 'yes' : 'no', '네')}</div></div>
-          <div ${dr.life.remote ? 'hidden' : ''}>
-            <div class="field"><label for="f-leave">집을 나서는 시간</label><input type="time" id="f-leave" value="${dr.life.leave}"></div>
-            <div class="field"><label for="f-back">집에 오는 시간</label><input type="time" id="f-back" value="${dr.life.back}"></div>
-            <div class="field"><label>야근(주)</label><div class="chips">${[0, 1, 2, 3].map((n) => chip('data-late', String(n), String(dr.life.late), n ? `${n}번` : '없음')).join('')}</div></div>
-          </div>
-          <div class="field"><label for="f-sleep">자는 시간</label><input type="time" id="f-sleep" value="${dr.life.sleep}"></div>
-          <div class="field"><label>토요일 외출</label><div class="chips">${chip('data-wout', 'no', dr.life.weekendOut ? 'yes' : 'no', '집에 있어요')}${chip('data-wout', 'yes', dr.life.weekendOut ? 'yes' : 'no', '보통 나가요')}</div></div>
-        </div>` : `<p class="fine" style="margin:6px 0 0">기상 ${dr.life.wake} · 취침 ${dr.life.sleep}${dr.life.remote ? '' : ` · 야근 주 ${dr.life.late}번`} 기준. 다르면 '직접 입력'.</p>`}</div>
       <div class="q"><p>체험 코스</p><div class="chips">${chip('data-course', 'month', dr.course, '아기 시절 30일')}${chip('data-course', 'year', dr.course, '첫 1년을 30일에')}</div></div>
       <div class="q"><p>체험 방식</p><div class="chips">${chip('data-fast', 'no', dr.fast ? 'yes' : 'no', '실제 시간대로')}${chip('data-fast', 'yes', dr.fast ? 'yes' : 'no', '빠른 체험(시간 앞당기기)')}</div></div>
-      <p class="fine">집·가족·예산 같은 입양 서류는 들어가서 천천히 써도 돼요.</p>`,
+      <p class="fine">내 하루(출퇴근·잠 시간)와 집·가족·예산 같은 입양 서류는 집에 들어가서 써요.</p>`,
   ];
   const ok = () => (step === N - 1 ? !!dr.name.trim() : true);
   const draw = () => {
@@ -339,9 +327,8 @@ function onboarding() {
     readTimes();
     if (b.id === 'ob-back') { step--; return draw(); }
     if (b.id === 'ob-next') {
-      if (step === N - 1 && !dr.life.remote && toMin(dr.life.back) <= toMin(dr.life.leave)) return toast('집에 오는 시간이 나서는 시간보다 늦어야 해요');
       if (step < N - 1) { step++; return draw(); }
-      return start({ ...dr, papers: false });
+      return start({ ...dr, papers: false, lifeSet: false });   // 11/24: 내 하루는 집에서(openLife) — 그전엔 기본값(출근 08:20~19:00)
     }
     const d = b.dataset;
     if (d.type) { dr.type = d.type; dr.species = TYPES[d.type].species; }
@@ -375,10 +362,14 @@ function start(dr) {
   initCare();
   save();
   track('start');
-  careAlarms(true); // 앱: 첫 돌봄 알림 허락을 여기서 묻는다
   location.hash = '#/';
   route();
-  toast(`${dr.name}${E.josa(dr.name, '이/가').slice(-1)} 집에 왔어요`);
+  // 데려오는 길 스토리 → 집 → 내 하루 시트(11/24). 첫 돌봄 알림 허락은 스토리 뒤에 묻는다
+  openStory(() => {
+    toast(`${dr.name}${E.josa(dr.name, '이/가').slice(-1)} 집에 왔어요`);
+    careAlarms(true);
+    if (!lifeDone()) openLife();   // 바로 연다 — 늦게 열면 첫날 길잡이(시트가 없으면 시작)가 먼저 떠서 겹쳤다
+  });
 }
 
 // ---------- 입양 서류 마저 쓰기(10/22 온보딩 3단계로 줄이면서 뒤로 옮김) ----------
@@ -418,6 +409,99 @@ function openPapers() {
   });
 }
 
+// ---------- 내 하루(11/24 — 온보딩에서 집 화면으로 옮김, 사용자 "내 인적사항을 적는거는 집화면에서") ----------
+// 쓰기 전엔 기본값(기상 07:00·출근 08:20~19:00·취침 23:30)으로 돌봄 요청이 온다. 예전 저장본(lifeSet 없음)은 쓴 것으로 본다
+const lifeDone = () => P().lifeSet !== false;
+function openLife() {
+  const L = { ...P().life };
+  let mode = L.remote ? 'remote' : (L.leave === '08:20' && L.back === '19:00' && L.wake === '07:00' && L.sleep === '23:30' ? 'office' : 'custom');
+  const chip = (attr, val, cur, label) => `<button class="chip${val === cur ? ' on' : ''}" ${attr}="${val}">${label}</button>`;
+  const body = () => `<span class="label">내 하루</span><h2>${esc(petName())}${E.josa(petName(), '을/를').slice(-1)} 언제 챙길 수 있나요?</h2><p class="sub" style="margin-top:0">밥·배변·산책 요청이 이 시간에 맞춰 와요. 집을 비우는 동안은 '낮 돌봄'으로 따로 정해요.</p>
+    <div class="q"><div class="chips">${chip('data-day', 'office', mode, '출근 08:20~19:00')}${chip('data-day', 'remote', mode, '재택')}${chip('data-day', 'custom', mode, '직접 입력')}</div>
+      ${mode === 'custom' ? `<div class="card" style="margin-top:8px">
+        <div class="field"><label for="l-wake">일어나는 시간</label><input type="time" id="l-wake" value="${L.wake}"></div>
+        <div class="field"><label>재택 근무</label><div class="chips">${chip('data-remote', 'no', L.remote ? 'yes' : 'no', '아니요')}${chip('data-remote', 'yes', L.remote ? 'yes' : 'no', '네')}</div></div>
+        <div ${L.remote ? 'hidden' : ''}>
+          <div class="field"><label for="l-leave">집을 나서는 시간</label><input type="time" id="l-leave" value="${L.leave}"></div>
+          <div class="field"><label for="l-back">집에 오는 시간</label><input type="time" id="l-back" value="${L.back}"></div>
+          <div class="field"><label>야근(주)</label><div class="chips">${[0, 1, 2, 3].map((n) => chip('data-late', String(n), String(L.late), n ? `${n}번` : '없음')).join('')}</div></div>
+        </div>
+        <div class="field"><label for="l-sleep">자는 시간</label><input type="time" id="l-sleep" value="${L.sleep}"></div>
+        <div class="field"><label>토요일 외출</label><div class="chips">${chip('data-wout', 'no', L.weekendOut ? 'yes' : 'no', '집에 있어요')}${chip('data-wout', 'yes', L.weekendOut ? 'yes' : 'no', '보통 나가요')}</div></div>
+      </div>` : `<p class="fine" style="margin:6px 0 0">기상 ${L.wake} · 취침 ${L.sleep}${L.remote ? '' : ` · 야근 주 ${L.late}번`} 기준. 다르면 '직접 입력'.</p>`}</div>
+    <button class="btn btn-main btn-wide" id="l-save">이대로 할게요</button><button class="btn btn-wide" data-close>나중에</button>`;
+  const { sheet, close } = openSheet(body(), { onClose: () => route() });
+  const readTimes = () => { for (const k of ['wake', 'leave', 'back', 'sleep']) { const el = $('#l-' + k, sheet); if (el?.value) L[k] = el.value; } };
+  const redraw = () => { const y = sheet.scrollTop; sheet.innerHTML = `<span class="grip" aria-hidden="true"></span>${body()}`; sheet.scrollTop = y; };
+  sheet.addEventListener('click', async (e) => {
+    const b = e.target.closest('button');
+    if (!b) return;
+    readTimes();
+    if (b.id === 'l-save') {
+      if (!L.remote && toMin(L.back) <= toMin(L.leave)) return toast('집에 오는 시간이 나서는 시간보다 늦어야 해요');
+      Object.assign(P(), { life: L, lifeSet: true }); await save();
+      careAlarms(false); widgetSnap();
+      toast('내 하루에 맞춰 돌봄 시간을 바꿨어요'); return close();
+    }
+    const x = b.dataset;
+    if (x.day) { mode = x.day; if (x.day === 'office') Object.assign(L, { wake: '07:00', leave: '08:20', back: '19:00', sleep: '23:30', remote: false }); if (x.day === 'remote') L.remote = true; }
+    if (x.remote) L.remote = x.remote === 'yes';
+    if (x.late) L.late = Number(x.late);
+    if (x.wout) L.weekendOut = x.wout === 'yes';
+    if (Object.keys(x).length) redraw();
+  });
+}
+
+// ---------- 데려오는 길 스토리(11/24 사용자 "처음 게임 시작할때 스토리가 부족한거 같아 … 입양하는 루트에 맞춰서 사진 스토리") ----------
+// 길(보호소·펫숍·브리더)마다 4장 + 마지막 '집에 온 날'은 고른 아이. 그림 art/story/*.webp(원본 art/raw/story, Gemini 수채 그림체), 문구는 출처 있는 사실만(볼트 동물-제도 8절)
+const STORY = {
+  shelter: [
+    { img: 'shelter_1', t: '2025년 보호센터에 들어온 95,685마리 중 새 가족을 만난 건 4마리 중 1마리예요.', src: ['shelter2025'] },
+    { img: 'shelter_2', t: '먼저 입양 교육을 듣고 신청서를 써요. 절차는 지역마다 조금씩 달라요.', src: ['seoul_adopt', 'epis_course'] },
+    { img: 'shelter_3', t: '상담하고, 아이를 한두 번 만나 본 뒤에 정해요.', src: ['seoul_adopt'] },
+    { img: 'shelter_4', t: { dog: '센터는 동물등록을 마치고 보내요. 데리러 갈 땐 이동장을 챙겨요.', cat: '데리러 갈 땐 이동장을 챙겨요. 중성화를 마치고 보내는 센터도 있어요.' }, src: { dog: ['law_adopt', 'suwon_adopt'], cat: ['seoul_adopt', 'suwon_adopt'] } },
+  ],
+  shop: [
+    { img: 'shop_1', t: '펫숍 분양비는 평균 89만 원이에요.', src: ['kb2025'] },
+    { img: 'shop_2', t: '생후 2개월이 안 된 아기를 파는 건 법으로 금지돼 있어요.', src: ['law_adopt'] },
+    { img: 'shop_3', t: { dog: '판매자는 내 이름으로 동물등록을 신청한 뒤에 넘겨줘야 해요.', cat: '고양이 등록은 의무가 아니지만, 원하면 내장형 칩으로 할 수 있어요.' }, src: { dog: ['law_adopt'], cat: ['cat_register'] } },
+    { img: 'shop_4', t: { dog: '이동장과 첫 용품도 챙겨요. 사료·용품만 한 달 평균 16만 원쯤 들어요.', cat: '이동장과 첫 용품도 챙겨요. 사료·모래·용품만 한 달 평균 14만 원쯤 들어요.' }, src: ['kb2025'] },
+  ],
+  breeder: [
+    { img: 'breeder_1', t: '전문 브리더 분양비는 평균 101만 원이에요.', src: ['kb2025'] },
+    { img: { dog: 'breeder_2_dog', cat: 'breeder_2_cat' }, t: '법은 12개월이 안 된 어미의 교배·출산을 금지해요. 어미와 형제들이 사는 곳을 봐요.', src: ['law_adopt'] },
+    { img: 'breeder_3', t: { dog: '브리더도 내 이름으로 동물등록을 신청한 뒤에 넘겨줘야 해요.', cat: '고양이 등록은 의무가 아니지만, 원하면 내장형 칩으로 할 수 있어요.' }, src: { dog: ['law_adopt'], cat: ['cat_register'] } },
+    { img: { dog: 'breeder_4_dog', cat: 'breeder_4_cat' }, t: '택배처럼 보내는 건 안 돼요. 직접 데려오거나 동물운송업자를 통해서만 받아요.', src: ['law_adopt'] },
+  ],
+};
+const ROUTE_TITLE = { shelter: '보호소에서 데려오기', shop: '펫숍에서 데려오기', breeder: '브리더에게서 데려오기' };
+function openStory(done) {
+  const sp = species(), pick = (v) => (v && typeof v === 'object' && !Array.isArray(v) ? v[sp] : v);
+  const pages = [...(STORY[P().route] || STORY.shelter).map((p) => ({ img: pick(p.img), t: pick(p.t), src: pick(p.src) })),
+    { img: `home_${P().type}`, t: `오늘부터 ${petName()}${E.josa(petName(), '과/와').slice(-1)} 함께하는 30일이 시작돼요.`, src: null }];
+  const el = document.createElement('div');
+  el.className = 'story'; el.setAttribute('role', 'dialog'); el.setAttribute('aria-label', ROUTE_TITLE[P().route] || '입양 이야기');
+  document.body.appendChild(el); document.body.classList.add('storying');
+  let i = 0;
+  const end = () => { el.remove(); document.body.classList.remove('storying'); track('story_end'); done?.(); };
+  const draw = () => {
+    const p = pages[i];
+    el.innerHTML = `<img class="story-img${p.img.startsWith('home_') ? ' low' : ''}" src="art/story/${p.img}.webp" alt="">
+      <div class="story-cap"><p>${esc(p.t)}${p.src ? ` <button class="src-btn" data-src="${p.src.join(',')}">출처</button>` : ''}</p>
+        <div class="story-nav"><span class="story-k">${ROUTE_TITLE[P().route] || ''} · ${i + 1} / ${pages.length}</span>
+        <span class="story-dots">${pages.map((_, j) => `<i${j === i ? ' class="on"' : ''}></i>`).join('')}</span>
+        ${i < pages.length - 1 ? '<button class="story-skip" data-skip>건너뛰기</button>' : ''}<button class="btn btn-main story-next" data-next>${i < pages.length - 1 ? '다음' : '집으로'}</button></div></div>`;
+    const nx = pages[i + 1]; if (nx) new Image().src = `art/story/${nx.img}.webp`;   // 다음 장 미리 받기
+  };
+  el.addEventListener('click', (e) => {
+    const b = e.target.closest('button');
+    if (b?.dataset.src) return showSources(b.dataset.src.split(','));
+    if (b?.dataset.skip != null) { track('story_skip'); return end(); }
+    if (b?.dataset.next != null || e.target.classList.contains('story-img')) { if (i < pages.length - 1) { i++; draw(); } else end(); }
+  });
+  draw();
+}
+
 // ---------- 오늘 ----------
 // 지금 모습: 문구 + 상태 그림(평소·기쁨·배고픔·잠·아픔·말썽)
 function moodOf(plan, key) {
@@ -444,8 +528,8 @@ function today() {
   setTab('today');
   const d = dayNow();
   if (d > COURSE_DAYS) {
-    view.innerHTML = `<section class="card done-day"><span class="stamp">${courseDone()} 완료</span><h2 style="margin-top:14px">${esc(petName())}${E.josa(petName(), '과/와').slice(-1)} ${courseDone()}을 함께했어요</h2><p class="sub">이제 반려 준비도 리포트를 확인해 보세요.</p><a class="btn btn-main btn-wide" href="#/report">리포트 보기</a>${yearOffer()}</section>`;
-    view.onclick = (e) => { if (e.target.closest('[data-year]')) confirmYear(); };
+    view.innerHTML = `<section class="card done-day"><span class="stamp">${courseDone()} 완료</span><h2 style="margin-top:14px">${esc(petName())}${E.josa(petName(), '과/와').slice(-1)} ${courseDone()}을 함께했어요</h2><p class="sub">이제 반려 준비도 리포트를 확인해 보세요.</p><a class="btn btn-main btn-wide" href="#/report">리포트 보기</a>${yearOffer()}</section>${lifeOffer()}`;
+    view.onclick = (e) => { if (e.target.closest('[data-year]')) confirmYear(); const l = e.target.closest('[data-life]'); if (l) wantLife(l); };
     return;
   }
   const key = todayKey();
@@ -459,18 +543,23 @@ function today() {
   const stretch = aloneFor(key, d, !!arr && arr !== 'none');
   const limit = E.aloneLimit(species(), weeks);
   const evs = visibleEvents();
-  const mood = S.skin?.state !== 'ok' && S.skin ? { text: S.skin.state === 'infected' ? '피부가 빨갛게 부어 계속 긁어요' : '자꾸 몸을 긁고 발을 핥아요', state: S.skin.state === 'infected' ? 'sick' : 'idle' } : moodOf(plan, key);
+  let mood = S.skin?.state !== 'ok' && S.skin ? { text: S.skin.state === 'infected' ? '피부가 빨갛게 부어 계속 긁어요' : '자꾸 몸을 긁고 발을 핥아요', state: S.skin.state === 'infected' ? 'sick' : 'idle' } : moodOf(plan, key);
   const firstAway = awayTasks.length ? Math.min(...awayTasks.map((t) => toMin(t.time))) : 0;
   const canArrange = awayTasks.length > 0 && nm < firstAway + E.WINDOW;
   const helperOK = P().people.helper || P().people.live === 'family';
   const arrLabel = { self: '내가 점심에 들러요', helper: '가족·지인에게 부탁했어요', sitter: '펫시터를 불렀어요', none: '오늘은 못 챙겨요' };
   const sleepNow = nm >= toMin(P().life.sleep) || nm < toMin(P().life.wake);
   const mo = !sleepNow && S.moment ? momentById(S.moment.id) : null;   // 지금 일어나는 일(답하기 전)
-  const roomState = sleepNow ? 'sleep' : mo && ['idle', 'happy'].includes(mood.state) ? mo.state : mood.state;
   const acts = actsFor(plan, key, d, nm, stage);
   const openKinds = acts.filter((a) => a.cls === 'now').map((a) => a.kind);
+  // 강아지 낮잠(11/11 공부 반영): 할 일·지금 일어나는 일·아픔·피부 문제가 없을 때만. 할 일이 생기면 깬다
+  const nap = !sleepNow && !openKinds.length && !mo && species() === 'dog' && ['idle', 'happy'].includes(mood.state) && !mood.avoid && (!S.skin || S.skin.state === 'ok') && E.napAt(stage, nm);
+  if (nap) { mood = { text: '쿨쿨 낮잠 자는 중이에요', state: 'sleep' }; strokeTip('nap_dog'); }
+  const roomState = sleepNow || nap ? 'sleep' : mo && ['idle', 'happy'].includes(mood.state) ? mo.state : mood.state;
   const NEED = { feed: '배고파요!', potty: '쉬 마려워요', walk: '나가고 싶어요!', play: '놀아 주세요!', litter: '화장실이 지저분해요', train: '뭐 배울까요?', brush: '털이 엉켰어요' };
   const need = !sleepNow && openKinds.length ? NEED[openKinds[0]] : mo ? `❗ ${fill(mo.title)}` : roomState === 'sick' ? '몸이 안 좋아요…' : !sleepNow && S.skin?.state !== 'ok' ? '긁적긁적…' : '';
+  // 말풍선을 누르면: 할 일이면 그 일, '지금 일어나는 일'이면 그 이야기, 아프거나 긁으면 병원(왼쪽 알림과 같은 곳으로)
+  const needOn = !sleepNow && openKinds.length ? `data-act="${openKinds[0]}"` : mo ? `data-mo="${mo.id}"` : need ? 'data-hud="vet"' : '';
   // 배고프면 '낑낑'/'야옹' — 5분에 한 번까지(1분마다 다시 그려도 계속 울지 않게)
   if (need === NEED.feed && Date.now() - lastCall > 300000) { lastCall = Date.now(); setTimeout(() => sfx.call(species()), 1200); }
   const dirty = (kind) => plan.some((t) => t.kind === kind && E.taskPhase(t, nm) !== 'early' && !statusFor(t, key, d));
@@ -489,7 +578,7 @@ function today() {
   const KIND = { vet: '병원', food: '음식', behavior: '행동', life: '생활', law: '법·의무' };
   const awayAlert = awayTasks.length && (canArrange || arr);
   view.innerHTML = `<section class="game" id="game">
-    ${roomHTML({ type: P().type, stage, state: roomState, tod: timeOfDay(nm), need, prop: { ...prop, bowl: 'empty' }, spots })}
+    ${roomHTML({ type: P().type, stage, state: roomState, tod: timeOfDay(nm), need, needOn, prop: { ...prop, bowl: 'empty' }, spots })}
     <div class="hud hud-tl"><div class="hud-card">
       <div class="hud-name"><b>${esc(petName())}</b><span>${E.ageLabel(weeks)} · ${d}일째/${COURSE_DAYS}</span><em class="hud-pers">${S.personaSeen ? `${esc(personaName())}${F.learned(species(), S.tricks).length ? ` · 재주 ${F.learned(species(), S.tricks).length}` : ''}` : '성격 ?'}</em><time>${toHM(nm)}</time></div>
       <div class="mini-g">${mg('health', '건강', 'var(--sky)')}${mg('bond', '마음', 'var(--apricot)')}${mg('habit', '습관', 'var(--forest)')}</div>
@@ -497,6 +586,7 @@ function today() {
       <p class="hud-mood">${esc(fill(`{name:은/는} ${sleepNow ? '새근새근 자고 있어요' : mood.text}`))}</p>
     </div>
       ${mo ? `<button class="alert hot mo" data-mo="${mo.id}"><span class="pill now">지금</span><span>${esc(fill(mo.title))}</span></button>` : ''}
+      ${!lifeDone() ? '<button class="alert hot" data-hud="life"><span class="pill life">내 하루</span><span>내 하루 알려 주기 · 돌봄 시간이 맞춰져요</span></button>' : ''}
       ${!papersDone() && (S.personaSeen || d >= 2) ? `<button class="alert${d >= 3 ? ' hot' : ''}" data-hud="papers"><span class="pill law">서류</span><span>입양 서류 마저 쓰기 · 집·가족·예산</span></button>` : ''}
       ${S.stats.health < 50 && !sleepNow ? `<button class="alert hot" data-hud="vet"><span class="pill vet">병원</span><span>기운이 없어요 — 병원에 데려가 보세요 (건강 ${S.stats.health})</span></button>` : ''}
       ${evs.map((p) => { const e = eventById(p.id); return `<button class="alert hot" data-ev="${e.id}"><span class="pill ${e.kind}">${KIND[e.kind]}</span><span>${esc(fill(e.title))}</span></button>`; }).join('')}
@@ -547,7 +637,7 @@ function today() {
   if (!S.widgetTip && d >= 2) widgetHint();
 }
 async function widgetHint() {
-  if ((await widgetCount()) !== 0 || $('#sheet-root').classList.contains('on') || document.body.classList.contains('guiding')) return;
+  if ((await widgetCount()) !== 0 || $('#sheet-root').classList.contains('on') || document.body.classList.contains('guiding') || document.body.classList.contains('storying')) return;
   S.widgetTip = true; save();
   openSheet(`<span class="label">홈 화면 위젯</span><h2>${esc(fill('{name:을/를} 홈 화면에 둘 수 있어요'))}</h2><p>앱을 열지 않아도 지금 챙길 돌봄과 다음 돌봄 시간이 보여요.</p>
     <ul class="tips"><li>홈 화면 빈 곳을 길게 눌러요</li><li><b>위젯</b>을 누르고 '키워봐도될까'를 찾아요</li><li>'키워봐도될까 돌봄'을 끌어다 놓아요</li></ul><button class="btn btn-main btn-wide" data-close>알겠어요</button>`);
@@ -556,7 +646,7 @@ async function widgetHint() {
 function startGuide(force = false) {
   if (document.body.dataset.route !== 'today' || document.body.classList.contains('guiding') || (!force && S.guided)) return;
   const hint = $('#rotate-hint');
-  if ($('#sheet-root').classList.contains('on') || (hint && getComputedStyle(hint).display !== 'none')) { setTimeout(() => startGuide(force), 1500); return; }
+  if ($('#sheet-root').classList.contains('on') || document.body.classList.contains('storying') || (hint && getComputedStyle(hint).display !== 'none')) { setTimeout(() => startGuide(force), 1500); return; }   // 11/24: 데려오는 길 스토리가 끝난 뒤에
   // 첫 실행은 그림을 받는 중일 수 있다 — 아이 그림이 뜬 뒤에 시작해야 '쓰다듬기'가 빈자리를 비추지 않는다
   const pimg = $('#pet-img');
   if (pimg && !pimg.complete) { pimg.addEventListener('load', () => setTimeout(() => startGuide(force), 300), { once: true }); return; }
@@ -583,6 +673,10 @@ TIPS.shy_dog = ['아직 낯설어해요', '데려온 첫 3일쯤은 새 집에 �
 TIPS.brush_long = ['엉킨 털은 가위로 자르지 마세요', '털이 긴 고양이는 매일 빗어 주는 게 좋아요. 다리 안쪽·엉덩이·가슴·목둘레가 잘 엉켜요. 엉킨 털은 피부에 바짝 붙어 있어서 가위로 자르다 다칠 수 있어요 — 심하면 동물병원에 맡겨요.', ['vca_longhair'], '빗질'];
 TIPS.brush_rough = ['살살, 짧게 빗어 주세요', '엉킨 털을 세게 당기면 아파서 빗질 자체를 싫어하게 될 수 있어요. 짧게 여러 번 살살 풀고, 끝나면 칭찬해 주세요.', [], '빗질'];
 TIPS.litter_daily = ['화장실은 하루 한 번 이상', '고양이는 깨끗한 화장실을 좋아해요. 뭉친 모래는 하루 한 번 이상 떠내고, 일주일에 한 번은 모래를 다 갈고 통을 씻어요. 화장실은 고양이 수보다 하나 더 두는 게 권장이에요.', ['aspca_litter'], '화장실'];
+TIPS.nap_dog = ['낮잠 자는 중이에요', '강아지는 밤에만 자지 않아요. 보호자 2,300여 명의 기록에서 생후 16주 강아지는 하루 평균 11.2시간을 잤고, 그중 낮잠이 3시간 반쯤(중앙값)이었어요. 12개월이 되면 낮잠이 3시간쯤으로 조금 줄어요. 할 일 시간이 되면 깨어나요.', ['kinsman2020'], '잠'];
+TIPS.feed_cat = ['고양이는 조금씩 자주 먹어요', '마음대로 먹게 두면 고양이는 하루 6~8번, 한 번에 조금씩 먹어요. 새벽과 해 질 녘에 가장 많이 먹고요. 하루 양을 4번에 나눠 준 실험에서도 몸무게는 한 번에 준 것과 같았어요 — 여러 번 나눠 줘도 괜찮아요.', ['parker2019_cat', 'eyre2025_cat', 'camara2020_cat'], '밥'];
+TIPS.stairs_puppy = ['계단은 안아서', '노르웨이에서 큰 개 강아지 501마리를 따라간 연구에서, 생후 3개월까지 계단을 오르내린 강아지는 고관절 이형성(엉덩이 관절이 어긋나는 병) 위험이 높았어요. 같은 시기에 부드럽고 조금 울퉁불퉁한 땅에서 목줄 없이 뛴 강아지는 위험이 낮았고요. 연구진도 3개월까지는 계단을 피하라고 권해요.', ['krontveit2012'], '바깥 구경'];
+TIPS.toy_rotate = ['장난감은 바꿔 가며', '고양이에게 같은 장난감을 연달아 세 번 주자 놀이가 거의 사라졌지만, 색이 다른 장난감으로 바꾸자 처음보다 더 신나게 놀았다는 실험이 있어요. 개도 같은 장난감을 계속 주면 흥미를 잃었다가 새 장난감에는 다시 놀았고요. 장난감 몇 개를 번갈아 주세요.', ['hall2002_toy', 'pullen2012_toy'], '놀이'];
 TIPS.shy_cat = ['아직 낯설어해요', '새 고양이는 처음 며칠 숨어 지내는 게 아주 흔해요. 2~3일은 조용한 방 하나에서 지내게 하고, 관심을 억지로 주지 말고 옆에 앉아 고양이가 먼저 다가오게 기다려 주세요.', ['spca_nz_cat']];
 // 데려온 뒤 적응 — 첫날 한 번. 강아지는 보호소들이 쓰는 3·3·3, 고양이는 SPCA 안내. 보호소에서 왔으면 한 줄 더
 const ADAPT = {
@@ -606,6 +700,7 @@ function strokeTip(code) {
   S.tips[code] = true; save();
   const [title, text, src, label = '쓰다듬기'] = TIPS[code];
   setTimeout(() => {
+    if (document.body.classList.contains('storying')) { delete S.tips[code]; save(); return; }   // 11/24: 데려오는 길 스토리 위로 뜨지 않게 — 다음 기회에 다시
     if ($('#sheet-root').classList.contains('on')) return;
     const { sheet } = openSheet(`<span class="label">${label}</span><h2>${esc(title)}</h2><p>${esc(text)}</p>${src.length ? `<button class="src-btn" data-src="${src.join(',')}">출처</button>` : ''}<button class="btn btn-wide" data-close>알겠어요</button>`);
     sheet.addEventListener('click', (e) => { const b = e.target.closest('[data-src]'); if (b) showSources(b.dataset.src.split(',')); });
@@ -616,7 +711,7 @@ const GROW = {
   teen: {
     title: '청소년이 됐어요',
     dog: [['기초 접종 마무리 — 마지막 접종은 생후 16주 이후, 6개월 무렵 한 번 더', 'wsava2024'], ['바깥 구경 대신 진짜 산책 — 다 크면 운동 {ex}', 'kennelclub'], ['이갈이 시기(영구치 생후 3~7개월) — 씹어도 되는 것을 챙겨 주세요', 'vca_teething'], ['생후 6개월 무렵부터 밥은 하루 2번', 'vca_dog_feed'], ['중성화 상담 시기 — 몸집에 따라 6개월 무렵~15개월', 'aaha_canine2019']],
-    cat: [['기초 접종 마무리 — 마지막 접종은 생후 16주 이후, 6개월 무렵 한 번 더', 'wsava2024'], ['중성화 상담 시기 — 생후 5개월 무렵까지 권하는 수의사회가 있어요', 'aafp_peds2020'], ['생후 6개월 무렵부터 밥은 하루 2번 이상', 'vca_cat_feed']],
+    cat: [['기초 접종 마무리 — 고양이는 생후 16~20주까지 맞히고, 6개월 무렵 한 번 더', 'aafp_vax2020'], ['중성화 상담 시기 — 생후 5개월 무렵까지 권하는 수의사회가 있어요', 'aafp_peds2020'], ['생후 6개월 무렵부터 밥은 하루 2번 이상', 'vca_cat_feed']],
   },
   adult: {
     title: '어른이 됐어요',
@@ -638,6 +733,21 @@ function growCard(was, stage, weeks) {
 }
 // 30일(아기 시절) 코스를 마친 사람에게: 같은 아이·같은 생활로 1년 코스
 const yearOffer = () => (isYear() ? '' : `<button class="btn btn-soft btn-wide" data-year style="margin-top:8px">같은 아이로 '첫 1년' 코스 해 보기</button><p class="fine" style="margin:6px 0 0">30일 동안 1년이 흘러요. 청소년·어른으로 자라며 이갈이·중성화·사춘기·사료 바꾸기를 겪고, 1년 양육비가 장부에 쌓여요.</p>`);
+// 평생 모드 수요 측정(11/3 사용자 결정 — 출시 후 다운로드가 보이면 인앱 결제로 붙인다). 지금은 '관심 있어요'만 센다
+const lifeOffer = () => {
+  track('life_offer');
+  const want = lsGet('kiwo:lifeWant');
+  return `<section class="card life-offer"><span class="stamp">준비 중</span><h2 style="margin-top:10px">${esc(petName())}${E.josa(petName(), '과/와').slice(-1)} 평생 함께 키우기</h2>
+    <p class="sub" style="margin:0">체험이 끝나도 같은 아이와 계속 살아요. 어른·노년으로 나이 들고, 해마다 생일과 계절이 돌아와요. 지금 만들지 고민 중이에요.</p>
+    <button class="btn ${want ? '' : 'btn-main'} btn-wide" data-life style="margin-top:10px"${want ? ' disabled' : ''}>${want ? '관심 표시했어요 — 나오면 업데이트 소식으로 알려 드려요' : '이런 모드가 있으면 좋겠어요'}</button></section>`;
+};
+function wantLife(b) {
+  if (lsGet('kiwo:lifeWant')) return;
+  try { localStorage.setItem('kiwo:lifeWant', new Date().toISOString().slice(0, 10)); } catch { /* 저장 불가 */ }
+  track('life_want');
+  b.disabled = true; b.classList.remove('btn-main'); b.textContent = '관심 표시했어요 — 나오면 업데이트 소식으로 알려 드려요';
+  toast('고마워요! 의견이 모이면 만들게요');
+}
 function confirmYear() {
   const { sheet, close } = openSheet(`<h2>첫 1년 코스를 시작할까요?</h2><p class="sub">${esc(petName())}, 생활 시간·집·예산은 그대로 두고 생후 8주부터 다시 시작해요. 지금 기록(리포트 포함)은 지워져요.</p><button class="btn btn-main btn-wide" id="do-year">1년 코스 시작</button><button class="btn btn-wide" data-close>취소</button>`);
   $('#do-year', sheet).addEventListener('click', () => {
@@ -702,7 +812,7 @@ async function handPlay() {
   let r = null;
   if (webgl3d()) {
     try {
-      const m = await import('./play3d.js?v=202611031153');
+      const m = await import('./play3d.js?v=202611241640');
       track(`play3d_${id}`);
       r = await (id === 'toy_tug' ? m.tug3d : m.wand3d)({ type: P().type, stage: E.stageOf(ageW(dayNow())) });
     } catch (e) { console.error(e); r = null; }
@@ -754,6 +864,8 @@ async function doAct(kind) {
     await ROOM.play(kind);
     BUSY = false;
     toast(status === 'done' ? `${a.task.label} — 제때 했어요` : `${a.task.label} — 늦었지만 챙겼어요`);
+    if (kind === 'feed' && species() === 'cat') strokeTip('feed_cat');
+    if (kind === 'walk' && species() === 'dog' && ageW(d) < 16) strokeTip('stairs_puppy');
     return today();
   }
   if (a?.cls === 'away') return ROOM.nudge('지금은 집에 없어요 — 아래에서 낮 돌봄을 정해요');
@@ -762,15 +874,24 @@ async function doAct(kind) {
     const n = S.freePlay[key] || 0;
     if (n >= 3) return ROOM.nudge('오늘은 충분히 놀았어요. 쉬는 것도 중요해요');
     BUSY = true;
-    const hp = kind === 'play' ? await handPlay() : null;   // 터그·낚싯대가 있으면 손으로
+    // 펫샵에서 산 장난감이 있으면 그걸로 — 심심함(습관)도 덜어 준다(11/3 사용자 "장난감도 실제 상품으로")
+    // 같은 장난감을 같은 날 세 번째로 쓰면 시큰둥 — 마음 보너스 없음. 다른 장난감이 있으면 그걸로 바꿔 논다(11/11 공부 반영, Hall 2002·Pullen 2012)
+    const toys = (S.inv?.toys ?? []).map((id) => C.shop.items.find((i) => i.id === id)).filter(Boolean);
+    const tu = S.toyUse?.key === key ? S.toyUse : { key, id: null, n: 0 };
+    const tired = (id) => tu.id === id && tu.n >= 2;
+    const handId = species() === 'dog' ? 'toy_tug' : 'toy_wand';
+    const fresh = toys.filter((t) => !tired(t.id) && t.id !== handId);
+    const hp = kind === 'play' && !(tired(handId) && fresh.length) ? await handPlay() : null;   // 터그·낚싯대가 있으면 손으로
     if (hp && !hp.ok) { BUSY = false; return; }
     S.freePlay[key] = n + 1;
-    // 펫샵에서 산 장난감이 있으면 그걸로 — 심심함(습관)도 덜어 준다(11/3 사용자 "장난감도 실제 상품으로")
-    const toys = (S.inv?.toys ?? []).map((id) => C.shop.items.find((i) => i.id === id)).filter(Boolean);
-    const toy = hp?.toy ?? (toys.length ? toys[n % toys.length] : null);
-    S.stats = E.applyFx(S.stats, toy ? { bond: hp ? 2 : 1, habit: 1 } : { bond: 1 });
+    const toy = hp?.toy ?? (fresh[0] ?? (toys.length ? toys[n % toys.length] : null));
+    const bored = !!toy && tired(toy.id);
+    if (toy) S.toyUse = { key, id: toy.id, n: tu.id === toy.id ? tu.n + 1 : 1 };
+    const bond = bored ? 0 : hp ? 2 : 1;
+    S.stats = E.applyFx(S.stats, toy ? { bond, habit: 1 } : { bond: 1 });
     if (hp) playAfter(hp);
-    if (toy) toast(`${toy.emoji} ${E.josa(toy.name.split('(')[0].trim(), '으로/로')} 놀아 줬어요 — 마음 +${hp ? 2 : 1} · 습관 +1`);
+    if (toy) toast(bored ? `${toy.emoji} 같은 장난감만 해서 시큰둥해요 — 습관 +1 · 다른 장난감이 있으면 바꿔 줘요` : `${toy.emoji} ${E.josa(toy.name.split('(')[0].trim(), '으로/로')} 놀아 줬어요 — 마음 +${bond} · 습관 +1`);
+    if (bored || (toy && tu.id && tu.id !== toy.id && tired(tu.id))) strokeTip('toy_rotate');
     S.lastDone = now().getTime();
     await save();
     await ROOM.play('play');
@@ -894,6 +1015,7 @@ function hudAction(k) {
   if (k === 'away') return openAway();
   if (k === 'plan') return openPlan();
   if (k === 'papers') return openPapers();
+  if (k === 'life') return openLife();
   if (k === 'games') return openMiniGames();
   if (k === 'wallet') return openWallet();
   if (k === 'shop') return openShop(careApi);
@@ -913,6 +1035,8 @@ function openMiniGames() {
       sfx.coin();
       save();
       track('game_end');
+      // 시급 기준(money.js FULL_AT 0.4)을 조정하려고 게임별 점수 구간만 센다 — 0점·시급 일부(<0.4)·시급 다(0.4~0.7)·잘함(0.7~)
+      track(`perf_${game}_${perf <= 0 ? 'zero' : perf < M.FULL_AT ? 'lo' : perf < 0.7 ? 'mid' : 'hi'}`);
       return r;
     },
     onClose: () => route(),
@@ -1046,7 +1170,7 @@ function scheduleMoment(sleepNow) {
 function fireMoment() {
   if (!P() || S.moment || document.body.dataset.route !== 'today') return;
   // 창·손 돌봄·게임·길잡이가 열려 있으면 조금 뒤에
-  if ($('#sheet-root').classList.contains('on') || ['playing', 'guiding', 'handcare'].some((k) => document.body.classList.contains(k)) || BUSY) { momentTimer = setTimeout(fireMoment, 5000); return; }
+  if ($('#sheet-root').classList.contains('on') || ['playing', 'guiding', 'handcare', 'storying'].some((k) => document.body.classList.contains(k)) || BUSY) { momentTimer = setTimeout(fireMoment, 5000); return; }
   const key = todayKey();
   S.moCount ??= {};
   const n = S.moCount[key] || 0;
@@ -1336,7 +1460,7 @@ function report() {
       <button class="src-btn" data-src="epis_course,suwon_adopt,geumcheon_adopt2026">출처</button>
       ${P().route !== 'shelter' ? '<p class="fine">이번엔 펫숍·브리더를 골랐지만, 보호센터에서 기다리는 아이들도 함께 살펴보세요.</p>' : ''}
       <p class="fine">이 앱은 입양을 권하거나 말리는 앱이 아니라 판단을 돕는 도구예요.</p></section>
-    ${final ? `${yearOffer()}<button class="btn btn-wide" data-restart>다른 아이로 다시 체험하기</button>` : ''}`;
+    ${final ? `${lifeOffer()}${yearOffer()}<button class="btn btn-wide" data-restart>다른 아이로 다시 체험하기</button>` : ''}`;
   view.onclick = (e) => {
     if (e.target.closest('[data-album]')) bookSeg = 'album';
     if (e.target.closest('[data-prep-link]')) track('prep_link');
@@ -1344,6 +1468,7 @@ function report() {
     if (!b) return;
     if (b.dataset.src) return showSources(b.dataset.src.split(','));
     if (b.dataset.prep) { S.prep ??= {}; S.prep[b.dataset.prep] = !S.prep[b.dataset.prep]; b.classList.toggle('on', S.prep[b.dataset.prep]); b.setAttribute('aria-pressed', String(S.prep[b.dataset.prep])); $('.prep-n').textContent = document.querySelectorAll('.prep-row.on').length; save(); return; }
+    if (b.dataset.life != null) return wantLife(b);
     if (b.dataset.year != null) return confirmYear();
     if (b.dataset.restart != null) return confirmReset();
     if (b.dataset.card != null) return openCard(rep, V[0], rep.verdict === 'ready', final);
@@ -1385,7 +1510,7 @@ function openSettings() {
   if (!P()) return;
   const { sheet } = openSheet(`<h2>설정</h2>
     <div class="card" style="margin-top:0"><p style="margin:0"><b>${esc(petName())}</b> · ${T().label} · ${E.COURSES[course()].label} · ${E.dayNo(P().startKey, todayKey()) > COURSE_DAYS ? '체험 완료' : `${dayNow()}일째`}</p>
-    <p class="sub" style="margin:4px 0 0">기상 ${P().life.wake} · ${P().life.remote ? '재택' : `출근 ${P().life.leave} · 귀가 ${P().life.back}`} · 취침 ${P().life.sleep} · 예산 ${papersDone() ? won(P().budget) : '서류 작성 전'}</p>${papersDone() ? '' : '<button class="btn btn-soft btn-wide" data-close data-hud-papers>입양 서류 마저 쓰기</button>'}</div>
+    <p class="sub" style="margin:4px 0 0">기상 ${P().life.wake} · ${P().life.remote ? '재택' : `출근 ${P().life.leave} · 귀가 ${P().life.back}`} · 취침 ${P().life.sleep} · 예산 ${papersDone() ? won(P().budget) : '서류 작성 전'}</p><button class="btn btn-soft btn-wide" data-close data-hud-life>${lifeDone() ? '내 하루 바꾸기' : '내 하루 알려 주기'}</button>${papersDone() ? '' : '<button class="btn btn-soft btn-wide" data-close data-hud-papers>입양 서류 마저 쓰기</button>'}</div>
     <p class="sub">모든 기록은 이 기기에만 저장돼요. 펫 이름·생활 시간·예산은 서버로 보내지 않아요.</p>
     <p class="disclaimer">비용은 공식 통계·진료비 게시제 평균이며 지역·병원마다 달라요. 건강 정보는 일반 정보이며 진료를 대신하지 않아요.</p>
     <div class="card"><h2>소리</h2><p class="sub" style="margin:0">효과음(밥 먹는 소리·골골·버튼)과 배경음(방 공기·창밖 새소리)을 따로 켜고 꺼요. 이 기기에만 저장돼요.</p>
@@ -1395,6 +1520,7 @@ function openSettings() {
     <button class="btn btn-wide" id="s-reset">처음부터 다시</button><button class="btn btn-wide" data-close>닫기</button>`);
   $('#s-reset', sheet).addEventListener('click', confirmReset);
   $('[data-hud-papers]', sheet)?.addEventListener('click', () => setTimeout(openPapers, 250));
+  $('[data-hud-life]', sheet)?.addEventListener('click', () => setTimeout(openLife, 250));
   $('#s-exact', sheet)?.addEventListener('click', async () => { const ok = await exactAlarm(true); toast(ok ? '정확한 알림이 켜져 있어요' : '설정에서 허용해 주세요'); });
   for (const k of ['sfx', 'amb']) $(`#s-${k}`, sheet).addEventListener('click', (e) => { const v = !soundOn(k); setSound(k, v); e.currentTarget.classList.toggle('on', v); e.currentTarget.textContent = `${k === 'sfx' ? '효과음' : '배경음'} ${v ? '켜짐' : '꺼짐'}`; if (v && k === 'sfx') sfx.tap(); });
   $('#s-fast', sheet).addEventListener('click', () => { DEV = !DEV; lsSet('kiwo:fast', DEV ? '1' : null); track(DEV ? 'fast_on' : 'fast_off'); location.reload(); });
@@ -1445,7 +1571,7 @@ async function devAction(a) {
   if (DEV) window.__kiwo = { get S() { return S; }, get room() { return ROOM; }, save, route }; // 빠른 체험(지인 테스트·점검)용 상태 보기
   route();
   // 화면을 켜 둔 채 시간이 지나면(응답 창이 열리고 닫힘) 다시 그린다
-  const quiet = () => ['playing', 'guiding', 'handcare'].some((k) => document.body.classList.contains(k));
+  const quiet = () => ['playing', 'guiding', 'handcare', 'storying'].some((k) => document.body.classList.contains(k));
   setInterval(() => { if (P() && !$('#sheet-root').classList.contains('on') && !quiet() && document.body.dataset.route !== 'onboard') route(); }, 60000);
   document.addEventListener('visibilitychange', () => { if (!document.hidden && P() && !quiet()) route(); });
 })();

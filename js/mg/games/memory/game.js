@@ -1,5 +1,5 @@
 import { el, createLoop, makeSprite, spriteNode, vibrate } from '../../core/dom.js';
-import { MEMORY_CONFIG, createMemoryState, flipCard, stepMemory, timeLeft, memoryResult } from './logic.js';
+import { MEMORY_CONFIG, createMemoryState, flipCard, stepMemory, timeLeft, memoryResult, memoryScore } from './logic.js';
 
 export const memoryGame = {
   id: 'memory',
@@ -7,7 +7,7 @@ export const memoryGame = {
     // 짝 8개. 앱 아이템 그림으로 바꾸면 수집 욕구와 연결된다
     pairs: ['🍎', '🥕', '🍙', '🍓', '🧸', '🎀', '⚽', '🌸'],
   },
-  describe: (r) => `${r.matches}쌍 · ${r.moves}번 시도${r.won ? ` · 시간 보너스 +${r.timeBonus}` : ''}`,
+  describe: (r) => `${r.matches}쌍 · ${r.moves}번 시도${r.misses ? ` · 틀림 ${r.misses}번(−${r.misses * MEMORY_CONFIG.missPoints})` : ''}${r.won ? ` · 시간 보너스 +${r.timeBonus}` : ''}`,
 
   create(stage, ctx) {
     const fx = (name, v) => (ctx.fx ? ctx.fx(name) : vibrate(ctx.haptics, v));   // 앱이 넘긴 효과음·진동(키워봐도될까 11/2), 없으면 웹 진동만
@@ -63,7 +63,7 @@ export const memoryGame = {
       });
     }
 
-    let started = false;
+    let started = false, peek = null;
     function onFlip(i) {
       if (!started) return;
       const ev = flipCard(state, i);
@@ -71,9 +71,13 @@ export const memoryGame = {
       if (ev.type === 'match' || ev.type === 'win') {
         const r = tiles[ev.indexes[1]].getBoundingClientRect();
         const s = stage.getBoundingClientRect();
-        ctx.float(`+${MEMORY_CONFIG.matchPoints}`, r.left - s.left + r.width / 2, r.top - s.top, '#2fa36b');
+        const why = pairs[state.cards[ev.indexes[1]].pair]?.why;   // 짝에 이유가 있으면(위험 음식) 점수 대신 이유를 띄운다
+        ctx.float(why ? `⚠️ ${why}` : `+${MEMORY_CONFIG.matchPoints}`, r.left - s.left + r.width / 2, r.top - s.top, why ? '#c0392b' : '#2fa36b');
         fx(ev.type === 'win' ? 'win' : 'match', 20);
-      } else fx(ev.type === 'mismatch' ? 'mismatch' : 'flip');
+      } else {
+        fx(ev.type === 'mismatch' ? 'mismatch' : 'flip');
+        if (ev.type === 'mismatch' && MEMORY_CONFIG.missPoints) { const r = tiles[ev.indexes[1]].getBoundingClientRect(), s = stage.getBoundingClientRect(); ctx.float(`−${MEMORY_CONFIG.missPoints}`, r.left - s.left + r.width / 2, r.top - s.top, '#c0392b'); }
+      }
       render(ev.type === 'mismatch' ? ev.indexes : []);
       if (ev.type === 'win') finish();
     }
@@ -87,7 +91,7 @@ export const memoryGame = {
 
     function updateHud() {
       ctx.hud([
-        { label: S.score, value: state.matches * MEMORY_CONFIG.matchPoints },
+        { label: S.score, value: memoryScore(state) },
         { label: S.moves, value: state.moves },
         { label: S.time, value: Math.ceil(timeLeft(state)) },
       ]);
@@ -105,10 +109,14 @@ export const memoryGame = {
     render();
     return {
       start() {
-        started = true;
-        loop.start();
+        // 처음엔 모든 카드를 앞면으로 보여 주고(외우는 시간), 덮은 뒤부터 시간이 간다
+        const sec = MEMORY_CONFIG.preview || 0;
+        tiles.forEach((t) => t.classList.add('is-up'));
+        ctx.hud([{ label: S.time, value: '외워요' }, { label: S.score, value: 0 }, { label: S.moves, value: 0 }]);
+        peek = setTimeout(() => { peek = null; render(); started = true; loop.start(); }, sec * 1000);
       },
       destroy() {
+        if (peek) clearTimeout(peek);
         loop.destroy();
         grid.remove();
       },

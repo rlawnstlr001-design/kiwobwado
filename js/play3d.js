@@ -5,9 +5,10 @@
 //       흥분 신호 '✋'에 손을 놓으면 줄을 놓고 앉아 차분해졌다가 다시 놀자(RSPCA·Blue Cross 놀이 안내) → 끝은 아이가 이겨 줄을 물고 으쓱 걸어간다.
 // 결과 { ok, rough } — rough = 너무 세게 당기거나 흥분 신호를 무시한 횟수(app.js playAfter)
 import * as THREE from 'three';
-import { sfx } from './sound.js?v=202611031153';
-import { haptic } from './native.js?v=202611031153';
-import { loadPet3d, loadGLB, clamp } from './arena3d.js?v=202611031153';
+import { sfx } from './sound.js?v=202611241640';
+import { haptic } from './native.js?v=202611241640';
+import { loadPet3d, loadGLB, clamp } from './arena3d.js?v=202611241640';
+import { paintModel, paintLights, paintMat, PAINT_ON } from './paint3d.js?v=202611241640';   // 11/16 그림체(사용자 '놀아 주기 이질감')
 
 const N = 16;              // 줄 마디 수
 const ROPE = 0.8;          // 줄 길이(m)
@@ -41,27 +42,29 @@ export function tug3d({ type, stage, base = '', src = null } = {}) {
     const scene = new THREE.Scene();
     const camera = new THREE.PerspectiveCamera(38, 1, 0.05, 30);
     camera.position.set(0.95, 0.62, 2.0); camera.lookAt(0, 0.28, 0);   // 바닥에 앉은 보호자 눈높이, 비스듬히(3/4) — 정면이면 뒤로 버티는 자세가 안 보였다
-    scene.add(new THREE.HemisphereLight('#FFF6E8', '#B08A5A', 1.25));
+    const hemi = new THREE.HemisphereLight('#FFF6E8', '#B08A5A', 1.25); scene.add(hemi);
     const sun = new THREE.DirectionalLight('#FFF1DC', 1.9);
     sun.position.set(-1.2, 2.4, 1.6); sun.castShadow = true; sun.shadow.mapSize.set(1024, 1024);
     Object.assign(sun.shadow.camera, { left: -1.5, right: 1.5, top: 1.5, bottom: -1.5, near: 0.5, far: 6 }); sun.shadow.bias = -0.0008;
     scene.add(sun);
     const floor = new THREE.Mesh(new THREE.PlaneGeometry(6, 6), new THREE.ShadowMaterial({ opacity: 0.28 }));
     floor.rotation.x = -Math.PI / 2; floor.receiveShadow = true; scene.add(floor);
+    if (PAINT_ON) paintLights(renderer, { sun, hemi, floor });
 
     // 장난감: Blender로 만든 터그 로프 매듭 두 개(art/3d/toy_tug.glb — tools/make_tug_toy.py, 세 가닥 꼰 매듭 + 풀린 술)
     // 줄 몸통은 같은 세 가닥(빨강·크림·파랑)을 물리 줄 둘레에 나선으로 감아 매 프레임 만든다. 매듭은 줄기가 +Y(블렌더 +Z)
-    const STRAND = ['#C72924', '#F2E8D1', '#285C9E'].map((c) => new THREE.MeshStandardMaterial({ color: c, roughness: 0.95 }));
+    const STRAND = ['#C72924', '#F2E8D1', '#285C9E'].map((c) => { const m = new THREE.MeshStandardMaterial({ color: c, roughness: 0.95 }); return PAINT_ON ? paintMat(m) : m; });
     const strands = [null, null, null];
     const knotM = new THREE.Group(), knotH = new THREE.Group();
     scene.add(knotM, knotH);
-    loadGLB(`${base}art/3d/toy_tug.glb?v=202611031153`).then((g) => {
+    loadGLB(`${base}art/3d/toy_tug.glb?v=202611241640`).then((g) => {
       if (!g || done) return;
       for (const [nm, grp] of [['KnotMouth', knotM], ['KnotHand', knotH]]) {
         const o = g.scene.getObjectByName(nm);
         if (!o) continue;
         o.position.set(0, 0, 0); o.traverse((m) => { if (m.isMesh) { m.castShadow = true; m.material.roughness = 0.95; } });
         grp.add(o);
+        if (PAINT_ON) paintModel(o, { line: 0.0025 });
       }
     });
     const P = Array.from({ length: N + 1 }, (_, i) => new THREE.Vector3(0.05 + i * 0.03, 0.01, 0.15 + i * 0.03));
@@ -79,7 +82,7 @@ export function tug3d({ type, stage, base = '', src = null } = {}) {
 
     // 세로 화면이면 카메라를 뒤로 물린다(좁은 화면에 아이가 가득 차 너무 가까워 보였다, 11/3)
     const camBase = camera.position.clone(), camLook = new THREE.Vector3(0, 0.25, 0);
-    const size = () => { const w = stageEl.clientWidth, h = stageEl.clientHeight; renderer.setSize(w, h, false); camera.aspect = w / h; camera.position.copy(camLook).addScaledVector(camBase.clone().sub(camLook), camera.aspect < 1 ? 1 / Math.sqrt(camera.aspect) : 1); camera.updateProjectionMatrix(); };
+    const size = () => { const w = stageEl.clientWidth, h = stageEl.clientHeight; renderer.setSize(w, h); camera.aspect = w / h; camera.position.copy(camLook).addScaledVector(camBase.clone().sub(camLook), camera.aspect < 1 ? 1 / Math.sqrt(camera.aspect) : 1); camera.updateProjectionMatrix(); };
     addEventListener('resize', size); size();
 
     loadPet3d(scene, base, type, stage, src).then((d) => {
@@ -262,7 +265,7 @@ export function tug3d({ type, stage, base = '', src = null } = {}) {
 // 엉덩이를 씰룩이다 덮친다('Pounce') — 깃털이 그대로 있으면 잡는다. 깃털이 얼굴 높이에 가까이 오면 앞발로 탁('Swat'), 멀리 가면 뛰어서 쫓는다('Run').
 // 먹잇감처럼 '움직였다 멈췄다'가 좋고, 계속 빠르게만 흔들면 흥미를 잃는다. 마지막엔 꼭 잡게 해 준다(iCatCare 놀이 안내). 결과 { ok, rough: 0 }
 const WN = 10;          // 낚싯줄 마디
-const PITCH = false;    // 고개 위아래 꺾기 — 고양이 얼굴 살이 앞으로 늘어나 '얼굴이 길쭉'해 보여 끈다(11/3 사용자). 좌우만 머리 위주로 조금
+const PITCH = true;     // 고개 위아래 꺾기 — 11/3엔 얼굴이 길쭉해져 껐다. 원인은 뼈대의 축마다 다른 축척이었고(rig_pet.py, 11/9 고침) 이제 돌려도 안 늘어난다
 const LINE = 0.42;      // 낚싯줄 길이(m)
 export function wand3d({ type, stage, base = '', src = null } = {}) {
   return new Promise((resolve) => {
@@ -290,23 +293,25 @@ export function wand3d({ type, stage, base = '', src = null } = {}) {
     const scene = new THREE.Scene();
     const camera = new THREE.PerspectiveCamera(40, 1, 0.05, 30);
     camera.position.set(0.75, 0.55, 2.0); camera.lookAt(0, 0.2, 0);   // 바닥에 앉은 눈높이, 비스듬히
-    scene.add(new THREE.HemisphereLight('#FFF6E8', '#B08A5A', 1.25));
+    const hemi = new THREE.HemisphereLight('#FFF6E8', '#B08A5A', 1.25); scene.add(hemi);
     const sun = new THREE.DirectionalLight('#FFF1DC', 1.9);
     sun.position.set(-1.2, 2.4, 1.6); sun.castShadow = true; sun.shadow.mapSize.set(1024, 1024);
     Object.assign(sun.shadow.camera, { left: -1.5, right: 1.5, top: 1.5, bottom: -1.5, near: 0.5, far: 6 }); sun.shadow.bias = -0.0008;
     scene.add(sun);
     const floor = new THREE.Mesh(new THREE.PlaneGeometry(6, 6), new THREE.ShadowMaterial({ opacity: 0.28 }));
     floor.rotation.x = -Math.PI / 2; floor.receiveShadow = true; scene.add(floor);
+    if (PAINT_ON) paintLights(renderer, { sun, hemi, floor });
 
     // 깃털 + 낚싯줄
     const feather = new THREE.Group(); scene.add(feather);
-    loadGLB(`${base}art/3d/toy_wand.glb?v=202611031153`).then((g) => {
+    loadGLB(`${base}art/3d/toy_wand.glb?v=202611241640`).then((g) => {
       if (!g || done) return;
       const o = g.scene.getObjectByName('Feather') ?? g.scene;
       o.position.set(0, 0, 0); o.traverse((m) => { if (m.isMesh) { m.castShadow = true; m.material.side = THREE.DoubleSide; } });
       feather.add(o);
+      if (PAINT_ON) paintModel(o, { line: 0.002 });
     });
-    const lineM = new THREE.MeshStandardMaterial({ color: '#3B3530', roughness: 0.6 });
+    const lineM = PAINT_ON ? paintMat(new THREE.MeshStandardMaterial({ color: '#3B3530' })) : new THREE.MeshStandardMaterial({ color: '#3B3530', roughness: 0.6 });
     let lineMesh = null;
     const tip = new THREE.Vector3(0.35, 0.75, 0.45);
     const W = Array.from({ length: WN + 1 }, (_, i) => new THREE.Vector3(tip.x, tip.y - (LINE * i) / WN, tip.z));
@@ -323,7 +328,7 @@ export function wand3d({ type, stage, base = '', src = null } = {}) {
 
     // 세로 화면이면 카메라를 뒤로 물린다(좁은 화면에 아이가 가득 차 너무 가까워 보였다, 11/3)
     const camBase = camera.position.clone(), camLook = new THREE.Vector3(0, 0.25, 0);
-    const size = () => { const w = stageEl.clientWidth, h = stageEl.clientHeight; renderer.setSize(w, h, false); camera.aspect = w / h; camera.position.copy(camLook).addScaledVector(camBase.clone().sub(camLook), camera.aspect < 1 ? 1 / Math.sqrt(camera.aspect) : 1); camera.updateProjectionMatrix(); };
+    const size = () => { const w = stageEl.clientWidth, h = stageEl.clientHeight; renderer.setSize(w, h); camera.aspect = w / h; camera.position.copy(camLook).addScaledVector(camBase.clone().sub(camLook), camera.aspect < 1 ? 1 / Math.sqrt(camera.aspect) : 1); camera.updateProjectionMatrix(); };
     addEventListener('resize', size); size();
 
     loadPet3d(scene, base, type, stage, src).then((d) => {
@@ -427,7 +432,7 @@ export function wand3d({ type, stage, base = '', src = null } = {}) {
             if (wiggle > 0.7 && cat.pounce) { pounceFrom = cpos.clone(); const md = Math.hypot(mouth.x - cpos.x, mouth.z - cpos.z); pounceTo = new THREE.Vector3(F.x - Math.sin(heading) * md, 0, F.z - Math.cos(heading) * md); go('pounce', cat.pounce, 0.08); cat.pounce.timeScale = cat.pounce.getClip().duration / 0.55; sfx.pop?.(); }
             break;
           case 'chase':   // 뛰어서 쫓는다
-            turn(4); cpos.x += Math.sin(heading) * 0.9 * dt; cpos.z += Math.cos(heading) * 0.9 * dt;
+            turn(4); cat.pace('Run', 0.9); cpos.x += Math.sin(heading) * 0.9 * dt; cpos.z += Math.cos(heading) * 0.9 * dt;
             if (dist < 0.55) go('stalk', cat.act.Crouch, 0.25);
             break;
           case 'pounce': {   // 덮치기: 0.55초 동안 깃털 자리로(포물선은 동작이 맡는다)

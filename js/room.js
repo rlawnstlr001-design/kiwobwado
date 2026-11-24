@@ -2,8 +2,8 @@
 // 아이가 숨 쉬고 돌아다니고, 방 안 물건(밥그릇·패드·현관)을 누르면 돌봄을 하고, 그림자 손으로 쓰다듬을 수 있다
 // 그림: art/room/room_wide.webp(방), art/sprite/<성향>_<단계>_<상태>.webp(배경 없는 아이), art/prop/*.webp(밥그릇·패드·화장실·장난감)
 
-import { mountRig, RIG } from './rig.js?v=202611031153';
-import { sfx, petLoop } from './sound.js?v=202611031153';
+import { mountRig, RIG } from './rig.js?v=202611241640';
+import { sfx, petLoop } from './sound.js?v=202611241640';
 
 // 그림자 손 — 만지는 자리에 따라 모양이 바뀐다(10/12 사용자 요청)
 // head: 위에서 손바닥을 얹어 머리를 쓰다듬기(손가락이 아래로) · chin: 아래에서 손가락을 구부려 턱 긁기 · body: 옆으로 눕힌 손으로 몸 쓸어 주기
@@ -53,8 +53,8 @@ export function timeOfDay(min) {
 const tagOf = (label, sp) => `<span class="spot-tag ${sp?.cls ?? ''}">${label}${sp?.sub ? `<small>${sp.sub}</small>` : ''}</span>`;
 const spotCls = (sp) => (sp?.cls ? ` ${sp.cls}` : '');
 
-// need: 말풍선 글, prop: { pad|litter: 'clean'|'used', bowl: 'empty'|'full' }
-export function roomHTML({ type, stage, state, tod, need, prop, spots = {}, clock, tag }) {
+// need: 말풍선 글, needOn: 말풍선을 누르면 열 것(data-act/mo/hud 속성 — app.js onTodayClick), prop: { pad|litter: 'clean'|'used', bowl: 'empty'|'full' }
+export function roomHTML({ type, stage, state, tod, need, needOn = '', prop, spots = {}, clock, tag }) {
   const h = HEIGHT[type][stage] * (state === 'sleep' || state === 'sick' ? 0.78 : 1);
   const cat = type === 'short' || type === 'long';
   const pad = prop.pad ? `<button class="prop-btn prop-pad${spotCls(spots.potty)}" data-act="potty" aria-label="패드 갈기"><img src="art/prop/pad_${prop.pad}.webp" alt="" draggable="false">${tagOf('패드', spots.potty)}</button>` : '';
@@ -75,7 +75,7 @@ export function roomHTML({ type, stage, state, tod, need, prop, spots = {}, cloc
       <div class="pet-anim" id="pet-anim" hidden></div>
       <img class="pet-clip" id="pet-clip" alt="" hidden draggable="false">
       <img class="pet-link" id="pet-link" alt="" hidden draggable="false">
-      ${need ? `<div class="need" id="need">${need}</div>` : ''}
+      ${need ? `<button type="button" class="need" id="need" ${needOn}>${need}</button>` : ''}
     </div>
     <div class="zzz" aria-hidden="true"><i>z</i><i>z</i><i>Z</i></div>
     <div class="hand z-body" id="hand">${HANDS.body}</div>
@@ -99,7 +99,7 @@ let META = { sprite: {}, clip: {}, anim: {} };
 export async function loadAnim() {
   const get = (u) => fetch(u).then((r) => (r.ok ? r.json() : {})).catch(() => ({}));
   let meta;
-  [ANIM, CLIP, meta, LINK] = await Promise.all([get('art/anim/index.json?v=202611031153'), get('art/clip/index.json?v=202611031153'), get('art/meta.json?v=202611031153'), get('art/link/index.json?v=202611031153')]);
+  [ANIM, CLIP, meta, LINK] = await Promise.all([get('art/anim/index.json?v=202611241640'), get('art/clip/index.json?v=202611241640'), get('art/meta.json?v=202611241640'), get('art/link/index.json?v=202611241640')]);
   META = { sprite: {}, clip: {}, anim: {}, ...meta };
 }
 
@@ -114,8 +114,8 @@ let revertTimer = null;
 // shy: 데려온 뒤 적응(engine adaptOf) — 1이면 구석(CORNER)에 머물고 만지면 움찔, 0.5면 덜 돌아다니고 하트가 천천히 찬다
 // avoid: 마음이 많이 상함(마음 25 미만) — 오른쪽 끝(HIDE)에 등 돌리고 숨어 있고, 만지면 화면 밖으로 피했다가 다시 빼꼼
 // 그려 넣은 액세서리 레이어 목록(tools/make_wear.py) — 있으면 스티커 대신 아이별 레이어를 쓴다
-const LAYERS = fetch('art/wear/layers.json?v=202611031153').then((r) => (r.ok ? r.json() : {})).catch(() => ({}));
-const wearFor = (name, wear, L) => wear.map((w) => ((L[name] ?? []).includes(w.art) ? { src: `art/wear/${name}/${w.art}.webp?v=202611031153`, slot: w.slot, art: w.art, layer: true, pad: L._pad?.[name] ?? 0 } : w));
+const LAYERS = fetch('art/wear/layers.json?v=202611241640').then((r) => (r.ok ? r.json() : {})).catch(() => ({}));
+const wearFor = (name, wear, L) => wear.map((w) => ((L[name] ?? []).includes(w.art) ? { src: `art/wear/${name}/${w.art}.webp?v=202611241640`, slot: w.slot, art: w.art, layer: true, pad: L._pad?.[name] ?? 0 } : w));
 export function mountRoom({ type, stage, state, onStroke, canPet, onTip, wear = [], shy = 0, avoid = false }) {
   clearInterval(wanderTimer);
   clearTimeout(revertTimer);
@@ -253,7 +253,7 @@ export function mountRoom({ type, stage, state, onStroke, canPet, onTip, wear = 
   // 연결 영상: 미리 받아 두고(Blob), 틀 때마다 새 주소를 만들어 첫 장면부터 다시 재생한다(같은 주소면 이어서 돈다)
   const blobs = {};
   if (LINK[name] && !REDUCE) for (const k of ['stand', 'sit', 'eatf', 'idle']) {
-    if (LINK[`${name}_${k}`]) fetch(`art/link/${name}_${k}.webp?v=202611031153`).then((r) => (r.ok ? r.blob() : null)).then((b) => {
+    if (LINK[`${name}_${k}`]) fetch(`art/link/${name}_${k}.webp?v=202611241640`).then((r) => (r.ok ? r.blob() : null)).then((b) => {
       if (!b) return;
       blobs[k] = b;
       // 반복 영상이 늦게 오면: 가만히 있는 중일 때 바로 바꿔 낀다
@@ -494,10 +494,12 @@ export function mountRoom({ type, stage, state, onStroke, canPet, onTip, wear = 
     rig.look((e.clientX - (pr.left + pr.width / 2)) / (rr.width * .4));
   });
   room.addEventListener('pointerleave', () => rig?.look(0));
-  pet.addEventListener('pointerenter', (e) => { showHand(e); room.classList.add('hovering'); });
-  pet.addEventListener('pointermove', move);
+  // 말풍선(.need)은 누르는 버튼 — 그 위에선 쓰다듬기 손을 띄우지 않는다(11/3 사용자 "강아지 위 글씨를 눌러도 내용이 나오게")
+  const onNeed = (e) => !!document.elementFromPoint(e.clientX, e.clientY)?.closest?.('.need');
+  pet.addEventListener('pointerenter', (e) => { if (onNeed(e)) return; showHand(e); room.classList.add('hovering'); });
+  pet.addEventListener('pointermove', (e) => { if (onNeed(e)) { room.classList.remove('hovering'); return leave(); } move(e); });
   pet.addEventListener('pointerleave', () => { room.classList.remove('hovering'); leave(); });
-  pet.addEventListener('pointerdown', (e) => { if (e.pointerType !== 'mouse') { pet.setPointerCapture(e.pointerId); room.classList.add('hovering'); showHand(e); } });
+  pet.addEventListener('pointerdown', (e) => { if (onNeed(e)) return; if (e.pointerType !== 'mouse') { pet.setPointerCapture(e.pointerId); room.classList.add('hovering'); showHand(e); } });
   pet.addEventListener('pointerup', (e) => { if (e.pointerType !== 'mouse') { room.classList.remove('hovering'); leave(); } });
   pet.addEventListener('pointercancel', () => { room.classList.remove('hovering'); leave(); });
 

@@ -3,10 +3,10 @@
 // 다른 성향 봇 3마리와 100m. 그리는 것만 three.js 3D — 4레인 경기장(js/arena3d.js) + 우리 아이 3D 4마리 + 레인마다 보호자 3D.
 // 골인하면 내 보호자는 무릎 꿇고 안아 주고(Hug), 다른 보호자는 자기 아이가 들어오면 박수(Clapping)
 import * as THREE from 'three';
-import { sfx } from './sound.js?v=202611031153';
-import { rng } from './engine.js?v=202611031153';
-import { haptic } from './native.js?v=202611031153';
-import { SIZE, clamp, shuffleR, nameTex, roundTex, makeStage, buildArena, loadPet3d, loadOwners, backFrames, SHIRT } from './arena3d.js?v=202611031153';
+import { sfx } from './sound.js?v=202611241640';
+import { rng } from './engine.js?v=202611241640';
+import { haptic } from './native.js?v=202611241640';
+import { SIZE, clamp, shuffleR, nameTex, roundTex, makeStage, buildArena, paintArena, loadPet3d, loadOwners, backFrames, SHIRT } from './arena3d.js?v=202611241640';
 
 const TYPES = ['small', 'medium', 'large', 'short', 'long'];
 const BOT_NAMES = ['초코', '몽이', '까미', '쿠키', '라떼', '호떡', '감자', '모찌', '탄이', '별이'];
@@ -60,6 +60,7 @@ export function race3dGame(body, ctx, done, { base = '' } = {}) {
   const heightOf = (x) => x.d?.height ?? SIZE[x.type] * 1.3;
   // 보호자: 레인마다 한 명, 결승선 1.2m 뒤에서 팔 벌려 기다린다
   let owners = [];
+  paintArena(scene);   // 11/16 그림체
   loadOwners(scene, base, LANES, r).then((os) => { if (!over) owners = os; });
   const ownerOf = (x) => owners[x.lane];
 
@@ -199,9 +200,9 @@ export function race3dGame(body, ctx, done, { base = '' } = {}) {
         const ra = x.d.cur === act.Dash || x.d.cur === act.Run ? x.d.cur : null, rc = ra ? ra.time / ra.getClip().duration : 0;
         holder.position.set(x.x, rc ? Math.abs(Math.sin(rc * Math.PI * 2)) * h * 0.04 : 0, -x.s);
         if (!started || (x.fin != null && x.s > STOP - 0.08)) to(act.Sit ?? act.Idle, 0.45);
-        else if (x.v > 4.5 && act.Dash) { to(act.Dash, 0.15); act.Dash.timeScale = clamp(x.v * 0.36, 1.6, 3.6); }
-        else if (x.v > 0.4 && act.Run) { to(act.Run, 0.2); act.Run.timeScale = clamp(x.v * 0.36, 0.7, 2.2); }
-        else if (x.fin != null && act.Walk) { to(act.Walk, 0.25); act.Walk.timeScale = 1.2; }
+        else if (x.fin != null && x.v < 1.3 && act.Walk) { to(act.Walk, 0.25); x.d.pace('Walk', x.v); }
+        else if (x.v > (ra === act.Dash ? 2.4 : 2.8) && act.Dash) { to(act.Dash, 0.15); x.d.pace('Dash', x.v); }   // 3m/s 언저리부터 갤럽(종종걸음은 박자를 다 내도 발이 몸을 못 따라갔다)
+        else if (x.v > 0.4 && act.Run) { to(act.Run, 0.2); x.d.pace('Run', x.v); }
         x.d.update(raw);
       } else if (x.board) {
         x.frame = (x.frame + raw * x.v * 0.75) % 2;

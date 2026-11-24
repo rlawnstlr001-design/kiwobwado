@@ -298,3 +298,20 @@ input[type=range] { width: 100%; accent-color: var(--forest); }
 .prep-row small { display: block; color: var(--ink-2); font-weight: 600; font-size: 12.5px; }
 .prep-row em { flex: none; font-style: normal; font-weight: 800; text-align: right; font-size: 13px; }
 .prep-row em small { font-size: 11px; color: var(--ink-3); }
+
+/* ---------- 데려오는 길 스토리(11/24) — 가로 화면 그림책: 그림 한 장 + 아래 자막 띠. 출처 시트(z 50)가 위로 뜨게 45 ---------- */
+.story { position: fixed; inset: 0; z-index: 45; background: #1f1b17; display: flex; flex-direction: column; animation: storyIn .35s ease-out; }
+.story-img { flex: 1; min-height: 0; width: 100%; object-fit: cover; object-position: center 40%; cursor: pointer; animation: storyIn .45s ease-out; }
+.story-img.low { object-position: center 78%; }
+.story-cap { background: var(--paper); padding: 10px max(18px, env(safe-area-inset-right)) calc(10px + env(safe-area-inset-bottom)) max(18px, env(safe-area-inset-left)); border-top: 1px solid var(--paper-3); }
+.story-cap p { margin: 0 0 6px; font-size: clamp(15px, 2.4vw, 19px); font-weight: 800; color: var(--ink); line-height: 1.45; word-break: keep-all; }
+.story-cap .src-btn { vertical-align: 2px; }
+.story-nav { display: flex; align-items: center; gap: 12px; }
+.story-k { color: var(--ink-3); font-size: 12.5px; font-weight: 700; }
+.story-dots { display: flex; gap: 5px; margin-right: auto; }
+.story-dots i { width: 6px; height: 6px; border-radius: 50%; background: var(--paper-3); }
+.story-dots i.on { background: var(--forest); width: 16px; border-radius: 3px; }
+.story-skip { background: none; border: 0; color: var(--ink-3); font: inherit; font-size: 13px; font-weight: 700; cursor: pointer; padding: 8px 4px; }
+.story-next { min-width: 92px; padding: 9px 18px; }
+@keyframes storyIn { from { opacity: 0; } to { opacity: 1; } }
+@media (prefers-reduced-motion: reduce) { .story, .story-img { animation: none; } }

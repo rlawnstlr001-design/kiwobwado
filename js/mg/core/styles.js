@@ -42,6 +42,7 @@ const CSS = `
 /* 짝 맞추기 */
 .kpg-grid{position:absolute;inset:0;margin:auto;display:grid;grid-template-columns:repeat(4,1fr);gap:8px;padding:12px;max-width:min(100%,480px);align-content:center}
 @supports (width:1cqh){.kpg-grid{max-width:min(100%,480px,72cqh)}}
+@media (orientation:landscape){.kpg-grid{grid-template-columns:repeat(8,1fr);max-width:min(100%,860px)}@supports (width:1cqh){.kpg-grid{max-width:min(100%,860px,270cqh)}}}
 .kpg-tile{position:relative;aspect-ratio:3/4;perspective:600px}
 .kpg-tile-in{position:absolute;inset:0;transition:transform .28s ease;transform-style:preserve-3d}
 .kpg-tile.is-up .kpg-tile-in,.kpg-tile.is-matched .kpg-tile-in{transform:rotateY(180deg)}

@@ -4,10 +4,10 @@
 // 11/2 추가 4종(먹이 받기·높이 쌓기·카드 짝 맞추기·OX 퀴즈)은 다른 세션에서 만든 패키지(js/mg — README 참고)의 '판'만 빌려 쓴다:
 // 패키지 자체 결과 화면·보상 규칙·광고 2배·하루 횟수는 쓰지 않고, 점수 → 코인·결과 화면은 이 앱 규칙(1코인 = 1,000원, 하루 한도)을 따른다.
 // 패키지 클래스 접두어는 앱의 .mg-* 와 겹쳐 kpg- 로 바꿔 넣었다. 문제 은행(196KB)이 있어 게임을 고를 때 불러온다
-import { C } from './content.js?v=202611031153';
-import { raceGame, agilityGame } from './race.js?v=202611031153';
-import { sfx } from './sound.js?v=202611031153';
-import { haptic } from './native.js?v=202611031153';
+import { C } from './content.js?v=202611241640';
+import { raceGame, agilityGame } from './race.js?v=202611241640';
+import { sfx } from './sound.js?v=202611241640';
+import { haptic } from './native.js?v=202611241640';
 
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 const shuffle = (a) => { for (let i = a.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [a[i], a[j]] = [a[j], a[i]]; } return a; };
@@ -24,8 +24,9 @@ export const GAMES = {
   match: { title: '간식 맞추기', icon: '🥕', desc: '이웃한 간식을 바꿔 같은 것 3개를 한 줄로 맞춰요.', perf: (s) => Math.min(1, s / 1200) },
   catch: { title: '먹이 받기', icon: '🧺', desc: '좌우로 끌어 먹어도 되는 음식을 받아요. 먹으면 안 되는 음식은 피하기 — 45초, 목숨 3개.', perf: (s) => Math.min(1, s / 75) },
   stack: { title: '캣타워 쌓기', icon: '🐈', desc: '좌우로 움직이는 캣타워 층을 톡 눌러 쌓아요. 아래층에 딱 맞추면 퍼펙트!', perf: (s) => Math.min(1, s / 45) },
-  memory: { title: '위험 음식 짝 맞추기', icon: '🃏', desc: '먹으면 안 되는 음식과 그 이유를 짝지어요 — 카드 16장, 60초.', perf: (s) => Math.min(1, s / 150) },
-  quiz: { title: '동물 OX 퀴즈', icon: '⭕', desc: '동물·반려동물 5문제, 문제마다 12초. 풀 때마다 새 문제가 나와요.', perf: (s) => s / 5 },
+  memory: { title: '위험 음식 짝 맞추기', icon: '🃏', desc: '처음 4초 동안 카드 16장을 다 보여 줘요. 같은 위험 음식 두 장을 찾으면 왜 위험한지 알려 줘요 — 60초.', perf: (s) => Math.min(1, s / 150) },
+  // OX는 찍어도 반은 맞는다 — 10문제 중 찍어서 맞는 몫(5개)을 빼고 센다(11/10: 안 읽고 아무거나 눌러도 평균 10,873원이었다)
+  quiz: { title: '동물 OX 퀴즈', icon: '⭕', desc: '동물·반려동물 10문제, 문제마다 12초. 찍어서 맞는 몫(반)은 빼고 세요 — 7개쯤 맞혀야 시급을 다 받아요.', perf: (s) => Math.max(0, (s - 5) / 5) },
 };
 
 const wonStr = (n) => `${Math.round(n).toLocaleString('ko-KR')}원`;
@@ -49,7 +50,7 @@ export function openGames(ctx) {
     stop?.(); stop = null; root.classList.remove('in-game');
     root.querySelector('.mg-title').textContent = '미니게임';
     body.innerHTML = `<div class="mg-menu">${Object.entries(GAMES).map(([k, g]) => `<button class="mg-card" data-g="${k}"><span class="mg-ic">${g.icon}</span><b>${titleOf(k, ctx.species)}</b><small>${g.desc}</small><span class="mg-best">${ctx.best[k] ? `최고 ${ctx.best[k]}점` : '처음 해 봐요'}</span></button>`).join('')}</div>
-      <p class="mg-note">한 판 = 1시간 근무. 시급 10,700원(2027년 최저임금)에 잘하면 성과급이 최대 50% 더 붙어요. 사료·간식·병원비는 전부 이 돈으로 내요.</p>`;
+      <p class="mg-note">한 판 = 1시간 근무. 시급 10,700원(2027년 최저임금)은 해낸 만큼 받고, 잘하면 성과급이 최대 50% 더 붙어요. 사료·간식·병원비는 전부 이 돈으로 내요.</p>`;
     body.onclick = (e) => { const b = e.target.closest('[data-g]'); if (b) play(b.dataset.g); };
   };
   const play = (k) => {
@@ -67,8 +68,8 @@ export function openGames(ctx) {
     const note = ctx.note; ctx.note = null;   // 경주: '2등 · 12.34초', 장애물: '완주 · 완벽 18'
     // 한 판 = 1시간 근무 — 근무표처럼(11/3 사용자 "진짜 일하고 돈을 벌어온 느낌")
     body.innerHTML = `<div class="mg-end"><p class="mg-k">${titleOf(k, ctx.species)} · ${score}점</p>${note ? `<p class="mg-place">${note}</p>` : ''}
-      <p class="mg-clock">🕐 1시간 일했어요 <small>오늘 ${r.hours}시간째</small></p>
-      <div class="mg-slip"><span>시급</span><b>${wonStr(r.base)}</b><span>성과급</span><b>${r.bonus ? `+${wonStr(r.bonus)}` : '없음'}</b>${r.repaid ? `<span>외상 갚기</span><b class="bad">−${wonStr(r.repaid)}</b>` : ''}<span class="tot">받은 돈</span><b class="tot">${wonStr(r.pay - r.repaid)}</b></div>
+      <p class="mg-clock">${r.pay ? `🕐 1시간 일했어요 <small>오늘 ${r.hours}시간째</small>` : '🕐 일한 걸로 치지 않아요 <small>점수를 내야 시급이 나와요</small>'}</p>
+      <div class="mg-slip"><span>시급${r.done < 1 ? ` <small>${Math.round(r.done * 100)}%만큼 해냈어요</small>` : ''}</span><b>${wonStr(r.base)}</b><span>성과급</span><b>${r.bonus ? `+${wonStr(r.bonus)}` : '없음'}</b>${r.repaid ? `<span>외상 갚기</span><b class="bad">−${wonStr(r.repaid)}</b>` : ''}<span class="tot">받은 돈</span><b class="tot">${wonStr(r.pay - r.repaid)}</b></div>
       <p class="mg-sub">지갑 ${wallet(r.cash)}</p>
       <div class="mg-btns"><button class="btn btn-main" data-again>한 시간 더 일하기</button><button class="btn" data-menu>다른 일</button></div></div>`;
     body.onclick = (e) => { if (e.target.closest('[data-again]')) play(k); if (e.target.closest('[data-menu]')) menu(); };
@@ -85,7 +86,7 @@ function lazy3d(kind, fallback) {
     if (!webgl()) return fallback(body, ctx, done);
     let stop = null, dead = false;
     body.innerHTML = '<p class="mg-note">경기장을 준비하고 있어요…</p>';
-    (kind === 'race' ? import('./race3d.js?v=202611031153').then((m) => m.race3dGame) : import('./agility3d.js?v=202611031153').then((m) => m.agility3dGame))
+    (kind === 'race' ? import('./race3d.js?v=202611241640').then((m) => m.race3dGame) : import('./agility3d.js?v=202611241640').then((m) => m.agility3dGame))
       .then((game) => { if (!dead) stop = game(body, ctx, done); })
       .catch((e) => { console.error(e); if (!dead) stop = fallback(body, ctx, done); });
     return () => { dead = true; stop?.(); };
@@ -97,15 +98,15 @@ function lazy3d(kind, fallback) {
 const PKG = { catch: ['catch', 'catchGame'], stack: ['stack', 'stackGame'], memory: ['memory', 'memoryGame'], quiz: ['quiz', 'quizGame'] };
 const QUIZ_CATS = ['동물', '포유류', '새', '바다·파충류', '곤충·작은 생물', '반려동물'];   // 11/2 사용자 "동물·반려 분야로 좁히자"(528문제)
 const QUIZ_SEEN = 'kiwo:quizSeen';
-// 매번 다른 문제(사용자 "문제는 매번 다르게"): 안 본 문제에서 무작위 5개, 다 보면 처음부터. 본 문제는 기기에 저장(문제 문장 앞 24자로)
+// 매번 다른 문제(사용자 "문제는 매번 다르게"): 안 본 문제에서 무작위 10개, 다 보면 처음부터. 본 문제는 기기에 저장(문제 문장 앞 24자로)
 function quizPick(bank) {
   const pool = bank.filter((q) => QUIZ_CATS.includes(q.cat));
   let seen = [];
   try { seen = JSON.parse(localStorage.getItem(QUIZ_SEEN) || '[]'); } catch { /* 저장소 없음 */ }
   const key = (q) => q.q.slice(0, 24); const seenSet = new Set(seen);
   let fresh = pool.filter((q) => !seenSet.has(key(q)));
-  if (fresh.length < 5) { seen = []; fresh = pool; }
-  const out = shuffle([...fresh]).slice(0, 5);
+  if (fresh.length < 10) { seen = []; fresh = pool; }
+  const out = shuffle([...fresh]).slice(0, 10);
   try { localStorage.setItem(QUIZ_SEEN, JSON.stringify([...seen, ...out.map(key)])); } catch { /* 저장소 없음 */ }
   return out;
 }
@@ -119,11 +120,12 @@ function pkgSkin(id, ctx, mods) {
     ctx.note = null; ctx.pkgBad = b;
     return good.length >= 2 ? { food: good, bomb: b?.emoji ?? '💣' } : { bomb: b?.emoji ?? '💣' };
   }
-  if (id === 'memory') {   // 위험 음식 ↔ 그 이유(11/2 사용자 "3번 바꿔줘" — 같은 그림 찾기 대신 공부형). 같은 그림은 한 번만
+  if (id === 'memory') {   // 같은 위험 음식 두 장 찾기 — 맞추면 이유가 뜬다(11/10 사용자 "음식↔이유 짝은 너무 어려워, 처음에 전체 카드 보여주고 같은 카드 맞추기"). 같은 그림은 한 번만
     const bad = shuffle(foods.filter((f) => f[ctx.species] === 'no' && f.why)); const used = new Set(); const pairs = [];
-    for (const f of bad) {   // 같은 그림·비슷한 이유(초콜릿 '테오브로민·카페인' ↔ 코코아 '테오브로민이 가장 진함')는 한 판에 하나만
-      const wk = shortWhy(f.why).slice(0, 4);
-      if (used.has(f.emoji) || used.has(wk)) continue; used.add(f.emoji); used.add(wk); pairs.push({ a: { icon: f.emoji, text: f.name.split('(')[0].split('·')[0] }, b: { icon: '⚠️', text: shortWhy(f.why) } }); if (pairs.length === 8) break;
+    for (const f of bad) {   // 같은 그림은 한 판에 하나만(이유가 비슷한 것까지 빼면 8쌍이 안 차 기본 그림(과일·장난감)으로 나오곤 했다 — 11/10)
+      // 원인을 모르는 음식(마카다미아)은 맞췄을 때 증상을 띄운다
+      if (used.has(f.emoji)) continue; used.add(f.emoji); { const face = { icon: f.emoji, text: f.name.split('(')[0].split('·')[0] }; pairs.push({ a: face, b: face, why: /미상|모름/.test(f.why) ? (f.symptom || '').split(/[,.]/)[0] : shortWhy(f.why) }); }
+      if (pairs.length === 8) break;
     }
     return pairs.length === 8 ? { pairs } : {};
   }
@@ -144,8 +146,8 @@ function pkgGame(id) {
     body.innerHTML = `<div class="kpg-root mgp"><div class="kpg-top"><div class="kpg-title"></div><div class="kpg-hud"></div></div><div class="kpg-stage"></div></div>`;
     const stage = body.querySelector('.kpg-stage'), hudBox = body.querySelector('.kpg-hud');
     const [dir, name] = PKG[id];
-    Promise.all([import(`./mg/games/${dir}/game.js?v=202611031153`), import('./mg/core/styles.js?v=202611031153'), import('./mg/core/strings.js?v=202611031153'), import('./mg/core/rewards.js?v=202611031153'),
-      id === 'quiz' ? import('./mg/games/quiz/questions.ko.js?v=202611031153') : {}]).then(([g, st, strs, rw, qs]) => {
+    Promise.all([import(`./mg/games/${dir}/game.js?v=202611241640`), import('./mg/core/styles.js?v=202611241640'), import('./mg/core/strings.js?v=202611241640'), import('./mg/core/rewards.js?v=202611241640'),
+      id === 'quiz' ? import('./mg/games/quiz/questions.ko.js?v=202611241640') : {}]).then(([g, st, strs, rw, qs]) => {
       if (dead) return;
       const def = g[name]; st.injectStyles(document);
       let lastHud = '';

@@ -5,10 +5,13 @@
 import * as THREE from 'three';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import { clone as skClone } from 'three/addons/utils/SkeletonUtils.js';
-import { makeBlinker } from './blink.js?v=202611031153';
+import { makeBlinker } from './blink.js?v=202611241640';
+import { paintModel, paintMat, paintScene, PAINT_ON } from './paint3d.js?v=202611241640';   // 11/16 그림체(사용자 '3D 이질감' A안)
 
 export const SIZE = { small: 0.5, medium: 0.6, large: 0.7, short: 0.48, long: 0.5 };
 export const STAGE_K = { baby: 0.78, teen: 0.9, adult: 1 };
+const GAIT_PACE = { Walk: [0.65, 0.9, 2.4], Run: [0.45, 1.2, 3.6], Dash: [0.27, 2.2, 3.4] };   // 디딤 비율(tools/rig_pet.py WALK·GAIT·DASH), 초당 걸음 최소·최대(작은 개 갤럽 ≈ 3Hz)
+const _p = new THREE.Vector3();
 export const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
 export const shuffleR = (a, r) => { for (let i = a.length - 1; i > 0; i--) { const j = Math.floor(r() * (i + 1)); [a[i], a[j]] = [a[j], a[i]]; } return a; };
 export const webglOK = () => { try { const c = document.createElement('canvas'); return !!(window.WebGLRenderingContext && (c.getContext('webgl2') || c.getContext('webgl'))); } catch { return false; } };
@@ -54,19 +57,23 @@ export function makeStage(cv) {
   renderer.setPixelRatio(Math.min(2, devicePixelRatio || 1));
   renderer.shadowMap.enabled = true; renderer.shadowMap.type = THREE.PCFSoftShadowMap;
   renderer.outputColorSpace = THREE.SRGBColorSpace;
-  renderer.toneMapping = THREE.ACESFilmicToneMapping; renderer.toneMappingExposure = 1.05;
+  renderer.toneMapping = PAINT_ON ? THREE.NoToneMapping : THREE.ACESFilmicToneMapping; renderer.toneMappingExposure = 1.05;   // 그림체는 그림 색 그대로
   const scene = new THREE.Scene();
   scene.background = new THREE.Color('#BFE3F2'); scene.fog = new THREE.Fog('#DDF0F4', 35, 150);
   const camera = new THREE.PerspectiveCamera(55, 1, 0.1, 400);
-  scene.add(new THREE.HemisphereLight('#EAF6FF', '#7FA35E', 1.15));
-  const sun = new THREE.DirectionalLight('#FFF4DE', 2.1);
+  scene.add(new THREE.HemisphereLight('#EAF6FF', '#7FA35E', PAINT_ON ? 1.7 : 1.15));
+  const sun = new THREE.DirectionalLight('#FFF4DE', PAINT_ON ? 1.7 : 2.1);
   sun.castShadow = true; sun.shadow.mapSize.set(1024, 1024);
   Object.assign(sun.shadow.camera, { left: -12, right: 12, top: 12, bottom: -12, near: 1, far: 60 });
   sun.shadow.bias = -0.0005;
   scene.add(sun, sun.target);
+  // 그림체: 화면 전체에 수채 종이 결 + 가장자리 물 번짐(room.css .paper3d) — 저폴리 경기장이 종이에 그린 그림처럼(11/16)
+  if (PAINT_ON && cv.parentElement && !cv.parentElement.querySelector('.paper3d')) { const p = document.createElement('i'); p.className = 'paper3d'; p.setAttribute('aria-hidden', 'true'); cv.after(p); }
   return { renderer, scene, camera, sun };
 }
-export const std = (color, extra = {}) => new THREE.MeshStandardMaterial({ color, roughness: 0.85, metalness: 0, ...extra });
+export const std = (color, extra = {}) => { const m = new THREE.MeshStandardMaterial({ color, roughness: 0.85, metalness: 0, ...extra }); return PAINT_ON ? paintMat(m) : m; };
+// 경기장 전체(직접 만든 재질 포함)를 그림체로 — buildArena 끝과 장애물을 다 놓은 뒤 부른다
+export const paintArena = (scene) => { if (PAINT_ON) paintScene(scene); };
 export const mesh = (geo, mat, { cast = true, recv = true } = {}) => { const m = new THREE.Mesh(geo, mat); m.castShadow = cast; m.receiveShadow = recv; return m; };
 
 // ---------- 경기장 ----------
@@ -170,7 +177,7 @@ export function buildArena(scene, { half, lanes = 1, end, r }) {
 // art/3d/pets/<성향_단계>.glb(키 1·바닥 0, 동작 Run·Dash·Leap·Sit·Down·Walk…) — 없으면 null(부르는 쪽이 그림 판으로 대신)
 // 크기: 아기 크기(H×1.3, 10/29에 맞춘 값)를 기준으로 단계만큼 키운다
 export async function loadPet3d(scene, base, type, stage, src = null) {   // src: 시험용 다른 GLB(lab/play3d)
-  const g = await loadGLB(src ?? `${base}art/3d/pets/${type}_${stage}.glb?v=202611031153`);
+  const g = await loadGLB(src ?? `${base}art/3d/pets/${type}_${stage}.glb?v=202611241640`);
   if (!g) return null;
   const H = SIZE[type] ?? 0.55;
   const model = g.scene, mats = [];
@@ -185,15 +192,39 @@ export async function loadPet3d(scene, base, type, stage, src = null) {   // src
   const mixer = new THREE.AnimationMixer(model);
   const clip = (n) => THREE.AnimationClip.findByName(g.animations, n) ?? THREE.AnimationClip.findByName(g.animations, `AnimalArmature|${n}`);
   const act = Object.fromEntries(['Sit', 'Down', 'Leap', 'Dash', 'Run', 'Idle', 'Walk', 'Tug', 'Bow', 'Crouch', 'Swat', 'Pounce'].map((n) => [n, clip(n) && mixer.clipAction(clip(n))]));
+  // 걸음마다 땅을 디딘 발이 뒤로 가는 속도(timeScale 1, m/s)를 재 둔다 — 몸 속도에 재생 속도를 맞춰 발이 덜 미끄러지게(11/9 측정: Run은 몸 속도의 13~32%뿐이었다)
+  const feet = ['FFL', 'FFBL'].map((n) => model.getObjectByName(n)).filter(Boolean), footSpeed = {};
+  for (const [n, [duty]] of Object.entries(GAIT_PACE)) {
+    const a = act[n];
+    if (!a || !feet.length) continue;
+    const dur = a.getClip().duration;
+    let sum = 0;
+    a.play();
+    for (const f of feet) {
+      let lo = 1e9, hi = -1e9;
+      for (let i = 0; i < 16; i++) { a.time = dur * i / 16; mixer.update(0); model.updateMatrixWorld(true); const z = f.getWorldPosition(_p).z; lo = Math.min(lo, z); hi = Math.max(hi, z); }
+      sum += hi - lo;
+    }
+    a.stop();
+    footSpeed[n] = sum / feet.length / (duty * dur);
+  }
   let cur = act.Sit ?? act.Idle; cur?.play();   // 처음엔 앉아서
   const to = (a, fade = 0.2) => { if (!a || a === cur) return; a.reset().play(); cur?.crossFadeTo(a, fade, false); cur = a; };
   // 몸 휘기 뼈와 쉬는 자세 회전(q0) — 동작에 키가 없는 뼈는 믹서가 되돌려 주지 않아, 매 프레임 q0로 되돌리지 않으면 회전이 쌓인다(10/27 목 90° 사고)
   const bend = [['Torso3', 0.15], ['Neck1', 0.2], ['Head', 0.15], ['Back', -0.12], ['Tail1', -0.3]]
     .map(([n, f]) => [model.getObjectByName(n), f]).filter(([b]) => b?.isBone).map(([b, f]) => [b, f, b.quaternion.clone()]);
   const blink = makeBlinker(model);
+  if (PAINT_ON) paintModel(model, { mats });   // 놀아 주기·경주·장애물 모두 같은 그림체
   const _q = new THREE.Quaternion(), _ax = new THREE.Vector3();
   return {
     holder, model, mixer, act, to, mats, H, height: k, get cur() { return cur; },
+    // 몸 속도 v(m/s)에 맞춘 재생 속도 — 박자는 동물이 낼 수 있는 범위로 묶는다(작은 아이가 최고 속도면 발이 조금 미끄러지는 쪽을 택함)
+    pace(n, v) {
+      const a = act[n], fs = footSpeed[n];
+      if (!a || !fs) return;
+      const dur = a.getClip().duration, [, lo, hi] = GAIT_PACE[n];
+      a.timeScale = clamp(v / fs, lo * dur, hi * dur);
+    },
     // 동작 → 눈 깜빡임 → 몸 휘기(b: 머리·목은 가는 쪽으로, 엉덩이·꼬리는 반대로)
     update(raw, b = 0) {
       for (const [bn, , q0] of bend) bn.quaternion.copy(q0);
@@ -213,16 +244,27 @@ const OWNER_LOOK = [
   { Shirt: '#6FC1B6', Pants: '#4A4F5A', Hair: '#6B4226', HairBase: '#6B4226', Skin: '#DDB08A' },
 ];
 export async function loadOwners(scene, base, n, r) {
-  const g = await loadGLB(`${base}art/3d/owner.glb?v=202611031153`);
+  // 11/16 새 보호자 4명(tools/owner_rig.py — 앱 2D 보호자 그림 → Gemini 전신 → Meshy 3D, 그림체 텍스처): art/3d/owner0~3.glb.
+  // 레인마다 다른 사람. 없으면 옛 보호자(owner.glb, 단색 저폴리)
+  const order = shuffleR([0, 1, 2, 3], r);
+  const gs = await Promise.all(Array.from({ length: Math.min(n, 4) }, (_, i) => loadGLB(`${base}art/3d/owner${order[i]}.glb?v=202611241640`)));
+  if (gs.every(Boolean)) return gs.flatMap((g) => ownerFrom(scene, g, r)).concat(n > 4 ? (await loadOwners(scene, base, n - 4, r)) : []);
+  const g = await loadGLB(`${base}art/3d/owner.glb?v=202611241640`);
   if (!g) return [];
+  return ownerFrom(scene, g, r, n);
+}
+function ownerFrom(scene, g, r, n = null, first = true) {
+  const single = n == null;   // 새 보호자: 파일 하나 = 한 사람
+  if (single) n = 1;
   // 키: 살(SkinnedMesh)의 상자는 뼈대 배율(×100)을 안 따라 엉뚱하다 → 머리 뼈 높이로 잰다(머리 뼈 = 키의 0.89, tools/owner_hug.py 확인)
   g.scene.updateMatrixWorld(true);
+  const top = g.scene.getObjectByName('HeadTop');   // 새 보호자: 정수리 표시(키 그대로)
   const headY = g.scene.getObjectByName('Head')?.getWorldPosition(new THREE.Vector3()).y ?? 1.45;
-  const k = 1.62 / Math.max(0.01, headY / 0.89);
+  const k = 1.62 / Math.max(0.01, top ? top.getWorldPosition(new THREE.Vector3()).y : headY / 0.89);
   const looks = shuffleR([...OWNER_LOOK], r);
   const clip = (name) => THREE.AnimationClip.findByName(g.animations, name) ?? THREE.AnimationClip.findByName(g.animations, `HumanArmature|${name}`);
   return Array.from({ length: n }, (_, i) => {
-    const model = i ? skClone(g.scene) : g.scene, look = looks[i % looks.length];
+    const model = i || !first ? skClone(g.scene) : g.scene, look = single ? {} : looks[i % looks.length];
     model.traverse((o) => {
       if (!o.isMesh) return;
       o.castShadow = true; o.receiveShadow = true; o.frustumCulled = false;
@@ -230,6 +272,7 @@ export async function loadOwners(scene, base, n, r) {
       for (const m of Array.isArray(o.material) ? o.material : [o.material]) { if (look[m.name]) m.color.set(look[m.name]); m.roughness = 0.85; m.metalness = 0; }
     });
     const holder = new THREE.Group(); holder.add(model); model.scale.setScalar(k); scene.add(holder);
+    if (PAINT_ON) paintModel(model, { line: 0.012 });
     const mixer = new THREE.AnimationMixer(model);
     const act = { Welcome: clip('Welcome'), Hug: clip('Hug'), Clap: clip('Female_Clapping'), Idle: clip('Female_Idle') };
     for (const key of Object.keys(act)) act[key] = act[key] && mixer.clipAction(act[key]);
@@ -256,7 +299,7 @@ export async function loadOwners(scene, base, n, r) {
 
 // ---------- 그림 판(3D가 없을 때) ----------
 let BACKS = null;
-const backs = (base) => (BACKS ??= fetch(`${base}art/sprite/backs.json?v=202611031153`).then((x) => (x.ok ? x.json() : {})).catch(() => ({})));
+const backs = (base) => (BACKS ??= fetch(`${base}art/sprite/backs.json?v=202611241640`).then((x) => (x.ok ? x.json() : {})).catch(() => ({})));
 export async function backFrames(type, stage, base) {
   const have = await backs(base);
   const order = { baby: ['baby', 'teen', 'adult'], teen: ['teen', 'adult', 'baby'], adult: ['adult', 'teen', 'baby'] }[stage] ?? ['baby'];

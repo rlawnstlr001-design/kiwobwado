@@ -5,7 +5,7 @@
 import { createRng, hashString, shuffle } from '../../core/rng.js';
 
 export const QUIZ_CONFIG = {
-  count: 5,
+  count: 10,
   secondsPerQuestion: 12,
 };
 

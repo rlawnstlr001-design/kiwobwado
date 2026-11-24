@@ -155,6 +155,10 @@ function addMin(hm, n) { return toHM(toMin(hm) + n); }
 
 // ---------- 응답 판정 ----------
 // nowMin: 그날 0시부터 지난 분. 반환: 'early'(아직), 'open'(응답 창), 'late', 'closed'(그날 끝)
+// 강아지 낮잠(볼트 동물-생활습관, Kinsman 2020 보호자 기록): 낮잠 합계 아기(16주) 중앙값 3.5시간 · 12개월 3.0시간.
+// 시간대는 밥·산책과 덜 겹치게 고른 값(추론) — 아기 9:40·13:10·16:00, 그 뒤 13:10·16:00
+const NAPS = { baby: [[580, 640], [790, 870], [960, 1030]], grown: [[790, 870], [960, 1060]] };
+export const napAt = (stage, nowMin) => NAPS[stage === 'baby' ? 'baby' : 'grown'].some(([a, b]) => nowMin >= a && nowMin < b);
 export function taskPhase(task, nowMin) {
   const t = toMin(task.time);
   if (nowMin < t - EARLY) return 'early';

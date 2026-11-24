@@ -4,10 +4,10 @@
 //  아이·보호자는 우리 수채 그림(뒷모습 2걸음)을 3D 공간에 세운 판 — 그림체는 그대로, 공간·빛·그림자·카메라는 3D
 // 좌표: x 오른쪽 · y 위 · 코스는 -z 방향(아이 위치 s m → z = -s)
 import * as THREE from 'three';
-import { sfx } from './sound.js?v=202611031153';
-import { rng } from './engine.js?v=202611031153';
-import { haptic } from './native.js?v=202611031153';
-import { SIZE, STAGE_K, clamp, shuffleR, canvasTex, stripeTex, roundTex, makeStage, std, mesh, buildArena, loadPet3d, loadOwners, backFrames, loadTex, SHIRT } from './arena3d.js?v=202611031153';
+import { sfx } from './sound.js?v=202611241640';
+import { rng } from './engine.js?v=202611241640';
+import { haptic } from './native.js?v=202611241640';
+import { SIZE, STAGE_K, clamp, shuffleR, canvasTex, stripeTex, roundTex, makeStage, std, mesh, buildArena, paintArena, loadPet3d, loadOwners, backFrames, loadTex, SHIRT } from './arena3d.js?v=202611241640';
 
 const KEY = { ArrowUp: 'up', ArrowDown: 'down', ArrowLeft: 'left', ArrowRight: 'right', KeyW: 'up', KeyS: 'down', KeyA: 'left', KeyD: 'right' };
 const ARROW = { up: '↑', down: '↓', left: '←', right: '→' };
@@ -124,6 +124,7 @@ export function agility3dGame(body, ctx, done, { base = '' } = {}) {
   let owner3 = null, hugged = false, petTried = false;
   const PET_STOP = END + 0.2;   // 완주한 아이가 앉는 곳
   backFrames(ctx.type, ctx.stage, base).then((fr) => { IM = fr; petAspect = fr[0].image.width / fr[0].image.height; petMat.map = fr[0]; petMat.needsUpdate = true; });
+  paintArena(scene);   // 11/16 그림체(장애물까지 다 놓은 뒤)
   loadOwners(scene, base, 1, r).then(async ([o]) => {
     if (over) return;
     if (o) { owner3 = o; return; }
@@ -279,9 +280,8 @@ export function agility3dGame(body, ctx, done, { base = '' } = {}) {
         // 우리 점프 'Leap'(도약 → 정점 → 앞발 뻗기 → 착지, 10/29 — 볼트 동물-걸음걸이 '점프'): 높이 곡선(jump 1 → 0)과 같은 시간에 맞춰 직접 넘긴다
         to(act.Leap, 0.06); act.Leap.timeScale = 0; act.Leap.time = (1 - jump) * act.Leap.getClip().duration;
       } else to(act.Dash ?? act.Run, 0.12);   // 달릴 땐 우리 갤럽 'Dash'(로터리 갤럽 — 볼트 동물-걸음걸이)
-      if (act.Run) act.Run.timeScale = 1.81 + (speed() - 5.2) * 0.15;   // 20프레임(11/2 16→20, 한 바퀴 시간 그대로)
-      if (act.Walk) act.Walk.timeScale = 1.3;
-      if (act.Dash) act.Dash.timeScale = 2.4 + (speed() - 5.2) * 0.18;   // 한 바퀴 ≈ 0.36초(작은 개 갤럽 ≈ 3Hz) — 21프레임(11/2 14→21, 발 떼는 순간을 촘촘히)
+      dog3.pace('Walk', 1.4);
+      dog3.pace('Dash', speed());
       dog3.update(raw, bend);   // 동작 → 눈 깜빡임 → 몸 휘기(머리·목은 가는 쪽, 엉덩이·꼬리는 반대)
       if (ended && lives > 0) holder.rotation.set(0, Math.PI, 0);   // 보호자 쪽을 똑바로
     }

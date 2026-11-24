@@ -98,6 +98,20 @@
   "grade": "A",
   "url": "https://www.merckvetmanual.com/toxicology/food-hazards/garlic-and-onion-allium-spp-toxicosis-in-animals"
  },
+ "msd_grape": {
+  "title": "Grape, Raisin, and Tamarind Toxicosis in Dogs",
+  "org": "MSD Veterinary Manual",
+  "year": "2024",
+  "grade": "A",
+  "url": "https://www.msdvetmanual.com/veterinary/toxicology/food-hazards/raisin-and-grape-toxicosis-in-dogs"
+ },
+ "wegenast2022": {
+  "title": "Acute kidney injury in dogs following ingestion of cream of tartar and tamarinds",
+  "org": "Journal of Veterinary Emergency and Critical Care (Wegenast 외)",
+  "year": "2022",
+  "grade": "B",
+  "url": "https://doi.org/10.1111/vec.13234"
+ },
  "merck_xylitol": {
   "title": "Xylitol Toxicosis in Dogs",
   "org": "Merck Veterinary Manual",
@@ -692,5 +706,117 @@
   "year": "2023",
   "grade": "A",
   "url": "https://rspca-brighton.org.uk/wp-content/uploads/2023/02/RSPCA-Appropriate-play.docx.pdf"
+ },
+ "kinsman2020": {
+  "title": "Sleep Duration and Behaviours: A Descriptive Analysis of a Cohort of Dogs up to 12 Months of Age",
+  "org": "Animals(Kinsman 외, Dogs Trust Generation Pup)",
+  "year": "2020",
+  "grade": "B",
+  "url": "https://pmc.ncbi.nlm.nih.gov/articles/PMC7401528/"
+ },
+ "parker2019_cat": {
+  "title": "Daily rhythms in food intake and locomotor activity in a colony of domestic cats",
+  "org": "Animal Biotelemetry(Parker 외)",
+  "year": "2019",
+  "grade": "B",
+  "url": "https://link.springer.com/article/10.1186/s40317-019-0188-0"
+ },
+ "eyre2025_cat": {
+  "title": "Twenty-Four-Hour Feeding Patterns of In-Home Healthy Aging Cats",
+  "org": "Animals(Eyre 외)",
+  "year": "2025",
+  "grade": "B",
+  "url": "https://www.ncbi.nlm.nih.gov/pmc/articles/PMC12784832/"
+ },
+ "camara2020_cat": {
+  "title": "Once-a-day feeding in indoor cats",
+  "org": "PLOS ONE(Camara 외, 겔프대)",
+  "year": "2020",
+  "grade": "B",
+  "url": "https://pmc.ncbi.nlm.nih.gov/articles/PMC7500645"
+ },
+ "krontveit2012": {
+  "title": "Housing- and exercise-related risk factors associated with hip dysplasia in four large dog breeds",
+  "org": "Am J Vet Res(Krontveit 외)",
+  "year": "2012",
+  "grade": "B",
+  "url": "https://doi.org/10.2460/ajvr.73.6.838"
+ },
+ "hall2002_toy": {
+  "title": "Object play in adult domestic cats: the roles of habituation and disinhibition",
+  "org": "Appl Anim Behav Sci(Hall·Bradshaw·Robinson)",
+  "year": "2002",
+  "grade": "B",
+  "url": "https://doi.org/10.1016/S0168-1591(02)00153-3"
+ },
+ "pullen2012_toy": {
+  "title": "Habituation and dishabituation during object play in kennel-housed dogs",
+  "org": "Animal Cognition(Pullen·Merrill·Bradshaw)",
+  "year": "2012",
+  "grade": "B",
+  "url": "https://link.springer.com/article/10.1007/s10071-012-0538-2"
+ },
+ "fediaf2025": {
+  "title": "Nutritional Guidelines for Complete and Complementary Pet Food for Cats and Dogs",
+  "org": "FEDIAF(유럽 펫푸드 산업 연맹)",
+  "year": "2025",
+  "grade": "B",
+  "url": "https://europeanpetfood.org/wp-content/uploads/2025/09/FEDIAF-Nutritional-Guidelines_2025-ONLINE.pdf"
+ },
+ "puppy_social2022": {
+  "title": "Optimising Puppy Socialisation",
+  "org": "Animals 12(22):3201",
+  "year": "2022",
+  "grade": "B",
+  "url": "https://pmc.ncbi.nlm.nih.gov/articles/PMC9687081/"
+ },
+ "aafp_vax2020": {
+  "title": "2020 AAHA/AAFP Feline Vaccination Guidelines",
+  "org": "미국동물병원협회·미국고양이수의사회(AAHA/AAFP), J Feline Med Surg",
+  "year": "2020",
+  "grade": "A",
+  "url": "https://pmc.ncbi.nlm.nih.gov/articles/PMC11135662/"
+ },
+ "felinevma_social2025": {
+  "title": "Position statement on the socialization of feral kittens — 사회화 시기 생후 약 2~9주",
+  "org": "FelineVMA, J Feline Med Surg",
+  "year": "2025",
+  "grade": "A",
+  "url": "https://pmc.ncbi.nlm.nih.gov/articles/PMC11954556/"
+ },
+ "altman2026_grape": {
+  "title": "영국 응급 진료 기록의 포도·건포도 섭취(개·고양이)",
+  "org": "Altman 외, Frontiers in Veterinary Science",
+  "year": "2026",
+  "grade": "B",
+  "url": "https://pmc.ncbi.nlm.nih.gov/articles/PMC13533654/"
+ },
+ "shelter2025": {
+  "title": "유기동물 발생 10년 만에 연간 10만 마리 이하로(2025 동물보호·복지 실태조사 인용 — 입소 95,685마리 중 입양 25.6%)",
+  "org": "데일리벳(농림축산식품부 조사 인용)",
+  "year": "2026",
+  "grade": "B",
+  "url": "https://www.dailyvet.co.kr/?p=288794"
+ },
+ "law_adopt": {
+  "title": "보호센터 분양 전 등록(제45조), 2개월 미만 판매 금지·12개월 미만 교배 금지·직접 전달(제78조), 구매자 명의 등록 신청 후 판매(제79조)",
+  "org": "동물보호법(국가법령정보센터)",
+  "year": "2026",
+  "grade": "A",
+  "url": "https://www.law.go.kr/법령/동물보호법"
+ },
+ "seoul_adopt": {
+  "title": "입양절차안내 — 입양 교육·설문·방문 상담, 중성화·등록 후 입양",
+  "org": "서울특별시 서울동물복지지원센터",
+  "year": "2026",
+  "grade": "A",
+  "url": "https://news.seoul.go.kr/env/adoptinfo"
+ },
+ "cat_register": {
+  "title": "고양이 동물등록 2월 1일부터 전국 확대(의무 아님·내장형만)",
+  "org": "데일리벳(농림축산식품부 발표 인용)",
+  "year": "2022",
+  "grade": "B",
+  "url": "https://www.dailyvet.co.kr/?p=160099"
  }
 }
